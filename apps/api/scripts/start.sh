@@ -12,4 +12,6 @@ if [ "${SEED_ON_START:-0}" = "1" ]; then
 fi
 
 echo "[start] launching API on :8000"
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+# --no-access-log: our RequestLoggingMiddleware emits the (JSON, redacted) access
+# log to file + console, so uvicorn's plain-text one would just duplicate it.
+exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log

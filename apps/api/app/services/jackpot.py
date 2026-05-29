@@ -34,7 +34,11 @@ from app.models.tenancy import Merchant
 
 logger = get_logger("app.jackpot")
 
-JACKPOT_SPIN_COST = 5   # coins per play (0 = free; >0 charges + gates on balance)
+# Default jackpot spin cost (coins): 0 = free; >0 charges + gates on balance.
+# A merchant can override it via merchants.settings["jackpot_spin_cost"] — see
+# jackpot_spin_cost().
+JACKPOT_SPIN_COST = 5
+JACKPOT_SPIN_COST_KEY = "jackpot_spin_cost"
 GRID_SIZE = 3
 LOSE_WEIGHT_MULTIPLIER = 3  # lose-bucket = total prize weight × this → ~25% win rate
 
@@ -76,6 +80,18 @@ def ensure_grand_anchor(merchant: Merchant) -> bool:
     return False
 
 
+def jackpot_spin_cost(merchant: Merchant | None) -> int:
+    """Per-merchant jackpot spin cost, falling back to the JACKPOT_SPIN_COST default.
+    Ignores absent/invalid/negative overrides."""
+    if merchant is None:
+        return JACKPOT_SPIN_COST
+    try:
+        cost = int((merchant.settings or {}).get(JACKPOT_SPIN_COST_KEY))
+    except (TypeError, ValueError):
+        return JACKPOT_SPIN_COST
+    return cost if cost >= 0 else JACKPOT_SPIN_COST
+
+
 def _voucher_code() -> str:
     return "JACKPOT-" + secrets.token_hex(4).upper()
 
@@ -115,7 +131,7 @@ def jackpot_config(db: Session, *, merchant_id: str) -> dict:
     prizes = _ordered_prizes(db, merchant_id)
     merchant = db.get(Merchant, merchant_id)
     return {
-        "spin_cost": JACKPOT_SPIN_COST,
+        "spin_cost": jackpot_spin_cost(merchant),
         "grid_size": GRID_SIZE,
         "payline": "middle_row",
         "grand_prize": _grand_prize(db, merchant),
@@ -132,24 +148,26 @@ def play_jackpot(db: Session, *, customer_id: str, merchant_id: str) -> dict:
     if not prizes:
         raise NotFoundError("No jackpot configured", code="no_jackpot")
 
+    merchant = db.get(Merchant, merchant_id)
+    spin_cost = jackpot_spin_cost(merchant)
     acct = get_or_create_account(
         db, customer_id=customer_id,
         scope_type=RewardScope.MERCHANT.value, scope_id=merchant_id,
         for_update=True,  # row-lock: no concurrent double-spin double-charge
     )
-    # 1. Charge the spin — only when a cost is configured. With JACKPOT_SPIN_COST=0
-    #    the jackpot is free to play (no food purchase / earned points required),
-    #    so we neither gate on balance nor write a redeem ledger row.
-    if JACKPOT_SPIN_COST > 0:
-        if acct.points_balance < JACKPOT_SPIN_COST:
+    # 1. Charge the spin — only when a cost is configured. With a 0 spin cost the
+    #    jackpot is free to play (no food purchase / earned points required), so we
+    #    neither gate on balance nor write a redeem ledger row.
+    if spin_cost > 0:
+        if acct.points_balance < spin_cost:
             logger.warning("jackpot_insufficient", extra={"extra": {
                 "customer_id": customer_id, "merchant_id": merchant_id,
-                "balance": acct.points_balance, "cost": JACKPOT_SPIN_COST}})
+                "balance": acct.points_balance, "cost": spin_cost}})
             raise ConflictError("Insufficient points to play", code="insufficient_points")
-        acct.points_balance -= JACKPOT_SPIN_COST
+        acct.points_balance -= spin_cost
         db.add(RewardTransaction(
             account_id=acct.id, txn_type=RewardTxnType.REDEEM.value,
-            points=-JACKPOT_SPIN_COST, reason="Jackpot spin",
+            points=-spin_cost, reason="Jackpot spin",
         ))
 
     # 2. Weighted outcome (lose vs win-which-item) — server is authoritative.
@@ -180,7 +198,6 @@ def play_jackpot(db: Session, *, customer_id: str, merchant_id: str) -> dict:
             status="active",
             voucher_code=voucher_code,
         ))
-        merchant = db.get(Merchant, merchant_id)
         if merchant is not None:
             _reset_grand_prize(merchant)
         logger.info("jackpot_win", extra={"extra": {
@@ -191,10 +208,10 @@ def play_jackpot(db: Session, *, customer_id: str, merchant_id: str) -> dict:
     db.flush()
     logger.info("jackpot_play", extra={"extra": {
         "customer_id": customer_id, "merchant_id": merchant_id,
-        "won": won_prize is not None, "cost": JACKPOT_SPIN_COST,
+        "won": won_prize is not None, "cost": spin_cost,
         "balance": acct.points_balance}})
     return {
-        "spin_cost": JACKPOT_SPIN_COST,
+        "spin_cost": spin_cost,
         "grid": grid,
         "won": won_prize is not None,
         "prize": (

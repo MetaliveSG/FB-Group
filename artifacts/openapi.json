@@ -8221,6 +8221,17 @@
             "type": "number",
             "title": "Price"
           },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
           "is_available": {
             "type": "boolean",
             "title": "Is Available"
@@ -9882,11 +9893,21 @@
           "pipeline_enabled": {
             "type": "boolean",
             "title": "Pipeline Enabled"
+          },
+          "wheel_spin_cost": {
+            "type": "integer",
+            "title": "Wheel Spin Cost"
+          },
+          "jackpot_spin_cost": {
+            "type": "integer",
+            "title": "Jackpot Spin Cost"
           }
         },
         "type": "object",
         "required": [
-          "pipeline_enabled"
+          "pipeline_enabled",
+          "wheel_spin_cost",
+          "jackpot_spin_cost"
         ],
         "title": "SettingsOut"
       },
@@ -9902,6 +9923,30 @@
               }
             ],
             "title": "Pipeline Enabled"
+          },
+          "wheel_spin_cost": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wheel Spin Cost"
+          },
+          "jackpot_spin_cost": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jackpot Spin Cost"
           }
         },
         "type": "object",

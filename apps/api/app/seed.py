@@ -63,9 +63,11 @@ def _menu(db: Session, outlet: Outlet, spec: dict) -> list[str]:
         cat = MenuCategory(menu_id=menu.id, name=cat_name, sort_order=ci)
         db.add(cat)
         db.flush()
-        for ii, (name, price, mods) in enumerate(items):
+        for ii, entry in enumerate(items):
+            name, price, mods = entry[0], entry[1], entry[2]
+            image_url = entry[3] if len(entry) > 3 else None
             item = MenuItem(category_id=cat.id, name=name, description=f"{name}", price=price,
-                            is_available=True, sort_order=ii)
+                            image_url=image_url, is_available=True, sort_order=ii)
             db.add(item)
             db.flush()
             for mname, delta in mods:
@@ -501,29 +503,67 @@ def _ensure_kampong_jackpot(db: Session, merchant_id: str) -> dict:
 
 
 
+# (name, price, modifiers, image_url) — images are real food photos served from
+# apps/web/public/menu/ (sourced from Wikimedia Commons, see docs). The image path
+# is the single source of truth; _ensure_kampong_images() syncs them onto live rows.
 KAMPONG_MENU = {
     "Hawker Mains": [
-        ("Fish Ball Noodle", 5.50, [("Extra Fish Ball", 1.50), ("Less Spicy", 0.00)]),
-        ("Fish Soup (slice)", 7.00, [("Extra Fish", 1.50), ("Less Spicy", 0.00)]),
-        ("Curry Rice", 5.50, [("Add Chicken", 2.00), ("Add Egg", 1.00)]),
-        ("Roti Prata (Plain)", 1.80, [("Add Egg", 1.00), ("Add Cheese", 1.50)]),
+        ("Fish Ball Noodle", 5.50, [("Extra Fish Ball", 1.50), ("Less Spicy", 0.00)], "/menu/fish-ball-noodle.jpg"),
+        ("Fish Soup (slice)", 7.00, [("Extra Fish", 1.50), ("Less Spicy", 0.00)], "/menu/fish-soup.jpg"),
+        ("Curry Rice", 5.50, [("Add Chicken", 2.00), ("Add Egg", 1.00)], "/menu/curry-rice.jpg"),
+        ("Roti Prata (Plain)", 1.80, [("Add Egg", 1.00), ("Add Cheese", 1.50)], "/menu/roti-prata.jpg"),
     ],
     "Bakery": [
-        ("Chicken Bun", 1.80, []),
-        ("Pork Bun", 1.80, []),
+        ("Chicken Bun", 1.80, [], "/menu/chicken-bun.jpg"),
+        ("Pork Bun", 1.80, [], "/menu/pork-bun.jpg"),
     ],
     "Fried Snacks": [
-        ("Chicken Drumstick", 3.50, []),
-        ("Burger", 4.50, [("Spicy", 0.00)]),
-        ("French Fries", 3.50, [("Make it Large", 1.50)]),
+        ("Chicken Drumstick", 3.50, [], "/menu/chicken-drumstick.jpg"),
+        ("Burger", 4.50, [("Spicy", 0.00)], "/menu/burger.jpg"),
+        ("French Fries", 3.50, [("Make it Large", 1.50)], "/menu/french-fries.jpg"),
     ],
     "Drinks": [
-        ("Teh Tarik", 2.20, [("Iced", 0.50)]),
+        ("Teh Tarik", 2.20, [("Iced", 0.50)], "/menu/teh-tarik.jpg"),
     ],
     "Dessert": [
-        ("Chendol", 3.00, [("Extra Gula Melaka", 0.50)]),
+        ("Chendol", 3.00, [("Extra Gula Melaka", 0.50)], "/menu/chendol.jpg"),
     ],
 }
+
+
+def _kampong_image_map() -> dict[str, str]:
+    """name → image_url, derived from KAMPONG_MENU (single source of truth)."""
+    return {
+        entry[0]: entry[3]
+        for items in KAMPONG_MENU.values()
+        for entry in items
+        if len(entry) > 3 and entry[3]
+    }
+
+
+def _ensure_kampong_images(db: Session, merchant_id: str) -> dict:
+    """Idempotently sync real-food photos onto Kampong Eats' live menu rows.
+
+    seed_kampong() no-ops once the merchant exists, so newly-added image_urls must
+    be patched onto already-seeded rows here. Matches by item name across all the
+    merchant's outlets; only writes when the value actually drifts.
+    """
+    from app.models.catalog import Menu, MenuCategory, MenuItem
+
+    images = _kampong_image_map()
+    rows = db.scalars(
+        select(MenuItem)
+        .join(MenuCategory, MenuItem.category_id == MenuCategory.id)
+        .join(Menu, MenuCategory.menu_id == Menu.id)
+        .where(Menu.merchant_id == merchant_id)
+    ).all()
+    updated = 0
+    for row in rows:
+        want = images.get(row.name)
+        if want and row.image_url != want:
+            row.image_url = want
+            updated += 1
+    return {"items": len(rows), "images_updated": updated}
 
 
 def seed_kampong(db: Session, *, coalition_id: str | None = None,
@@ -538,9 +578,10 @@ def seed_kampong(db: Session, *, coalition_id: str | None = None,
     if existing:
         # Bolt on any new add-ons / sync drifted symbols — idempotent.
         jackpot = _ensure_kampong_jackpot(db, existing.id)
+        images = _ensure_kampong_images(db, existing.id)
         db.commit()
         return {"merchant_id": existing.id, "merchant_name": existing.name,
-                "status": "already_exists", "jackpot_sync": jackpot}
+                "status": "already_exists", "jackpot_sync": jackpot, "image_sync": images}
 
     roles = seed_rbac(db)  # idempotent
     now = utcnow()

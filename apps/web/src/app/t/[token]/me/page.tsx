@@ -23,7 +23,7 @@ function maskPhone(p: string | null): string {
 
 function Shell({ token, children }: { token: string; children: React.ReactNode }) {
   return (
-    <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--color-bg)" }}>
+    <div className="t-shell">
       {children}
       <CustomerTabBar token={token} active="me" />
     </div>

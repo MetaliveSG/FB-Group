@@ -47,6 +47,19 @@ def _seed_jackpot(db, merchant_id):
     db.commit()
 
 
+def _seed_wheel(db, merchant_id):
+    for i, (label, kind, val) in enumerate([("Try again", "nothing", 0), ("10 pts", "points", 10)]):
+        db.add(WheelSegment(merchant_id=merchant_id, label=label, prize_kind=kind, prize_value=val,
+                            weight=1, color="#ccc", sort_order=i))
+    db.commit()
+
+
+def _set_settings(db, merchant_id, **kv):
+    m = db.get(Merchant, merchant_id)
+    m.settings = {**(m.settings or {}), **kv}
+    db.commit()
+
+
 # ── progressive grand jackpot ────────────────────────────────────────────────
 def test_grand_jackpot_config_at_least_base(client, db):
     w = make_world(db)
@@ -170,3 +183,57 @@ def test_redeem_until_insufficient_then_blocked(client, db):
     # exactly 2 vouchers minted, balance 50
     reds = db.scalars(select(RewardRedemption)).all()
     assert len([r for r in reds if r.reward_name == "Cheap Treat"]) == 2
+
+
+# ── per-merchant spin costs ──────────────────────────────────────────────────
+def test_spin_costs_default_to_service_constants(client, db):
+    w = make_world(db)
+    otok = staff_token(client, w.owner_email)
+    s = client.get("/api/v1/org/settings", headers=H(otok)).json()
+    assert s["wheel_spin_cost"] == rewards_service.WHEEL_SPIN_COST
+    assert s["jackpot_spin_cost"] == jackpot_service.JACKPOT_SPIN_COST
+
+
+def test_merchant_can_override_spin_costs_via_settings(client, db):
+    w = make_world(db)
+    otok = staff_token(client, w.owner_email)
+    upd = client.patch("/api/v1/org/settings",
+                       json={"wheel_spin_cost": 3, "jackpot_spin_cost": 0}, headers=H(otok))
+    assert upd.status_code == 200, upd.text
+    assert upd.json()["wheel_spin_cost"] == 3 and upd.json()["jackpot_spin_cost"] == 0
+    # the games' config endpoints (what the customer app reads) report the override.
+    # expire the test session so it sees the commit made in the request's session.
+    db.expire_all()
+    assert rewards_service.wheel_config(db, merchant_id=w.merchant_id)["spin_cost"] == 3
+    assert jackpot_service.jackpot_config(db, merchant_id=w.merchant_id)["spin_cost"] == 0
+
+
+def test_negative_spin_cost_rejected(client, db):
+    w = make_world(db)
+    otok = staff_token(client, w.owner_email)
+    r = client.patch("/api/v1/org/settings", json={"wheel_spin_cost": -1}, headers=H(otok))
+    assert r.status_code == 422  # pydantic ge=0 boundary
+
+
+def test_wheel_gates_on_overridden_cost(client, db):
+    """A raised wheel cost blocks a balance the default (10) would have allowed."""
+    w = make_world(db)
+    _set_settings(db, w.merchant_id, wheel_spin_cost=50)
+    _seed_wheel(db, w.merchant_id)
+    cust = register_customer(client, email="wc@b.sg", phone="+6592000010")
+    _give_coins(db, w.merchant_id, cust["customer"]["id"], 10)  # < 50 → blocked
+    r = client.post("/api/v1/me/wheel/spin", json={"merchant_id": w.merchant_id},
+                    headers=H(cust["access_token"]))
+    assert r.status_code == 409 and r.json()["error"]["code"] == "insufficient_points"
+
+
+def test_jackpot_free_when_cost_overridden_to_zero(client, db):
+    """Cost 0 makes the jackpot free — a 0-coin diner can still play (default 5 would block)."""
+    w = make_world(db)
+    _set_settings(db, w.merchant_id, jackpot_spin_cost=0)
+    _seed_jackpot(db, w.merchant_id)
+    cust = register_customer(client, email="jz@b.sg", phone="+6592000011")
+    r = client.post("/api/v1/me/jackpot/play", json={"merchant_id": w.merchant_id},
+                    headers=H(cust["access_token"]))
+    assert r.status_code == 200, r.text
+    assert r.json()["spin_cost"] == 0

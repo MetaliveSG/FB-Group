@@ -58,7 +58,9 @@ export function Sheet({
   return (
     <div className="ui-sheet__overlay" onClick={onClose} role="dialog" aria-modal>
       <div className="ui-sheet__panel" onClick={(e) => e.stopPropagation()}>
-        <div className="ui-sheet__grip" />
+        <button type="button" className="ui-sheet__grip-btn" onClick={onClose} aria-label="Close">
+          <span className="ui-sheet__grip" />
+        </button>
         {children}
       </div>
     </div>

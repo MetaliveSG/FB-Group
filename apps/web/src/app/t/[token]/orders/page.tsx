@@ -50,12 +50,12 @@ export default function OrdersPage() {
   }, [base, token]);
 
   const Shell = ({ children }: { children: React.ReactNode }) => (
-    <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--color-bg)" }}>
+    <div className="t-shell">
       <header style={{ padding: "var(--space-4)", background: "linear-gradient(180deg, var(--brand-600), var(--brand-700))", color: "#fff" }}>
         <div style={{ fontSize: "var(--text-lg)", fontWeight: 900 }}>My Orders</div>
         <div style={{ fontSize: "var(--text-xs)", opacity: 0.85 }}>Your order history</div>
       </header>
-      <main style={{ flex: 1, padding: "var(--space-4)" }}>{children}</main>
+      <main style={{ flex: 1, padding: "var(--space-4)", display: "flex", flexDirection: "column" }}>{children}</main>
       <CustomerTabBar token={token} active="orders" />
     </div>
   );
@@ -73,13 +73,15 @@ export default function OrdersPage() {
   if (loggedOut) {
     return (
       <Shell>
-        <Card pad style={{ textAlign: "center" }}>
-          <Icons.Receipt size={44} color="var(--color-primary)" style={{ marginBottom: 8 }} />
-          <div style={{ fontWeight: 800, fontSize: "var(--text-lg)", marginBottom: 6 }}>Log in to see your orders</div>
-          <Button block variant="primary" size="lg" leftIcon={Icons.ArrowLeft} onClick={() => router.push(`/t/${encodeURIComponent(token)}`)}>
-            Go to Menu
-          </Button>
-        </Card>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Card pad style={{ width: "100%", textAlign: "center" }}>
+            <Icons.Receipt size={44} color="var(--color-primary)" style={{ marginBottom: 8 }} />
+            <div style={{ fontWeight: 800, fontSize: "var(--text-lg)", marginBottom: 6 }}>Log in to see your orders</div>
+            <Button block variant="primary" size="lg" leftIcon={Icons.ArrowLeft} onClick={() => router.push(`/t/${encodeURIComponent(token)}`)}>
+              Go to Menu
+            </Button>
+          </Card>
+        </div>
       </Shell>
     );
   }

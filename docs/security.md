@@ -10,7 +10,8 @@
 - [x] **Tenant data isolation** — `merchant_id` predicate on every query; outlet/brand scoping; verified by tests (cross-merchant leakage blocked, outlet manager limited, cross-merchant opportunity/task/menu edits rejected).
 - [x] **Rate limiting** — sliding-window limiter on OTP issuance + login (abuse/brute-force prevention).
 - [x] **OTP hardening** — TTL expiry, attempt cap, constant-time compare, single-use.
-- [x] **CORS restriction** — explicit allowed origins (env), limited methods/headers.
+- [x] **CORS restriction** — explicit allowed origins (env), limited methods/headers; plus a private-LAN/`.local` origin regex so same-wifi devices (demo on a phone) are allowed without opening it to the public internet.
+- [x] **Log secret redaction** — every log record (file + console) is scrubbed of JWTs, `Authorization` headers, passwords, and long keys before write (`app/core/logging.py`); access + business errors are logged with context (method/path/code), never the bearer token.
 - [x] **Secure headers** — `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, HSTS, CSP.
 - [x] **Audit logs** — append-only `audit_logs` for privileged actions (order status change, manual order, payment, CRM tag).
 - [x] **Secrets via env** — `JWT_SECRET`, DB URL etc. from environment; `.env.example` only; no hardcoded credentials in code.

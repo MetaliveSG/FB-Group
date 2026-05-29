@@ -104,9 +104,9 @@ Operator drill-down reuses the CRM/reports endpoints with `?merchant_id=` (super
 | PATCH | `/api/v1/me/profile` | update profile — `phone` (compulsory, E.164, unique), `birthday`/`gender`/`full_name` optional |
 | GET | `/api/v1/me/rewards/catalog?merchant_id=` | redeemable rewards + `can_afford` |
 | POST | `/api/v1/me/rewards/redeem` | `{merchant_id, item_id}` → `{voucher_code, reward_name, points_balance}` |
-| GET | `/api/v1/me/wheel?merchant_id=` | `{spin_cost, segments:[{label,color}]}` |
+| GET | `/api/v1/me/wheel?merchant_id=` | `{spin_cost, segments:[{label,color}]}`. `spin_cost` defaults to 10 but is **per-merchant configurable** via `merchants.settings.wheel_spin_cost`. |
 | POST | `/api/v1/me/wheel/spin` | `{merchant_id}` → `{winning_index, prize, points_balance}` (insufficient points → 409) |
-| GET | `/api/v1/me/jackpot?merchant_id=` | **888 Jackpot** config: `{spin_cost, grid_size, payline:"middle_row", grand_prize, prizes:[…]}`. `spin_cost` = 5 coins (tunable via `JACKPOT_SPIN_COST`); `grand_prize` = persistent progressive pot (base 1000, grows ~0.5/s, resets on a win). |
+| GET | `/api/v1/me/jackpot?merchant_id=` | **888 Jackpot** config: `{spin_cost, grid_size, payline:"middle_row", grand_prize, prizes:[…]}`. `spin_cost` defaults to 5 but is **per-merchant configurable** via `merchants.settings.jackpot_spin_cost` (set on `/org/settings`; 0 = free play); `grand_prize` = persistent progressive pot (base 1000, grows ~0.5/s, resets on a win). |
 | POST | `/api/v1/me/jackpot/play` | `{merchant_id}` → server-authoritative outcome: `{spin_cost, grid:[[{item_name,emoji,…}]]×3, won, prize?:{item_name,item_price,emoji,voucher_code}, points_balance}`. Middle row is the payline — 3-of-a-kind there = win that item as a `JACKPOT-*` voucher. **Free to play** (no coin cost / balance untouched while `JACKPOT_SPIN_COST=0`). |
 
 ## Reports & Forecast (Module 9) — staff `report.view`, graph-ready
@@ -165,4 +165,4 @@ Configurable modes: **sales** (prospecting→qualified→proposal→negotiation�
 | GET/POST/PATCH | `/api/v1/org/outlets[/{id}]` | outlet CRUD (`outlet.manage`); create auto-provisions an empty menu |
 | GET/POST | `/api/v1/org/outlets/{id}/tables` | list/add tables (auto-generates a stable QR token) |
 | DELETE | `/api/v1/org/tables/{id}` | remove a table + its QR |
-| GET/PATCH | `/api/v1/org/settings` | merchant feature toggles, e.g. `{pipeline_enabled}` (`merchant.manage`) |
+| GET/PATCH | `/api/v1/org/settings` | merchant settings: `{pipeline_enabled, wheel_spin_cost, jackpot_spin_cost}` — spin costs are per-merchant (`ge=0`; PATCH needs `merchant.manage`) |

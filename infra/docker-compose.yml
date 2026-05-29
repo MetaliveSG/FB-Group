@@ -30,6 +30,13 @@ services:
       CORS_ORIGINS: http://localhost:3000,http://localhost:3001
       ACCESS_TOKEN_EXPIRE_MINUTES: "480"   # demo: 8h so sessions don't age out mid-demo. Prod: 30 + refresh.
       SEED_ON_START: "1"
+    # Persist the rotating JSON logs in a named volume so they survive container
+    # rebuilds (a CloudWatch agent would tail this file in prod — the MMQRDepositBot
+    # pattern). Named volume (not a host bind mount) avoids the Docker-Desktop
+    # external-drive permission friction; read it with:
+    #   docker-compose -f infra/docker-compose.yml exec api tail -f /app/logs/api.log
+    volumes:
+      - api_logs:/app/logs
     ports:
       - "8000:8000"
     depends_on:
@@ -49,3 +56,4 @@ services:
 
 volumes:
   pgdata:
+  api_logs:

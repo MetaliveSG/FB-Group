@@ -56,10 +56,14 @@ class TableOut(BaseModel):
 
 class SettingsOut(BaseModel):
     pipeline_enabled: bool
+    wheel_spin_cost: int
+    jackpot_spin_cost: int
 
 
 class SettingsUpdateIn(BaseModel):
     pipeline_enabled: bool | None = None
+    wheel_spin_cost: int | None = Field(default=None, ge=0)
+    jackpot_spin_cost: int | None = Field(default=None, ge=0)
 
 
 class TableCreateIn(BaseModel):

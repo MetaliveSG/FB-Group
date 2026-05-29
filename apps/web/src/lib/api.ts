@@ -188,7 +188,15 @@ export {
 };
 
 export function getApiBase(): string {
-  return process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
+  // Explicit override wins (e.g. a fixed API domain in prod).
+  if (process.env.NEXT_PUBLIC_API_BASE) return process.env.NEXT_PUBLIC_API_BASE;
+  // Otherwise call the API on the SAME host the page was loaded from, port 8000.
+  // This is what lets a phone on the home wifi reach it via the Mac's LAN IP
+  // (e.g. http://192.168.68.57:3001) — `localhost` would resolve to the phone itself.
+  if (typeof window !== "undefined") {
+    return `${window.location.protocol}//${window.location.hostname}:8000`;
+  }
+  return "http://localhost:8000";
 }
 
 export function getApiClient(token?: string): FbGroupApiClient {

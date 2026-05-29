@@ -11,7 +11,7 @@ Modular-monolith FastAPI backend (one API for all clients), Next.js frontend,
 PostgreSQL, fully Dockerised and AWS-ready by design.
 
 ## 2. What was built
-- **Backend** (`apps/api`): FastAPI + SQLAlchemy 2.0, **40 tables**, **92 API endpoints**, 7 Alembic migrations.
+- **Backend** (`apps/api`): FastAPI + SQLAlchemy 2.0, **40 tables**, **92 API endpoints**, 8 Alembic migrations.
 - **Frontend** (`apps/web`): Next.js 14 App Router, **22 routes** (+ a `/showcase` UI-kit gallery), typed API client in `packages/api-client`. Customer app redesigned mobile-first on a shared **design system** (`packages/ui` tokens + component kit, Lucide icons).
 - **Infra** (`infra/`): docker-compose (Postgres + API + web), Dockerfiles, healthchecks, backup script.
 - **Docs** (`docs/`): architecture, api, security, testing, deployment, bc-dr, database, PRD, this report.
@@ -74,7 +74,7 @@ Stable QR tokens: `orchard-01`, `tampines-01`, `holland-01`, `hawker-maxwell-01`
 | + | **Customer app redesign**: mobile-first design system (`packages/ui` tokens + Lucide kit), 4-tab nav (Menu·Rewards·Orders·Me), order history, profile editor (mobile/birthday/gender), **dedicated full-screen game pages + win celebration (fireworks/confetti)** | ✅ |
 
 ## 6. Test results
-- **Backend: 95 passed** (pytest, 21 files) — `artifacts/pytest_results.txt`. Covers auth, QR, ordering, checkout+loyalty (incl. order marked completed on payment), rewards/wheel, CRM + isolation, permissions, reports/forecast, the golden capture-loop e2e, operator, pipeline (modes)/activities/bulk/win-back, campaigns, menu/user/org admin, RFM, AI insights (heuristic path + permission/tenant gating), Kampong Eats merchant-4 seed (idempotency + menu shape), the 888 jackpot (grid/payline invariants, spin-cost deducted / insufficient-coins blocked, voucher mint), and the customer **My Account** endpoints (order history + customer isolation, vouchers, profile get/update with phone required+unique).
+- **Backend: 115 passed** (pytest, 23 files) — `artifacts/pytest_results.txt`. Covers auth, QR, ordering, checkout+loyalty (incl. order marked completed on payment), rewards/wheel, CRM + isolation, permissions, reports/forecast, the golden capture-loop e2e, operator, pipeline (modes)/activities/bulk/win-back, campaigns, menu/user/org admin, RFM, AI insights (heuristic path + permission/tenant gating), Kampong Eats merchant-4 seed (idempotency + menu shape), the 888 jackpot (grid/payline invariants, spin-cost deducted / insufficient-coins blocked, voucher mint), the customer **My Account** endpoints (order history + customer isolation, vouchers, profile get/update with phone required+unique), **per-merchant spin costs** (settings override surfaced to the game configs, `ge=0` validation, gating uses the override, jackpot-cost-0 = free play), and **logging behaviour** (`test_logging.py`: secret redaction, request access-log for 2xx/4xx, business errors logged with their code).
 - **Frontend: 37 passed** (Vitest) — `artifacts/frontend_test_results.txt`.
 - **Live HTTP** golden loop verified (`artifacts/live_demo.txt`); all 22 web routes return 200; Alembic up/down verified.
 
@@ -116,7 +116,7 @@ RPO ≤5m / RTO ≤30m per `docs/bc-dr.md`.
 
 ## 12. Lead Verifier confirmation
 All claims are backed by re-run tests + live HTTP verification against the Dockerised
-Postgres stack. **The app runs; 95 backend + 37 frontend tests pass; the QR→order→
+Postgres stack. **The app runs; 115 backend + 37 frontend tests pass; the QR→order→
 checkout→rewards→CRM capture loop works live; role/permission boundaries and
 cross-merchant isolation are enforced and test-proven; operator, pipeline (sales+win-back),
 campaigns, menu/user/org admin, RFM, the win-back launcher, and the AI Insights advisor

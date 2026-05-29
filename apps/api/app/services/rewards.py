@@ -15,11 +15,26 @@ from app.models.enums import RewardTxnType, RewardScope, WheelPrizeKind
 from app.models.identity import Customer
 from app.models.loyalty import LoyaltyAccount, RewardRedemption, RewardTransaction
 from app.models.orders import Order
-from app.models.tenancy import Outlet
+from app.models.tenancy import Merchant, Outlet
 
-WHEEL_SPIN_COST = 10  # coins per spin (lowered for testing; production: per-merchant config)
+# Default wheel spin cost (coins). A merchant can override it via
+# merchants.settings["wheel_spin_cost"] — see wheel_spin_cost().
+WHEEL_SPIN_COST = 10
+WHEEL_SPIN_COST_KEY = "wheel_spin_cost"
 
 logger = get_logger("app.rewards")
+
+
+def wheel_spin_cost(merchant: Merchant | None) -> int:
+    """Per-merchant wheel spin cost, falling back to the WHEEL_SPIN_COST default.
+    Ignores absent/invalid/negative overrides."""
+    if merchant is None:
+        return WHEEL_SPIN_COST
+    try:
+        cost = int((merchant.settings or {}).get(WHEEL_SPIN_COST_KEY))
+    except (TypeError, ValueError):
+        return WHEEL_SPIN_COST
+    return cost if cost >= 0 else WHEEL_SPIN_COST
 
 
 def _voucher_code() -> str:
@@ -192,8 +207,9 @@ def _ordered_segments(db: Session, merchant_id: str) -> list[WheelSegment]:
 
 def wheel_config(db: Session, *, merchant_id: str) -> dict:
     segs = _ordered_segments(db, merchant_id)
+    cost = wheel_spin_cost(db.get(Merchant, merchant_id))
     return {
-        "spin_cost": WHEEL_SPIN_COST,
+        "spin_cost": cost,
         "segments": [{"label": s.label, "color": s.color} for s in segs],
     }
 
@@ -202,19 +218,20 @@ def spin_wheel(db: Session, *, customer_id: str, merchant_id: str) -> dict:
     segs = _ordered_segments(db, merchant_id)
     if not segs:
         raise NotFoundError("No wheel configured", code="no_wheel")
+    cost = wheel_spin_cost(db.get(Merchant, merchant_id))
     acct = get_or_create_account(db, customer_id=customer_id,
                                  scope_type=RewardScope.MERCHANT.value, scope_id=merchant_id,
                                  for_update=True)  # row-lock: no concurrent double-spin
-    if acct.points_balance < WHEEL_SPIN_COST:
+    if acct.points_balance < cost:
         logger.warning("wheel_insufficient", extra={"extra": {
             "customer_id": customer_id, "merchant_id": merchant_id,
-            "balance": acct.points_balance, "cost": WHEEL_SPIN_COST}})
+            "balance": acct.points_balance, "cost": cost}})
         raise ConflictError("Insufficient points to spin", code="insufficient_points")
 
     # Spend the spin cost.
-    acct.points_balance -= WHEEL_SPIN_COST
+    acct.points_balance -= cost
     db.add(RewardTransaction(account_id=acct.id, txn_type=RewardTxnType.REDEEM.value,
-                             points=-WHEEL_SPIN_COST, reason="Wheel spin"))
+                             points=-cost, reason="Wheel spin"))
 
     # Weighted random selection.
     total = sum(max(s.weight, 0) for s in segs) or len(segs)
@@ -249,5 +266,5 @@ def spin_wheel(db: Session, *, customer_id: str, merchant_id: str) -> dict:
         "winning_index": chosen_index,
         "prize": prize,
         "points_balance": acct.points_balance,
-        "spin_cost": WHEEL_SPIN_COST,
+        "spin_cost": cost,
     }

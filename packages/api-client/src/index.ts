@@ -15,6 +15,7 @@ export interface MenuItem {
   name: string;
   description: string;
   price: number;
+  image_url: string | null;
   is_available: boolean;
   modifiers: Modifier[];
 }
@@ -503,6 +504,8 @@ export interface WinbackResult {
 
 export interface MerchantSettings {
   pipeline_enabled: boolean;
+  wheel_spin_cost: number;
+  jackpot_spin_cost: number;
 }
 
 export type ActivityType = "call" | "email" | "meeting" | "whatsapp" | "note";
@@ -1473,7 +1476,7 @@ export function getSettings(
 export function updateSettings(
   baseUrl: string,
   token: string,
-  data: { pipeline_enabled?: boolean },
+  data: { pipeline_enabled?: boolean; wheel_spin_cost?: number; jackpot_spin_cost?: number },
   merchantId?: string
 ): Promise<MerchantSettings> {
   return request(
@@ -1997,5 +2000,5 @@ export class FbGroupApiClient {
   // Round 10 — win-back launcher + merchant settings
   launchWinback(data: WinbackLaunch, merchantId?: string) { return launchWinback(this.baseUrl, this.token!, data, merchantId); }
   getSettings(merchantId?: string) { return getSettings(this.baseUrl, this.token!, merchantId); }
-  updateSettings(data: { pipeline_enabled?: boolean }, merchantId?: string) { return updateSettings(this.baseUrl, this.token!, data, merchantId); }
+  updateSettings(data: { pipeline_enabled?: boolean; wheel_spin_cost?: number; jackpot_spin_cost?: number }, merchantId?: string) { return updateSettings(this.baseUrl, this.token!, data, merchantId); }
 }

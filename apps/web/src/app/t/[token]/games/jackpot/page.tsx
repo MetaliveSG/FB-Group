@@ -248,9 +248,9 @@ export default function JackpotGamePage() {
           )}
         </div>
 
-        <div style={{ marginTop: 16, padding: "14px 18px 0", borderTop: "1px solid rgba(255,209,102,.25)" }}>
-          <div style={{ fontSize: 12, color: "#ffd9b0", marginBottom: 8, textAlign: "center" }}>Match 3 on the payline to win:</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center" }}>
+        <div style={{ marginTop: 10, padding: "10px 14px 0", borderTop: "1px solid rgba(255,209,102,.25)" }}>
+          <div style={{ fontSize: 12, color: "#ffd9b0", marginBottom: 6, textAlign: "center" }}>Match 3 on the payline to win:</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, justifyContent: "center" }}>
             {jackpot.prizes.map((p) => <span key={p.item_name} className="slot-legend-chip">{p.emoji} {p.item_name} · {formatSGD(p.item_price)}</span>)}
           </div>
         </div>

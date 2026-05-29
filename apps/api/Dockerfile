@@ -13,8 +13,9 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-# Drop privileges
-RUN useradd --create-home appuser && chown -R appuser /app
+# Drop privileges. Pre-create the log dir so the mounted (named) volume inherits
+# appuser ownership and the rotating file handler can write to it.
+RUN mkdir -p /app/logs && useradd --create-home appuser && chown -R appuser /app
 USER appuser
 
 EXPOSE 8000

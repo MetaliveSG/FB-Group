@@ -16,6 +16,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [wheelCost, setWheelCost] = useState("");
+  const [jackpotCost, setJackpotCost] = useState("");
 
   useEffect(() => {
     const tok = getStaffToken();
@@ -26,6 +28,8 @@ export default function SettingsPage() {
     getSettings(base, tok, getOperatorMerchant()?.id)
       .then((s) => {
         setSettings(s);
+        setWheelCost(String(s.wheel_spin_cost));
+        setJackpotCost(String(s.jackpot_spin_cost));
         setLoading(false);
       })
       .catch((err: unknown) => {
@@ -65,6 +69,42 @@ export default function SettingsPage() {
     }
   }
 
+  async function saveSpinCosts() {
+    const tok = getStaffToken();
+    if (!tok) return;
+    const wheel = Number(wheelCost);
+    const jackpot = Number(jackpotCost);
+    if (!Number.isInteger(wheel) || wheel < 0 || !Number.isInteger(jackpot) || jackpot < 0) {
+      setError("Spin costs must be whole numbers of 0 or more.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    setMsg(null);
+    try {
+      const updated = await updateSettings(
+        base,
+        tok,
+        { wheel_spin_cost: wheel, jackpot_spin_cost: jackpot },
+        getOperatorMerchant()?.id
+      );
+      setSettings(updated);
+      setWheelCost(String(updated.wheel_spin_cost));
+      setJackpotCost(String(updated.jackpot_spin_cost));
+      setMsg("Settings saved.");
+      setTimeout(() => setMsg(null), 2500);
+    } catch (err: unknown) {
+      const m = err instanceof Error ? err.message : "Failed to save settings";
+      setError(m.includes("403") ? "Settings require the merchant owner role." : m);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const spinCostsDirty =
+    !!settings &&
+    (wheelCost !== String(settings.wheel_spin_cost) || jackpotCost !== String(settings.jackpot_spin_cost));
+
   return (
     <MerchantSidebar active="settings">
       <div className="page-header">
@@ -102,6 +142,52 @@ export default function SettingsPage() {
               onClick={() => togglePipeline(!settings.pipeline_enabled)}
             >
               {settings.pipeline_enabled ? "Enabled" : "Disabled"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {!loading && settings ? (
+        <div className="card" style={{ marginTop: 16 }}>
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontWeight: 600 }}>Game spin costs</div>
+            <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
+              Coins a diner spends per play. Set 0 to make a game free.
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label htmlFor="wheel-cost">Spin the Wheel (coins)</label>
+              <input
+                id="wheel-cost"
+                type="number"
+                min={0}
+                step={1}
+                value={wheelCost}
+                disabled={saving}
+                onChange={(e) => setWheelCost(e.target.value)}
+                style={{ maxWidth: 140 }}
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label htmlFor="jackpot-cost">888 Jackpot (coins)</label>
+              <input
+                id="jackpot-cost"
+                type="number"
+                min={0}
+                step={1}
+                value={jackpotCost}
+                disabled={saving}
+                onChange={(e) => setJackpotCost(e.target.value)}
+                style={{ maxWidth: 140 }}
+              />
+            </div>
+            <button
+              className="btn btn-sm btn-primary"
+              disabled={saving || !spinCostsDirty}
+              onClick={saveSpinCosts}
+            >
+              {saving ? "Saving…" : "Save"}
             </button>
           </div>
         </div>

@@ -5,8 +5,16 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import NotFoundError
 from app.models.tenancy import Merchant
+from app.services.jackpot import JACKPOT_SPIN_COST
+from app.services.rewards import WHEEL_SPIN_COST
 
-DEFAULTS = {"pipeline_enabled": True}
+# Per-merchant settings surfaced via /org/settings. Spin-cost defaults mirror the
+# service constants — a merchant can override them; the games read the override.
+DEFAULTS = {
+    "pipeline_enabled": True,
+    "wheel_spin_cost": WHEEL_SPIN_COST,
+    "jackpot_spin_cost": JACKPOT_SPIN_COST,
+}
 
 
 def get_settings(db: Session, *, merchant_id: str) -> dict:

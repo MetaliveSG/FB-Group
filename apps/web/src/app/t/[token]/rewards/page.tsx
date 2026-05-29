@@ -37,7 +37,7 @@ import type {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--color-bg)" }}>
+    <div className="t-shell">
       {children}
     </div>
   );

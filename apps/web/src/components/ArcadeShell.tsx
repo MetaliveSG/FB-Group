@@ -19,7 +19,7 @@ export default function ArcadeShell({
 }) {
   const router = useRouter();
   return (
-    <div style={{ minHeight: "100vh", background: "radial-gradient(125% 90% at 50% 0%, #3a1414 0%, #1a0a0a 60%, #0d0606 100%)", display: "flex", flexDirection: "column" }}>
+    <div className="app-viewport" style={{ background: "radial-gradient(125% 90% at 50% 0%, #3a1414 0%, #1a0a0a 60%, #0d0606 100%)", display: "flex", flexDirection: "column" }}>
       <div style={{ maxWidth: 480, margin: "0 auto", width: "100%", flex: 1, display: "flex", flexDirection: "column" }}>
         <header style={{ padding: "var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
           <button
@@ -32,7 +32,7 @@ export default function ArcadeShell({
           <div style={{ flex: 1, fontSize: "var(--text-lg)", fontWeight: 900, color: "#ffe066", letterSpacing: 1 }}>{title}</div>
           {coins != null && <CoinBalance coins={coins} />}
         </header>
-        <main style={{ flex: 1, padding: "0 var(--space-4) var(--space-7)", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>
+        <main style={{ flex: 1, padding: "0 var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>
           {children}
         </main>
       </div>

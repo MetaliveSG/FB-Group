@@ -17,6 +17,7 @@ class MenuItemOut(ORMModel):
     name: str
     description: str
     price: float
+    image_url: str | None = None
     is_available: bool
     modifiers: list[ModifierOut] = []
 

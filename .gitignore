@@ -21,3 +21,8 @@ out/
 
 # OS
 .DS_Store
+
+# local runtime logs + env backups (session 2026-05-30)
+apps/api/mac_logs/
+apps/api/logs/
+.env*.disabled

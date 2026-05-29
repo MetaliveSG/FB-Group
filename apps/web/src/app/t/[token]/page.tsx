@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   resolveQr,
@@ -65,7 +65,7 @@ function cartCount(cart: CartEntry[]): number {
 }
 
 const Shell = ({ children }: { children: React.ReactNode }) => (
-  <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--color-bg)" }}>
+  <div className="t-shell">
     {children}
   </div>
 );
@@ -75,12 +75,12 @@ function Banner({ qr, right }: { qr: QrResolution | null; right?: React.ReactNod
     <header style={{ padding: "var(--space-4)", background: "linear-gradient(180deg, var(--brand-600), var(--brand-700))", color: "#fff" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: "var(--text-lg)", fontWeight: 900, lineHeight: 1.15 }}>{qr?.merchant.name ?? "Menu"}</div>
+          <div style={{ fontSize: "var(--text-lg)", fontWeight: 900, lineHeight: 1.15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{qr?.merchant.name ?? "Menu"}</div>
           <div style={{ fontSize: "var(--text-xs)", opacity: 0.85, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {qr ? `${qr.outlet.name} · Table ${qr.table.label}` : ""}
           </div>
         </div>
-        {right}
+        {right && <div style={{ flexShrink: 0 }}>{right}</div>}
       </div>
     </header>
   );
@@ -107,9 +107,24 @@ function MenuItemCard({
   return (
     <Card pad style={{ marginBottom: "var(--space-3)", opacity: available ? 1 : 0.55 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-3)" }}>
+        {item.image_url && (
+          <img
+            src={item.image_url}
+            alt={item.name}
+            loading="lazy"
+            style={{
+              width: 84,
+              height: 84,
+              flexShrink: 0,
+              objectFit: "cover",
+              borderRadius: "var(--radius-md)",
+              background: "var(--color-surface-2, #f1f1f1)",
+            }}
+          />
+        )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>{item.name}</div>
-          {item.description && (
+          {item.description && item.description !== item.name && (
             <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginTop: 2 }}>{item.description}</div>
           )}
           <div style={{ marginTop: 6, fontWeight: 800, color: "var(--color-primary)" }}>
@@ -302,6 +317,23 @@ export default function TablePage() {
     return () => window.removeEventListener(AUTH_LOGOUT_EVENT, onLogout);
   }, [token, base]);
 
+  // Persist the cart per QR token so it survives tab switches (Rewards/Orders/Me
+  // unmount this page) and refreshes. Load once on mount; save on change. The
+  // skip-first-write guard stops the empty initial state from clobbering a stored
+  // cart before the load effect runs.
+  const cartKey = `fbcart:${token}`;
+  const cartLoaded = useRef(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(cartKey);
+      if (raw) setCart(JSON.parse(raw) as CartEntry[]);
+    } catch { /* ignore corrupt/unavailable storage */ }
+  }, [cartKey]);
+  useEffect(() => {
+    if (!cartLoaded.current) { cartLoaded.current = true; return; }
+    try { localStorage.setItem(cartKey, JSON.stringify(cart)); } catch { /* quota/private mode */ }
+  }, [cart, cartKey]);
+
   const addToCart = useCallback((item: MenuItem, modifierIds: string[], qty: number = 1) => {
     const addQty = Math.max(1, qty);
     setCart((prev) => {
@@ -347,6 +379,7 @@ export default function TablePage() {
     try {
       const result = await checkout(base, customerToken, order.id, selectedPayment, forceOutcome || undefined);
       setCheckoutResult(result);
+      setCart([]);  // order is paid — clear the (persisted) cart
       setStep("success");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Checkout failed");
@@ -361,6 +394,7 @@ export default function TablePage() {
       <Shell>
         <Banner qr={null} />
         <main style={{ flex: 1, padding: "var(--space-4)", color: "var(--color-text-muted)" }}>Loading menu…</main>
+        <CustomerTabBar token={token} active="menu" />
       </Shell>
     );
   }
