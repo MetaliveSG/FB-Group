@@ -18,19 +18,52 @@ gamed in the browser.
 from __future__ import annotations
 
 import secrets
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ConflictError, NotFoundError
+from app.db.base import utcnow
 from app.loyalty.engine import get_or_create_account
 from app.models.engagement import JackpotPrize
 from app.models.enums import RewardScope, RewardTxnType
 from app.models.loyalty import RewardRedemption, RewardTransaction
+from app.models.tenancy import Merchant
 
-JACKPOT_SPIN_COST = 0   # points per play; 0 = free to play (no purchase/points needed)
+JACKPOT_SPIN_COST = 5   # coins per play (0 = free; >0 charges + gates on balance)
 GRID_SIZE = 3
 LOSE_WEIGHT_MULTIPLIER = 3  # lose-bucket = total prize weight × this → ~25% win rate
+
+# Progressive "grand jackpot" pot — a real, persistent value (per merchant) that
+# grows slowly with elapsed time and resets to BASE when a jackpot is won. The
+# pot = BASE + floor(seconds_since_last_reset × RATE), stored as a timestamp in
+# merchants.settings so it survives restarts and is shared across all diners.
+GRAND_JACKPOT_BASE = 1000
+GRAND_JACKPOT_RATE = 0.5  # coins per second (~30/min — slow, persistent)
+_GRAND_KEY = "grand_jackpot_since"
+
+
+def _grand_prize(db: Session, merchant: Merchant | None) -> int:
+    if merchant is None:
+        return GRAND_JACKPOT_BASE
+    settings = merchant.settings or {}
+    since = settings.get(_GRAND_KEY)
+    if not since:
+        # First time: anchor "now" and persist (one-time write on read).
+        merchant.settings = {**settings, _GRAND_KEY: utcnow().isoformat()}
+        db.commit()
+        return GRAND_JACKPOT_BASE
+    try:
+        since_dt = datetime.fromisoformat(since)
+    except (TypeError, ValueError):
+        return GRAND_JACKPOT_BASE
+    elapsed = (utcnow() - since_dt).total_seconds()
+    return GRAND_JACKPOT_BASE + int(max(0.0, elapsed) * GRAND_JACKPOT_RATE)
+
+
+def _reset_grand_prize(merchant: Merchant) -> None:
+    merchant.settings = {**(merchant.settings or {}), _GRAND_KEY: utcnow().isoformat()}
 
 
 def _voucher_code() -> str:
@@ -70,10 +103,12 @@ def _build_grid(prizes: list[JackpotPrize], won: JackpotPrize | None) -> list[li
 
 def jackpot_config(db: Session, *, merchant_id: str) -> dict:
     prizes = _ordered_prizes(db, merchant_id)
+    merchant = db.get(Merchant, merchant_id)
     return {
         "spin_cost": JACKPOT_SPIN_COST,
         "grid_size": GRID_SIZE,
         "payline": "middle_row",
+        "grand_prize": _grand_prize(db, merchant),
         "prizes": [
             {"item_name": p.item_name, "item_price": float(p.item_price),
              "emoji": p.emoji, "weight": p.weight}
@@ -120,7 +155,7 @@ def play_jackpot(db: Session, *, customer_id: str, merchant_id: str) -> dict:
     # 3. Render the grid that matches the outcome.
     grid = _build_grid(prizes, won_prize)
 
-    # 4. On a win, mint a voucher.
+    # 4. On a win, mint a voucher AND reset the progressive grand-jackpot pot.
     voucher_code: str | None = None
     if won_prize is not None:
         voucher_code = _voucher_code()
@@ -131,6 +166,9 @@ def play_jackpot(db: Session, *, customer_id: str, merchant_id: str) -> dict:
             status="active",
             voucher_code=voucher_code,
         ))
+        merchant = db.get(Merchant, merchant_id)
+        if merchant is not None:
+            _reset_grand_prize(merchant)
 
     db.flush()
     return {

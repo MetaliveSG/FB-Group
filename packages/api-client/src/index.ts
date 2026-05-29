@@ -704,6 +704,7 @@ export interface JackpotConfig {
   spin_cost: number;
   grid_size: number;
   payline: string;          // "middle_row"
+  grand_prize: number;      // progressive pot (persistent; resets to base on a win)
   prizes: JackpotPrize[];
 }
 

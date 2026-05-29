@@ -26,7 +26,7 @@ test (`app/tests/conftest.py`). Latest run: **95 passed** across 21 files (see
 | `test_reports.py` | 9 | summary correct, graph timeseries, top items/peak hours, **forecast**, outlet permission |
 | `test_ai_insights.py` | 9 | **AI advisor** heuristic shape (summary/highlights/ranked recs), staff-only, cross-merchant blocked |
 | `test_seed_kampong.py` | seed | **Kampong Eats** merchant 4 seeded (2 outlets, 11 SG-local items), owner login, QR resolves menu, **idempotent re-run** |
-| `test_jackpot.py` | 2 | **888 Jackpot (free-to-play)**: zero-coin customer can play with **no balance deduction**, grid 3x3 invariants, **middle-row payline matches outcome** (3-of-a-kind on win, not-all-same on loss), win mints `JACKPOT-*` voucher |
+| `test_jackpot.py` | 2 | **888 Jackpot**: insufficient-coins blocked, spin cost deducted every play, grid 3x3 invariants, **middle-row payline matches outcome** (3-of-a-kind on win, not-all-same on loss), win mints `JACKPOT-*` voucher (+ resets the progressive grand-jackpot pot) |
 | `test_my_account.py` | 7 | customer **My Account**: order history shape + **customer isolation** (B can't see A's orders), vouchers list, profile get/update, **mobile required + unique** |
 | `test_admin_analytics.py` | 9, 10 | menu CRUD + isolation, **user invite/list/revoke** (+perm+scope), **RFM scoring** |
 | `test_org_admin.py` | 1, 10 | brand→outlet(auto-menu)→table→**QR resolves**, permission, tenant isolation, unique table label |

@@ -7,6 +7,7 @@ export interface TabItem {
   label: string;
   icon: LucideIcon;
   onClick?: () => void;
+  badge?: boolean; // show a notification dot on this tab
 }
 
 export default function BottomNav({ items, active }: { items: TabItem[]; active: string }) {
@@ -22,7 +23,10 @@ export default function BottomNav({ items, active }: { items: TabItem[]; active:
             onClick={t.onClick}
             aria-current={isActive ? "page" : undefined}
           >
-            <Icon size={22} aria-hidden />
+            <span className="ui-tabbar__icon">
+              <Icon size={22} aria-hidden />
+              {t.badge && <span className="ui-tabbar__dot" aria-label="available" />}
+            </span>
             {t.label}
           </button>
         );

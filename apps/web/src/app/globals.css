@@ -948,6 +948,74 @@ code {
   50%      { opacity: 0.3; }
 }
 
+/* ============================================================
+   Win celebration — firework bursts + confetti (full-screen overlay)
+   ============================================================ */
+.celebration {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  pointer-events: none;
+  overflow: hidden;
+}
+.fw {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+.fw__p {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  opacity: 0;
+  /* rotate to the particle's angle, then fly outward along it */
+  transform: rotate(var(--a)) translateY(0) scale(1);
+  animation: fwBurst 1.2s ease-out infinite;
+  box-shadow: 0 0 6px rgba(255, 230, 150, 0.6);
+}
+@keyframes fwBurst {
+  0%   { transform: rotate(var(--a)) translateY(0) scale(1.1); opacity: 1; }
+  70%  { opacity: 1; }
+  100% { transform: rotate(var(--a)) translateY(-150px) scale(0.2); opacity: 0; }
+}
+.confetti {
+  position: absolute;
+  top: -18px;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0.95;
+  animation: confettiFall linear infinite;
+}
+@keyframes confettiFall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(106vh) rotate(560deg); opacity: 0.9; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .celebration { display: none; } /* the win card still conveys the result */
+}
+
+/* Compact the jackpot on short viewports (small phones) so the whole cabinet —
+   marquee, reels, spin button and legend — fits without scrolling. */
+@media (max-height: 800px), (max-width: 360px) {
+  .slot-reels { --slot-tile: 64px; margin: 12px; padding: 7px; }
+  .slot-cell-emoji { font-size: 38px; }
+  .slot-marquee { padding: 9px 10px 7px; }
+  .slot-777 { font-size: 34px; letter-spacing: 7px; }
+  .slot-title { font-size: 17px; letter-spacing: 3px; }
+  .slot-meter { gap: 6px; margin-top: 1px; }
+  .slot-meter-num { font-size: 30px; }
+  .slot-meter-coin { font-size: 24px; }
+  .slot-bulbs { padding: 5px 12px 0; }
+  .slot-bulb { width: 9px; height: 9px; }
+  .slot-machine { padding-bottom: 14px; }
+  .slot-play-btn { font-size: 16px; padding: 11px 26px; }
+  .slot-legend-chip { font-size: 11px; padding: 2px 8px; }
+}
+
 /* Shared gold "game cabinet" frame — wraps the spin-the-wheel so it matches
    the jackpot's red+gold theme (one cohesive game zone). */
 .game-cabinet {

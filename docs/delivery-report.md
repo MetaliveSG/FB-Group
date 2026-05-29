@@ -12,7 +12,7 @@ PostgreSQL, fully Dockerised and AWS-ready by design.
 
 ## 2. What was built
 - **Backend** (`apps/api`): FastAPI + SQLAlchemy 2.0, **40 tables**, **92 API endpoints**, 7 Alembic migrations.
-- **Frontend** (`apps/web`): Next.js 14 App Router, **20 routes** (+ a `/showcase` UI-kit gallery), typed API client in `packages/api-client`. Customer app redesigned mobile-first on a shared **design system** (`packages/ui` tokens + component kit, Lucide icons).
+- **Frontend** (`apps/web`): Next.js 14 App Router, **22 routes** (+ a `/showcase` UI-kit gallery), typed API client in `packages/api-client`. Customer app redesigned mobile-first on a shared **design system** (`packages/ui` tokens + component kit, Lucide icons).
 - **Infra** (`infra/`): docker-compose (Postgres + API + web), Dockerfiles, healthchecks, backup script.
 - **Docs** (`docs/`): architecture, api, security, testing, deployment, bc-dr, database, PRD, this report.
 - **Proof** (`artifacts/`): pytest output + OpenAPI + sample JSON (CRM, segments, RFM, pipeline, campaigns…).
@@ -22,7 +22,7 @@ All 12 spec modules **plus** extensions: Operator Console; Salesforce-style Pipe
 RFM segmentation + win-back launcher (RFM→pipeline→campaign); spin-the-wheel reward game;
 self-service admin (Menu, Users, Org brands/outlets/tables/QR, per-merchant feature toggles);
 **AI Insights advisor** (Claude-powered, with a deterministic heuristic fallback);
-**888 Jackpot game** (server-authoritative match-3 on the menu, **free to play**, mints food vouchers). Loyalty currency is branded **"coins"** (not redeemable for cash — free items only).
+**888 Jackpot game** (server-authoritative match-3 on the menu, 5 coins/spin, a real **persistent progressive grand-jackpot pot** that grows over time and resets when won, mints food vouchers). Each game has its **own full-screen page** with a **win celebration** (fireworks + confetti). Loyalty currency is branded **"coins"** (not redeemable for cash — free items only).
 
 ## 3. How to run locally
 **Docker (full stack on Postgres):**
@@ -70,13 +70,13 @@ Stable QR tokens: `orchard-01`, `tampines-01`, `holland-01`, `hawker-maxwell-01`
 | + | **RFM** segmentation + **win-back launcher** (RFM→pipeline→campaign) | ✅ |
 | + | **Self-service admin**: Menu CRUD, User invite/revoke, Org brands/outlets/tables/QR, per-merchant feature toggles | ✅ |
 | + | **AI Insights advisor**: executive summary + ranked next-best actions (Claude when keyed, deterministic heuristic otherwise) | ✅ |
-| + | **888 Jackpot game**: server-authoritative match-3 on the merchant's menu items; **free to play**; mints food vouchers on win | ✅ |
-| + | **Customer app redesign**: mobile-first design system (`packages/ui` tokens + Lucide kit), 4-tab nav (Menu·Rewards·Orders·Me), order history, profile editor (mobile/birthday/gender) | ✅ |
+| + | **888 Jackpot game**: server-authoritative match-3; 5 coins/spin; **persistent progressive grand-jackpot pot** (grows over time, resets on win); mints food vouchers | ✅ |
+| + | **Customer app redesign**: mobile-first design system (`packages/ui` tokens + Lucide kit), 4-tab nav (Menu·Rewards·Orders·Me), order history, profile editor (mobile/birthday/gender), **dedicated full-screen game pages + win celebration (fireworks/confetti)** | ✅ |
 
 ## 6. Test results
-- **Backend: 95 passed** (pytest, 21 files) — `artifacts/pytest_results.txt`. Covers auth, QR, ordering, checkout+loyalty (incl. order marked completed on payment), rewards/wheel, CRM + isolation, permissions, reports/forecast, the golden capture-loop e2e, operator, pipeline (modes)/activities/bulk/win-back, campaigns, menu/user/org admin, RFM, AI insights (heuristic path + permission/tenant gating), Kampong Eats merchant-4 seed (idempotency + menu shape), the 888 jackpot (grid/payline invariants, free-to-play / no balance deduction, voucher mint), and the customer **My Account** endpoints (order history + customer isolation, vouchers, profile get/update with phone required+unique).
+- **Backend: 95 passed** (pytest, 21 files) — `artifacts/pytest_results.txt`. Covers auth, QR, ordering, checkout+loyalty (incl. order marked completed on payment), rewards/wheel, CRM + isolation, permissions, reports/forecast, the golden capture-loop e2e, operator, pipeline (modes)/activities/bulk/win-back, campaigns, menu/user/org admin, RFM, AI insights (heuristic path + permission/tenant gating), Kampong Eats merchant-4 seed (idempotency + menu shape), the 888 jackpot (grid/payline invariants, spin-cost deducted / insufficient-coins blocked, voucher mint), and the customer **My Account** endpoints (order history + customer isolation, vouchers, profile get/update with phone required+unique).
 - **Frontend: 37 passed** (Vitest) — `artifacts/frontend_test_results.txt`.
-- **Live HTTP** golden loop verified (`artifacts/live_demo.txt`); all 20 web routes return 200; Alembic up/down verified.
+- **Live HTTP** golden loop verified (`artifacts/live_demo.txt`); all 22 web routes return 200; Alembic up/down verified.
 
 ## 7. Security checklist
 Input validation (Pydantic) · ORM bound params (no SQLi) · bcrypt hashing · JWT

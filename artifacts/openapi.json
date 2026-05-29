@@ -7950,6 +7950,10 @@
             "type": "string",
             "title": "Payline"
           },
+          "grand_prize": {
+            "type": "integer",
+            "title": "Grand Prize"
+          },
           "prizes": {
             "items": {
               "$ref": "#/components/schemas/JackpotPrizeOut"
@@ -7963,6 +7967,7 @@
           "spin_cost",
           "grid_size",
           "payline",
+          "grand_prize",
           "prizes"
         ],
         "title": "JackpotConfigOut"

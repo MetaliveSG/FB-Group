@@ -18,6 +18,24 @@ function polarToXY(cx: number, cy: number, r: number, angleDeg: number): [number
   return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
 }
 
+/** Coin prizes get a drawn gold "$" coin; everything else gets a picture emoji. */
+function isCoinLabel(label: string): boolean {
+  return /coin|pts|point/.test(label.toLowerCase());
+}
+function iconForLabel(label: string): string {
+  const l = label.toLowerCase();
+  if (/teh|tarik/.test(l)) return "🥤";
+  if (/chendol/.test(l)) return "🍧";
+  if (/kopi|espresso|coffee/.test(l)) return "☕";
+  if (/fries/.test(l)) return "🍟";
+  if (/prata|roti/.test(l)) return "🫓";
+  if (/burger/.test(l)) return "🍔";
+  if (/noodle/.test(l)) return "🍜";
+  if (/try again|again|miss|lose/.test(l)) return "🔄";
+  if (/free|voucher|reward/.test(l)) return "🎁";
+  return "⭐";
+}
+
 export default function Wheel({ segments, rotation, spinning, size = 280 }: WheelProps) {
   const n = segments.length;
   const cx = size / 2;
@@ -75,6 +93,12 @@ export default function Wheel({ segments, rotation, spinning, size = 280 }: Whee
             <stop offset="45%" stopColor="#fff" stopOpacity="0.06" />
             <stop offset="100%" stopColor="#fff" stopOpacity="0" />
           </radialGradient>
+          <radialGradient id="wheelCoin" cx="36%" cy="30%" r="70%">
+            <stop offset="0%" stopColor="#fff7c2" />
+            <stop offset="45%" stopColor="#ffd84d" />
+            <stop offset="80%" stopColor="#e0a200" />
+            <stop offset="100%" stopColor="#9c6a0c" />
+          </radialGradient>
         </defs>
 
         {segments.map((seg, i) => {
@@ -86,16 +110,32 @@ export default function Wheel({ segments, rotation, spinning, size = 280 }: Whee
           const d = `M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
 
           const midAngle = start + segAngle / 2;
-          const [lx, ly] = polarToXY(cx, cy, r * 0.62, midAngle);
+          const [ix, iy] = polarToXY(cx, cy, r * 0.72, midAngle); // icon (outer)
+          const [lx, ly] = polarToXY(cx, cy, r * 0.46, midAngle); // label (inner)
+          const coin = isCoinLabel(seg.label);
+          const coinR = r * 0.085;
 
           return (
             <g key={i}>
               <path d={d} fill={seg.color} stroke="#fff7e6" strokeWidth="1.5" />
+              {/* picture: drawn gold coin for coin prizes, emoji for the rest */}
+              {coin ? (
+                <g transform={`rotate(${midAngle} ${ix} ${iy})`} style={{ pointerEvents: "none" }}>
+                  <circle cx={ix} cy={iy} r={coinR} fill="url(#wheelCoin)" stroke="#9c6a0c" strokeWidth="1.5" />
+                  <text x={ix} y={iy} fill="#7a4e00" fontSize={coinR * 1.25} fontWeight="900"
+                    fontFamily="Georgia, serif" textAnchor="middle" dominantBaseline="central">$</text>
+                </g>
+              ) : (
+                <text x={ix} y={iy} fontSize={r * 0.13} textAnchor="middle" dominantBaseline="central"
+                  transform={`rotate(${midAngle} ${ix} ${iy})`} style={{ pointerEvents: "none" }}>
+                  {iconForLabel(seg.label)}
+                </text>
+              )}
               <text
                 x={lx}
                 y={ly}
                 fill="#fff"
-                fontSize={n > 6 ? 10 : 12}
+                fontSize={n > 6 ? 9 : 11}
                 fontWeight="800"
                 textAnchor="middle"
                 dominantBaseline="middle"

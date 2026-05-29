@@ -16,7 +16,7 @@ from app.models.loyalty import LoyaltyAccount, RewardRedemption, RewardTransacti
 from app.models.orders import Order
 from app.models.tenancy import Outlet
 
-WHEEL_SPIN_COST = 80  # points per spin (PoC constant; production: per-merchant config)
+WHEEL_SPIN_COST = 10  # coins per spin (lowered for testing; production: per-merchant config)
 
 
 def _voucher_code() -> str:

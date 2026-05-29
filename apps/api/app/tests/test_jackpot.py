@@ -11,6 +11,7 @@ from app.loyalty.engine import get_or_create_account, tier_for
 from app.models.engagement import JackpotPrize
 from app.models.enums import RewardScope
 from app.models.loyalty import RewardRedemption
+from app.services.jackpot import JACKPOT_SPIN_COST
 from app.tests.factories import make_world
 from app.tests.helpers import H, register_customer
 
@@ -36,40 +37,38 @@ def _seed_jackpot(db, merchant_id):
     db.commit()
 
 
-def test_jackpot_free_to_play_without_points(client, db):
-    """The jackpot is free: a brand-new customer with zero points (no food ever
-    purchased) can still play, and their balance is not touched."""
+def test_jackpot_insufficient_coins_blocked(client, db):
+    """A diner with fewer coins than the spin cost is blocked."""
     w = make_world(db)
     _seed_jackpot(db, w.merchant_id)
-    cust = register_customer(client, email="jp_poor@b.sg")  # 0 points, never ordered
+    cust = register_customer(client, email="jp_poor@b.sg")
+    _give_points(db, w.merchant_id, cust["customer"]["id"], JACKPOT_SPIN_COST - 1)
 
     r = client.post("/api/v1/me/jackpot/play",
                     json={"merchant_id": w.merchant_id},
                     headers=H(cust["access_token"]))
-    assert r.status_code == 200, r.text
-    data = r.json()
-    assert data["spin_cost"] == 0
-    assert data["points_balance"] == 0  # free play does not deduct
+    assert r.status_code == 409, r.text
 
 
-def test_jackpot_play_renders_grid_free(client, db):
+def test_jackpot_play_renders_grid_and_charges(client, db):
     """The /play endpoint always returns a well-formed 3x3 grid whose middle-row
-    payline matches the win/lose outcome the server decided. Play is free (no
-    deduction); a win mints a JACKPOT voucher."""
+    payline matches the win/lose outcome the server decided. Each play deducts the
+    spin cost; a win mints a JACKPOT voucher."""
     w = make_world(db)
     _seed_jackpot(db, w.merchant_id)
     cust = register_customer(client, email="jp_rich@b.sg")
     cid = cust["customer"]["id"]
-    _give_points(db, w.merchant_id, cid, 5000)  # points present but never spent on spins
+    _give_points(db, w.merchant_id, cid, 5000)
 
     # Play 30 times — assert invariants on every play and exercise both outcomes.
     cfg = client.get(f"/api/v1/me/jackpot?merchant_id={w.merchant_id}",
                      headers=H(cust["access_token"])).json()
-    assert cfg["spin_cost"] == 0
+    assert cfg["spin_cost"] == JACKPOT_SPIN_COST
     assert cfg["grid_size"] == 3
     assert {p["item_name"] for p in cfg["prizes"]} == {"Fish Ball Noodle", "Teh Tarik", "Chendol"}
 
     wins, losses = 0, 0
+    prev_balance = 5000
     for _ in range(30):
         r = client.post("/api/v1/me/jackpot/play",
                         json={"merchant_id": w.merchant_id},
@@ -77,9 +76,10 @@ def test_jackpot_play_renders_grid_free(client, db):
         assert r.status_code == 200, r.text
         data = r.json()
 
-        # Free play: cost is 0 and the balance never moves.
-        assert data["spin_cost"] == 0
-        assert data["points_balance"] == 5000
+        # Spin cost deducted every play (regardless of win/lose).
+        assert data["spin_cost"] == JACKPOT_SPIN_COST
+        assert data["points_balance"] == prev_balance - JACKPOT_SPIN_COST
+        prev_balance = data["points_balance"]
 
         # Grid is 3x3 of valid cells.
         assert len(data["grid"]) == 3

@@ -118,6 +118,7 @@ class JackpotConfigOut(BaseModel):
     spin_cost: int
     grid_size: int
     payline: str  # "middle_row"
+    grand_prize: int  # progressive pot (persistent; resets to base on a win)
     prizes: list[JackpotPrizeOut]
 
 

@@ -1,6 +1,7 @@
 """Customer rewards center + spin-the-wheel."""
 from app.loyalty.engine import get_or_create_account, tier_for
 from app.models.engagement import RewardCatalogItem, WheelSegment
+from app.services.rewards import WHEEL_SPIN_COST
 from app.models.enums import RewardScope
 from app.tests.factories import make_world
 from app.tests.helpers import H, register_customer
@@ -72,19 +73,19 @@ def test_wheel_spin_deducts_and_awards(client, db):
     cust = register_customer(client, email="r4@b.sg")
     _give_points(db, w, cust["customer"]["id"], 200)
     cfg = client.get(f"/api/v1/me/wheel?merchant_id={w.merchant_id}", headers=H(cust["access_token"])).json()
-    assert cfg["spin_cost"] == 80 and len(cfg["segments"]) == 3
+    assert cfg["spin_cost"] == WHEEL_SPIN_COST and len(cfg["segments"]) == 3
     r = client.post("/api/v1/me/wheel/spin", json={"merchant_id": w.merchant_id}, headers=H(cust["access_token"]))
     assert r.status_code == 200
     body = r.json()
     assert 0 <= body["winning_index"] < 3
-    # 200 - 80 spin cost + prize (>=0) -> at least 120
-    assert body["points_balance"] >= 120
+    # 200 - spin cost + prize (>=0) -> at least (200 - cost)
+    assert body["points_balance"] >= 200 - WHEEL_SPIN_COST
 
 
 def test_wheel_insufficient_blocked(client, db):
     w = make_world(db)
     _add_wheel(db, w)
     cust = register_customer(client, email="r5@b.sg")
-    _give_points(db, w, cust["customer"]["id"], 50)
+    _give_points(db, w, cust["customer"]["id"], WHEEL_SPIN_COST - 1)  # always just under cost
     r = client.post("/api/v1/me/wheel/spin", json={"merchant_id": w.merchant_id}, headers=H(cust["access_token"]))
     assert r.status_code == 409

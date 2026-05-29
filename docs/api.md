@@ -106,7 +106,7 @@ Operator drill-down reuses the CRM/reports endpoints with `?merchant_id=` (super
 | POST | `/api/v1/me/rewards/redeem` | `{merchant_id, item_id}` → `{voucher_code, reward_name, points_balance}` |
 | GET | `/api/v1/me/wheel?merchant_id=` | `{spin_cost, segments:[{label,color}]}` |
 | POST | `/api/v1/me/wheel/spin` | `{merchant_id}` → `{winning_index, prize, points_balance}` (insufficient points → 409) |
-| GET | `/api/v1/me/jackpot?merchant_id=` | **888 Jackpot** config: `{spin_cost, grid_size, payline:"middle_row", prizes:[{item_name,item_price,emoji,weight}]}`. `spin_cost` is **0 (free to play)** — tunable via `JACKPOT_SPIN_COST`. |
+| GET | `/api/v1/me/jackpot?merchant_id=` | **888 Jackpot** config: `{spin_cost, grid_size, payline:"middle_row", grand_prize, prizes:[…]}`. `spin_cost` = 5 coins (tunable via `JACKPOT_SPIN_COST`); `grand_prize` = persistent progressive pot (base 1000, grows ~0.5/s, resets on a win). |
 | POST | `/api/v1/me/jackpot/play` | `{merchant_id}` → server-authoritative outcome: `{spin_cost, grid:[[{item_name,emoji,…}]]×3, won, prize?:{item_name,item_price,emoji,voucher_code}, points_balance}`. Middle row is the payline — 3-of-a-kind there = win that item as a `JACKPOT-*` voucher. **Free to play** (no coin cost / balance untouched while `JACKPOT_SPIN_COST=0`). |
 
 ## Reports & Forecast (Module 9) — staff `report.view`, graph-ready
