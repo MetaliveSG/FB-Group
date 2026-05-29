@@ -1,0 +1,14 @@
+{
+  "name": "@fbgroup/api-client",
+  "version": "0.1.0",
+  "description": "Typed API client for FB Group F&B Platform",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

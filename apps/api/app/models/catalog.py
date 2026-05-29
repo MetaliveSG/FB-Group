@@ -1,0 +1,63 @@
+"""Menu catalog: Menu -> MenuCategory -> MenuItem -> MenuModifier."""
+from __future__ import annotations
+
+from decimal import Decimal
+
+from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.base import Base, PKMixin, TimestampMixin
+
+
+class Menu(PKMixin, TimestampMixin, Base):
+    __tablename__ = "menus"
+
+    merchant_id: Mapped[str] = mapped_column(ForeignKey("merchants.id", ondelete="CASCADE"), index=True)
+    outlet_id: Mapped[str] = mapped_column(ForeignKey("outlets.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(120), default="Main Menu")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    categories: Mapped[list["MenuCategory"]] = relationship(
+        back_populates="menu", cascade="all, delete-orphan", order_by="MenuCategory.sort_order"
+    )
+
+
+class MenuCategory(PKMixin, TimestampMixin, Base):
+    __tablename__ = "menu_categories"
+
+    menu_id: Mapped[str] = mapped_column(ForeignKey("menus.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+    menu: Mapped["Menu"] = relationship(back_populates="categories")
+    items: Mapped[list["MenuItem"]] = relationship(
+        back_populates="category", cascade="all, delete-orphan", order_by="MenuItem.sort_order"
+    )
+
+
+class MenuItem(PKMixin, TimestampMixin, Base):
+    __tablename__ = "menu_items"
+
+    category_id: Mapped[str] = mapped_column(ForeignKey("menu_categories.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    description: Mapped[str] = mapped_column(String(400), default="")
+    price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    is_available: Mapped[bool] = mapped_column(Boolean, default=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+    category: Mapped["MenuCategory"] = relationship(back_populates="items")
+    modifiers: Mapped[list["MenuModifier"]] = relationship(
+        back_populates="item", cascade="all, delete-orphan"
+    )
+
+
+class MenuModifier(PKMixin, Base):
+    """Optional add-on/customization for an item (e.g. 'Extra cheese' +$1.00)."""
+
+    __tablename__ = "menu_modifiers"
+
+    item_id: Mapped[str] = mapped_column(ForeignKey("menu_items.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    price_delta: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
+
+    item: Mapped["MenuItem"] = relationship(back_populates="modifiers")

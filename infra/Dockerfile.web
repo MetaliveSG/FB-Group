@@ -1,0 +1,15 @@
+# Next.js frontend image. Build context = repo root so shared packages are available.
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Shared packages (typed API client) + the web app.
+COPY packages ./packages
+COPY apps/web ./apps/web
+
+WORKDIR /app/apps/web
+RUN npm install
+RUN npm run build
+
+EXPOSE 3000
+CMD ["npm", "start"]

@@ -1,0 +1,89 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   FB Group design tokens — CSS custom-property mirror of theme.ts.
+   Web only (React Native imports theme.ts directly). Import once at the top of
+   globals.css:  @import "@fbgroup/ui/tokens.css";
+   Existing names (--color-primary, --radius, --shadow…) are kept so nothing
+   breaks; the new --space-*, --text-*, --motion-* scales are added on top.
+   ───────────────────────────────────────────────────────────────────────── */
+:root {
+  /* ── Color: ramps ── */
+  /* brand = warm "flame" orange-red */
+  --brand-50:#fff4ed; --brand-100:#ffe6d5; --brand-200:#fecdaa; --brand-300:#fda674;
+  --brand-400:#fb7a3c; --brand-500:#f4531d; --brand-600:#e23a0f; --brand-700:#bd2d0c;
+  --brand-800:#972711; --brand-900:#7c2410;
+
+  --amber-50:#fff7ea; --amber-100:#fde9c2; --amber-200:#fbd488; --amber-300:#f6bb4d;
+  --amber-400:#f0a623; --amber-500:#e8960a; --amber-600:#c47908; --amber-700:#9c5f0a;
+
+  --gold-300:#ffe680; --gold-400:#ffd84d; --gold-500:#f4c430; --gold-600:#c8961f;
+  --gold-700:#9c6a0c; --gold-800:#8b6508;
+
+  /* warm-tinted neutrals (stone) */
+  --neutral-0:#ffffff; --neutral-50:#faf8f6; --neutral-100:#f4f1ee; --neutral-200:#e7e2dd;
+  --neutral-300:#d6cfc8; --neutral-400:#a89f97; --neutral-500:#78706a; --neutral-600:#574f4a;
+  --neutral-700:#3d3833; --neutral-800:#272320; --neutral-900:#1a1714; --neutral-1000:#000;
+
+  /* ── Color: semantic aliases (use these in components) ── */
+  --color-primary:#e23a0f;        /* = brand-600 (warm flame) */
+  --color-primary-light:#f4531d;
+  --color-primary-dark:#bd2d0c;
+  --color-primary-hover:#f4531d;
+  --color-accent:#e8960a;
+  --color-accent-hover:#f0a623;
+  --color-gold:#f4c430;
+
+  --color-success:#16a34a; --color-success-bg:#dcfce7;
+  --color-danger:#dc2626;  --color-danger-bg:#fee2e2;
+  --color-warning:#d97706; --color-warning-bg:#fef3c7;
+  --color-info:#0ea5e9;    --color-info-bg:#e0f2fe;
+
+  --color-bg:#faf8f6;
+  --color-surface:#ffffff;
+  --color-surface-alt:#f4f1ee;
+  --color-text:#1a1714;
+  --color-text-muted:#78706a;
+  --color-text-inverse:#ffffff;
+  --color-border:#e7e2dd;
+  --color-border-strong:#d6cfc8;
+  --color-overlay:rgba(26,23,20,0.55);
+
+  /* ── Spacing (4px base / 8pt rhythm) ── */
+  --space-0:0;   --space-1:4px;  --space-2:8px;   --space-3:12px; --space-4:16px;
+  --space-5:24px; --space-6:32px; --space-7:48px;  --space-8:64px; --space-9:96px;
+
+  /* ── Radius ── */
+  --radius-sm:6px; --radius:8px; --radius-md:8px; --radius-lg:12px;
+  --radius-xl:16px; --radius-2xl:24px; --radius-pill:9999px;
+
+  /* ── Type scale ── */
+  --text-xs:12px; --text-sm:14px; --text-base:16px; --text-lg:18px; --text-xl:20px;
+  --text-2xl:24px; --text-3xl:30px; --text-4xl:36px; --text-5xl:48px;
+  --leading-tight:1.1; --leading-snug:1.25; --leading-normal:1.5; --leading-relaxed:1.65;
+  --weight-regular:400; --weight-medium:500; --weight-semibold:600; --weight-bold:700; --weight-black:900;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --font-mono:"SF Mono","Courier New",ui-monospace,monospace;
+
+  /* ── Shadows (elevation + gold glow) ── */
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.06);
+  --shadow:0 1px 4px rgba(0,0,0,0.1);
+  --shadow-md:0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg:0 8px 24px rgba(0,0,0,0.12);
+  --shadow-xl:0 16px 40px rgba(0,0,0,0.18);
+  --shadow-gold:0 0 24px rgba(255,215,0,0.55);
+
+  /* ── Motion ── */
+  --motion-fast:150ms; --motion-base:250ms; --motion-slow:400ms; --motion-slower:600ms;
+  --ease-out:cubic-bezier(0.2,0.8,0.2,1);
+  --ease-in-out:cubic-bezier(0.4,0,0.2,1);
+  --ease-spring:cubic-bezier(0.18,0.9,0.32,1.15);
+
+  /* ── Z-index ── */
+  --z-dropdown:1000; --z-sticky:1100; --z-overlay:1200; --z-modal:1300; --z-toast:1400;
+
+  /* ── Ergonomics ── */
+  --touch-min:44px; --tab-bar-h:64px; --header-h:56px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --motion-fast:1ms; --motion-base:1ms; --motion-slow:1ms; --motion-slower:1ms; }
+}

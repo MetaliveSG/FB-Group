@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Beef Burger",
+    "quantity": 134,
+    "revenue": 1072.0
+  },
+  {
+    "name": "Fish Burger",
+    "quantity": 124,
+    "revenue": 868.0
+  },
+  {
+    "name": "Chicken Burger",
+    "quantity": 117,
+    "revenue": 760.5
+  },
+  {
+    "name": "Nuggets (6pc)",
+    "quantity": 109,
+    "revenue": 545.0
+  },
+  {
+    "name": "Fries",
+    "quantity": 120,
+    "revenue": 420.0
+  },
+  {
+    "name": "Soft Drink",
+    "quantity": 123,
+    "revenue": 307.5
+  },
+  {
+    "name": "Teh",
+    "quantity": 138,
+    "revenue": 276.0
+  },
+  {
+    "name": "Kopi",
+    "quantity": 118,
+    "revenue": 236.0
+  }
+]

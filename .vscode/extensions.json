@@ -1,0 +1,11 @@
+{
+  // VS Code will prompt to install these when the folder is opened.
+  "recommendations": [
+    // SQLTools core + Postgres driver — powers the connection in .vscode/settings.json
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg",
+    // Microsoft's official Postgres extension — schema-aware IntelliSense, GUI connect.
+    // (Optional alternative GUI; connections are configured in its own UI, not this file.)
+    "ms-ossdata.vscode-pgsql"
+  ]
+}

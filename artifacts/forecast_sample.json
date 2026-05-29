@@ -1,0 +1,74 @@
+{
+  "method": "moving_average",
+  "window_days": 7,
+  "horizon_days": 7,
+  "moving_average": 38.8,
+  "history": [
+    {
+      "period": "2026-05-18",
+      "revenue": 108.51,
+      "orders": 2
+    },
+    {
+      "period": "2026-05-19",
+      "revenue": 51.56,
+      "orders": 1
+    },
+    {
+      "period": "2026-05-20",
+      "revenue": 61.75,
+      "orders": 1
+    },
+    {
+      "period": "2026-05-21",
+      "revenue": 20.98,
+      "orders": 1
+    },
+    {
+      "period": "2026-05-22",
+      "revenue": 70.14,
+      "orders": 2
+    },
+    {
+      "period": "2026-05-23",
+      "revenue": 85.13,
+      "orders": 2
+    },
+    {
+      "period": "2026-05-25",
+      "revenue": 33.57,
+      "orders": 1
+    }
+  ],
+  "forecast": [
+    {
+      "date": "2026-05-28",
+      "projected_revenue": 38.8
+    },
+    {
+      "date": "2026-05-29",
+      "projected_revenue": 38.8
+    },
+    {
+      "date": "2026-05-30",
+      "projected_revenue": 38.8
+    },
+    {
+      "date": "2026-05-31",
+      "projected_revenue": 38.8
+    },
+    {
+      "date": "2026-06-01",
+      "projected_revenue": 38.8
+    },
+    {
+      "date": "2026-06-02",
+      "projected_revenue": 38.8
+    },
+    {
+      "date": "2026-06-03",
+      "projected_revenue": 38.8
+    }
+  ],
+  "limitations": "Flat MA; no seasonality/trend/weekday effects. PoC only."
+}

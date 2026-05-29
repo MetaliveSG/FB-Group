@@ -1,0 +1,230 @@
+{
+  "customer": {
+    "id": "761195a71e5d455a9291bf115f361372",
+    "full_name": "Priya Frequent5",
+    "email": "cust5@example.sg",
+    "phone": "+6580000005",
+    "birthday": null
+  },
+  "metrics": {
+    "visit_count": 8,
+    "total_spend": 502.38,
+    "avg_spend": 62.8,
+    "points_balance": 577,
+    "lifetime_points": 577,
+    "tier": "silver",
+    "first_visit_at": "2026-02-08T04:23:47.501001",
+    "last_visit_at": "2026-05-05T15:23:47.501001",
+    "days_since_last_visit": 21,
+    "visits_per_month": 2.22,
+    "churn_risk": 0.18,
+    "churn_label": "low",
+    "lifecycle_stage": "vip",
+    "segments": [
+      "vip",
+      "frequent",
+      "high_spender"
+    ]
+  },
+  "orders": [
+    {
+      "id": "eaac3351f0ee49a4a177461fd2e49610",
+      "outlet_id": "fce3cdfc0b7d48afab76e2df808c8fac",
+      "channel": "qr",
+      "status": "completed",
+      "total": 35.97,
+      "created_at": "2026-05-05T15:23:47.501001"
+    },
+    {
+      "id": "71fb60ef28ab4e38bbb61574dd9a27fb",
+      "outlet_id": "fce3cdfc0b7d48afab76e2df808c8fac",
+      "channel": "qr",
+      "status": "completed",
+      "total": 92.32,
+      "created_at": "2026-04-24T01:23:47.501001"
+    },
+    {
+      "id": "e1db7799343f47e2b595abbe5cf7ed7d",
+      "outlet_id": "fce3cdfc0b7d48afab76e2df808c8fac",
+      "channel": "qr",
+      "status": "completed",
+      "total": 49.76,
+      "created_at": "2026-04-11T20:23:47.501001"
+    },
+    {
+      "id": "190517a45e9a4eb4bc17d882e865b669",
+      "outlet_id": "557ea486916e4c3db1b0dc23d36f0a60",
+      "channel": "qr",
+      "status": "completed",
+      "total": 82.73,
+      "created_at": "2026-03-29T20:23:47.501001"
+    },
+    {
+      "id": "c8db771373cc4124b49441247d280318",
+      "outlet_id": "fce3cdfc0b7d48afab76e2df808c8fac",
+      "channel": "qr",
+      "status": "completed",
+      "total": 35.37,
+      "created_at": "2026-03-18T04:23:47.501001"
+    },
+    {
+      "id": "a372e5710a8244f3a12c188713a80d53",
+      "outlet_id": "557ea486916e4c3db1b0dc23d36f0a60",
+      "channel": "qr",
+      "status": "completed",
+      "total": 35.97,
+      "created_at": "2026-03-04T21:23:47.501001"
+    },
+    {
+      "id": "99636a902dca4b0f86533e255c083376",
+      "outlet_id": "557ea486916e4c3db1b0dc23d36f0a60",
+      "channel": "qr",
+      "status": "completed",
+      "total": 89.93,
+      "created_at": "2026-02-21T00:23:47.501001"
+    },
+    {
+      "id": "589cf39379d84c688b68bc17bc35dcac",
+      "outlet_id": "557ea486916e4c3db1b0dc23d36f0a60",
+      "channel": "qr",
+      "status": "completed",
+      "total": 80.33,
+      "created_at": "2026-02-08T04:23:47.501001"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "154277b8a9e04ee5a84afd4e380f0c8c",
+      "outlet_id": "fce3cdfc0b7d48afab76e2df808c8fac",
+      "amount": 35.97,
+      "points_earned": 35,
+      "created_at": "2026-05-05T15:23:47.501001"
+    },
+    {
+      "id": "680cf8ee410a4aeba4285a8a2fe1263a",
+      "outlet_id": "fce3cdfc0b7d48afab76e2df808c8fac",
+      "amount": 92.32,
+      "points_earned": 92,
+      "created_at": "2026-04-24T01:23:47.501001"
+    },
+    {
+      "id": "b98312adbd214c37ac36ccf16e4435d4",
+      "outlet_id": "fce3cdfc0b7d48afab76e2df808c8fac",
+      "amount": 49.76,
+      "points_earned": 49,
+      "created_at": "2026-04-11T20:23:47.501001"
+    },
+    {
+      "id": "6a7feea059f94f11981038b1898fea99",
+      "outlet_id": "557ea486916e4c3db1b0dc23d36f0a60",
+      "amount": 82.73,
+      "points_earned": 112,
+      "created_at": "2026-03-29T20:23:47.501001"
+    },
+    {
+      "id": "141b8446741a453f950de323196f9bb9",
+      "outlet_id": "fce3cdfc0b7d48afab76e2df808c8fac",
+      "amount": 35.37,
+      "points_earned": 35,
+      "created_at": "2026-03-18T04:23:47.501001"
+    },
+    {
+      "id": "22679e99e67044cba7d44e4e79452e24",
+      "outlet_id": "557ea486916e4c3db1b0dc23d36f0a60",
+      "amount": 35.97,
+      "points_earned": 35,
+      "created_at": "2026-03-04T21:23:47.501001"
+    },
+    {
+      "id": "eea399305e6f489599c4c7fd4971b0ff",
+      "outlet_id": "557ea486916e4c3db1b0dc23d36f0a60",
+      "amount": 89.93,
+      "points_earned": 89,
+      "created_at": "2026-02-21T00:23:47.501001"
+    },
+    {
+      "id": "c3b4fd3b588b468ea1ab64a079c95ec8",
+      "outlet_id": "557ea486916e4c3db1b0dc23d36f0a60",
+      "amount": 80.33,
+      "points_earned": 130,
+      "created_at": "2026-02-08T04:23:47.501001"
+    }
+  ],
+  "rewards": [
+    {
+      "txn_type": "earn",
+      "points": 35,
+      "reason": "Earned 35 pts on $35.97",
+      "rule_code": "base-earn",
+      "created_at": "2026-05-27T12:23:50.348667"
+    },
+    {
+      "txn_type": "earn",
+      "points": 92,
+      "reason": "Earned 92 pts on $92.32",
+      "rule_code": "base-earn",
+      "created_at": "2026-05-27T12:23:50.346218"
+    },
+    {
+      "txn_type": "earn",
+      "points": 49,
+      "reason": "Earned 49 pts on $49.76",
+      "rule_code": "base-earn",
+      "created_at": "2026-05-27T12:23:50.343311"
+    },
+    {
+      "txn_type": "earn",
+      "points": 30,
+      "reason": "Every-5-visits bonus",
+      "rule_code": "loyal-5",
+      "created_at": "2026-05-27T12:23:50.340625"
+    },
+    {
+      "txn_type": "earn",
+      "points": 82,
+      "reason": "Earned 82 pts on $82.73",
+      "rule_code": "base-earn",
+      "created_at": "2026-05-27T12:23:50.340621"
+    },
+    {
+      "txn_type": "earn",
+      "points": 35,
+      "reason": "Earned 35 pts on $35.37",
+      "rule_code": "base-earn",
+      "created_at": "2026-05-27T12:23:50.337615"
+    },
+    {
+      "txn_type": "earn",
+      "points": 35,
+      "reason": "Earned 35 pts on $35.97",
+      "rule_code": "base-earn",
+      "created_at": "2026-05-27T12:23:50.334515"
+    },
+    {
+      "txn_type": "earn",
+      "points": 89,
+      "reason": "Earned 89 pts on $89.93",
+      "rule_code": "base-earn",
+      "created_at": "2026-05-27T12:23:50.331889"
+    },
+    {
+      "txn_type": "earn",
+      "points": 50,
+      "reason": "First visit bonus",
+      "rule_code": "welcome",
+      "created_at": "2026-05-27T12:23:50.328788"
+    },
+    {
+      "txn_type": "earn",
+      "points": 80,
+      "reason": "Earned 80 pts on $80.33",
+      "rule_code": "base-earn",
+      "created_at": "2026-05-27T12:23:50.328784"
+    }
+  ],
+  "tags": [],
+  "notes": [],
+  "owner_user_id": "959f07cd0c484767a469f9582aa430f6",
+  "owner_name": "Makan Owner",
+  "tasks": []
+}

@@ -1,0 +1,18 @@
+# FastAPI backend dependencies (Python 3.12)
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+SQLAlchemy==2.0.36
+pydantic==2.10.4
+pydantic-settings==2.7.1
+PyJWT==2.10.1
+bcrypt==4.2.1
+alembic==1.14.0
+python-multipart==0.0.20
+email-validator==2.2.0
+httpx==0.28.1
+pytest==8.3.4
+# Postgres driver (used in Docker / prod; tests + quick local run use SQLite)
+psycopg[binary]==3.2.3
+# Claude / Anthropic SDK — powers the AI Insights advisor (optional at runtime:
+# the advisor falls back to a deterministic heuristic when no API key is set).
+anthropic==0.104.1

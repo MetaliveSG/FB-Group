@@ -1,0 +1,20 @@
+{
+  // SQLTools connection to the local Docker Postgres (infra/docker-compose.yml service `db`).
+  // The DB is exposed on host :5432; creds match POSTGRES_USER/PASSWORD/DB in compose.
+  // NOTE: password is in plaintext here — fine for this local PoC (not a git repo, dev-only
+  // credentials). Do NOT copy this pattern to a real/remote DB or a versioned repo.
+  "sqltools.connections": [
+    {
+      "name": "FB Group (Docker Postgres)",
+      "driver": "PostgreSQL",
+      "server": "localhost",
+      "port": 5432,
+      "database": "fbgroup",
+      "username": "fbgroup",
+      "password": "fbgroup",
+      "connectionTimeout": 15,
+      "previewLimit": 50
+    }
+  ],
+  "sqltools.useNodeRuntime": true
+}

@@ -1,0 +1,51 @@
+# Local dev stack: PostgreSQL + FastAPI + Next.js
+# Usage (from repo root):  docker compose -f infra/docker-compose.yml up --build
+name: fbgroup
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fbgroup
+      POSTGRES_PASSWORD: fbgroup
+      POSTGRES_DB: fbgroup
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fbgroup"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ../apps/api
+    environment:
+      ENV: docker
+      DEBUG: "true"   # PoC demo: returns mock OTP as debug_code so the UI can auto-fill. Set false in prod.
+      DATABASE_URL: postgresql+psycopg://fbgroup:fbgroup@db:5432/fbgroup
+      JWT_SECRET: dev-only-change-me
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+      ACCESS_TOKEN_EXPIRE_MINUTES: "480"   # demo: 8h so sessions don't age out mid-demo. Prod: 30 + refresh.
+      SEED_ON_START: "1"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.web
+    environment:
+      NEXT_PUBLIC_API_BASE: http://localhost:8000
+    ports:
+      - "3001:3000"   # host 3000 is often taken by other dev servers; use 3001
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

@@ -1,0 +1,15 @@
+{
+  "name": "fbgroup-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Singapore F&B CRM / QR ordering / loyalty platform (PoC monorepo)",
+  "workspaces": [
+    "apps/web",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --prefix apps/web run dev",
+    "build:web": "npm --prefix apps/web run build",
+    "test:web": "npm --prefix apps/web test"
+  }
+}

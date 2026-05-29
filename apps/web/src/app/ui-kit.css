@@ -1,0 +1,196 @@
+/* ============================================================
+   FB Group UI kit — token-driven base components (mobile-first).
+   Every value references a design token from @fbgroup/ui/tokens.css.
+   Imported after globals.css in app/layout.tsx.
+   ============================================================ */
+
+/* ── Button ── */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--touch-min);
+  padding: 0 var(--space-5);
+  border: none;
+  border-radius: var(--radius-pill);
+  font-family: var(--font);
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  transition: transform var(--motion-fast) var(--ease-out),
+              background var(--motion-fast) var(--ease-out),
+              box-shadow var(--motion-fast) var(--ease-out),
+              opacity var(--motion-fast) var(--ease-out);
+}
+.ui-btn:active:not(:disabled) { transform: scale(0.97); }
+.ui-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.ui-btn:focus-visible { outline: 3px solid var(--brand-200); outline-offset: 2px; }
+
+.ui-btn--primary {
+  background: linear-gradient(180deg, var(--brand-500), var(--brand-600));
+  color: var(--color-text-inverse);
+  box-shadow: 0 4px 12px rgba(226, 58, 15, 0.32);
+}
+.ui-btn--primary:hover:not(:disabled) { background: linear-gradient(180deg, var(--brand-400), var(--brand-500)); }
+
+.ui-btn--secondary {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: inset 0 0 0 1.5px var(--color-primary);
+}
+.ui-btn--ghost { background: transparent; color: var(--color-text); }
+.ui-btn--ghost:hover:not(:disabled) { background: var(--color-surface-alt); }
+
+.ui-btn--accent {
+  background: linear-gradient(180deg, var(--amber-400), var(--amber-500));
+  color: #4a2e00;
+  box-shadow: 0 4px 12px rgba(232, 150, 10, 0.3);
+}
+.ui-btn--danger { background: var(--color-danger); color: #fff; }
+
+.ui-btn--sm { min-height: 36px; padding: 0 var(--space-3); font-size: var(--text-sm); }
+.ui-btn--lg { min-height: 52px; padding: 0 var(--space-6); font-size: var(--text-lg); }
+.ui-btn--block { display: flex; width: 100%; }
+
+/* ── Card / Surface ── */
+.ui-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+.ui-card--pad { padding: var(--space-4); }
+.ui-card--flush { padding: 0; overflow: hidden; }
+
+/* ── ListItem ── */
+.ui-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  font-family: var(--font);
+  cursor: pointer;
+}
+.ui-list-item:last-child { border-bottom: none; }
+.ui-list-item:active { background: var(--color-surface-alt); }
+.ui-list-item__icon { color: var(--color-primary); flex-shrink: 0; }
+.ui-list-item__body { flex: 1; min-width: 0; }
+.ui-list-item__title { display: block; font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--color-text); }
+.ui-list-item__meta { display: block; font-size: var(--text-sm); color: var(--color-text-muted); margin-top: 2px; }
+.ui-list-item__chevron { color: var(--color-text-muted); flex-shrink: 0; }
+
+/* ── Stepper (quantity) ── */
+.ui-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1);
+}
+.ui-stepper__btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px;
+  border: none; border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+.ui-stepper__btn:active:not(:disabled) { transform: scale(0.9); }
+.ui-stepper__btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.ui-stepper__val { min-width: 22px; text-align: center; font-weight: var(--weight-bold); font-size: var(--text-base); }
+
+/* ── Badge / Chip ── */
+.ui-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs); font-weight: var(--weight-semibold);
+  background: var(--color-surface-alt); color: var(--color-text);
+}
+.ui-badge--success { background: var(--color-success-bg); color: var(--color-success); }
+.ui-badge--danger  { background: var(--color-danger-bg);  color: var(--color-danger); }
+.ui-badge--warning { background: var(--color-warning-bg); color: var(--color-warning); }
+.ui-badge--gold    { background: var(--gold-300); color: var(--gold-800); }
+
+/* ── Skeleton ── */
+.ui-skel {
+  background: linear-gradient(90deg, var(--color-surface-alt) 25%, var(--neutral-200) 37%, var(--color-surface-alt) 63%);
+  background-size: 400% 100%;
+  border-radius: var(--radius-sm);
+  animation: uiSkel 1.4s ease infinite;
+}
+@keyframes uiSkel { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+/* ── EmptyState ── */
+.ui-empty { text-align: center; padding: var(--space-7) var(--space-4); color: var(--color-text-muted); }
+.ui-empty__icon { color: var(--color-border-strong); margin-bottom: var(--space-3); }
+.ui-empty__title { font-size: var(--text-lg); font-weight: var(--weight-bold); color: var(--color-text); margin-bottom: var(--space-1); }
+
+/* ── Bottom Sheet ── */
+.ui-sheet__overlay {
+  position: fixed; inset: 0; z-index: var(--z-modal);
+  background: var(--color-overlay);
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: uiFade var(--motion-base) var(--ease-out);
+}
+.ui-sheet__panel {
+  width: 100%; max-width: 480px;
+  background: var(--color-surface);
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  padding: var(--space-4) var(--space-4) calc(var(--space-5) + env(safe-area-inset-bottom));
+  box-shadow: var(--shadow-xl);
+  animation: uiSlideUp var(--motion-slow) var(--ease-spring);
+}
+.ui-sheet__grip { width: 40px; height: 4px; border-radius: var(--radius-pill); background: var(--color-border-strong); margin: 0 auto var(--space-3); }
+@keyframes uiFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes uiSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+/* ── CoinBalance pill ── */
+.ui-coin {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(180deg, var(--gold-300), var(--gold-500));
+  color: var(--gold-800); font-weight: var(--weight-black);
+  box-shadow: var(--shadow-sm);
+}
+.ui-coin__disc {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff7c2, var(--gold-400) 50%, var(--gold-600));
+  border: 1.5px solid var(--gold-700); font-size: var(--text-sm);
+}
+
+/* ── Tier progress ── */
+.ui-tier__track { height: 10px; border-radius: var(--radius-pill); background: var(--color-surface-alt); overflow: hidden; }
+.ui-tier__fill { height: 100%; border-radius: var(--radius-pill); background: linear-gradient(90deg, var(--amber-400), var(--brand-500)); transition: width var(--motion-slow) var(--ease-out); }
+
+/* ── Bottom tab bar (mobile nav) ── */
+.ui-tabbar {
+  position: sticky; bottom: 0; z-index: var(--z-sticky);
+  display: flex; align-items: stretch;
+  height: calc(var(--tab-bar-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+}
+.ui-tabbar__item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; border: none; background: none; cursor: pointer;
+  color: var(--color-text-muted); font-size: 11px; font-weight: var(--weight-semibold);
+  font-family: var(--font);
+}
+.ui-tabbar__item--active { color: var(--color-primary); }
