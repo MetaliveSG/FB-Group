@@ -24,12 +24,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ConflictError, NotFoundError
+from app.core.logging import get_logger
 from app.db.base import utcnow
 from app.loyalty.engine import get_or_create_account
 from app.models.engagement import JackpotPrize
 from app.models.enums import RewardScope, RewardTxnType
 from app.models.loyalty import RewardRedemption, RewardTransaction
 from app.models.tenancy import Merchant
+
+logger = get_logger("app.jackpot")
 
 JACKPOT_SPIN_COST = 5   # coins per play (0 = free; >0 charges + gates on balance)
 GRID_SIZE = 3
@@ -131,6 +134,9 @@ def play_jackpot(db: Session, *, customer_id: str, merchant_id: str) -> dict:
     #    so we neither gate on balance nor write a redeem ledger row.
     if JACKPOT_SPIN_COST > 0:
         if acct.points_balance < JACKPOT_SPIN_COST:
+            logger.warning("jackpot_insufficient", extra={"extra": {
+                "customer_id": customer_id, "merchant_id": merchant_id,
+                "balance": acct.points_balance, "cost": JACKPOT_SPIN_COST}})
             raise ConflictError("Insufficient points to play", code="insufficient_points")
         acct.points_balance -= JACKPOT_SPIN_COST
         db.add(RewardTransaction(
@@ -169,8 +175,16 @@ def play_jackpot(db: Session, *, customer_id: str, merchant_id: str) -> dict:
         merchant = db.get(Merchant, merchant_id)
         if merchant is not None:
             _reset_grand_prize(merchant)
+        logger.info("jackpot_win", extra={"extra": {
+            "customer_id": customer_id, "merchant_id": merchant_id,
+            "prize": won_prize.item_name, "voucher": voucher_code,
+            "grand_prize_reset_to": GRAND_JACKPOT_BASE}})
 
     db.flush()
+    logger.info("jackpot_play", extra={"extra": {
+        "customer_id": customer_id, "merchant_id": merchant_id,
+        "won": won_prize is not None, "cost": JACKPOT_SPIN_COST,
+        "balance": acct.points_balance}})
     return {
         "spin_cost": JACKPOT_SPIN_COST,
         "grid": grid,

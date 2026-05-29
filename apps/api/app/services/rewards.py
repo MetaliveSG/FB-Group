@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ConflictError, NotFoundError
+from app.core.logging import get_logger
 from app.loyalty.engine import TIER_THRESHOLDS, get_or_create_account
 from app.models.engagement import RewardCatalogItem, WheelSegment
 from app.models.enums import RewardTxnType, RewardScope, WheelPrizeKind
@@ -17,6 +18,8 @@ from app.models.orders import Order
 from app.models.tenancy import Outlet
 
 WHEEL_SPIN_COST = 10  # coins per spin (lowered for testing; production: per-merchant config)
+
+logger = get_logger("app.rewards")
 
 
 def _voucher_code() -> str:
@@ -155,6 +158,9 @@ def redeem_catalog_item(db: Session, *, customer_id: str, merchant_id: str, item
     acct = get_or_create_account(db, customer_id=customer_id,
                                  scope_type=RewardScope.MERCHANT.value, scope_id=merchant_id)
     if acct.points_balance < item.cost_points:
+        logger.warning("redeem_insufficient", extra={"extra": {
+            "customer_id": customer_id, "merchant_id": merchant_id,
+            "item": item.name, "balance": acct.points_balance, "cost": item.cost_points}})
         raise ConflictError("Insufficient points", code="insufficient_points")
 
     acct.points_balance -= item.cost_points
@@ -164,6 +170,9 @@ def redeem_catalog_item(db: Session, *, customer_id: str, merchant_id: str, item
     db.add(RewardRedemption(account_id=acct.id, reward_name=item.name,
                             points_spent=item.cost_points, status="redeemed", voucher_code=code))
     db.flush()
+    logger.info("reward_redeemed", extra={"extra": {
+        "customer_id": customer_id, "merchant_id": merchant_id, "item": item.name,
+        "cost": item.cost_points, "voucher": code, "balance": acct.points_balance}})
     return {"voucher_code": code, "reward_name": item.name, "points_balance": acct.points_balance}
 
 
@@ -195,6 +204,9 @@ def spin_wheel(db: Session, *, customer_id: str, merchant_id: str) -> dict:
     acct = get_or_create_account(db, customer_id=customer_id,
                                  scope_type=RewardScope.MERCHANT.value, scope_id=merchant_id)
     if acct.points_balance < WHEEL_SPIN_COST:
+        logger.warning("wheel_insufficient", extra={"extra": {
+            "customer_id": customer_id, "merchant_id": merchant_id,
+            "balance": acct.points_balance, "cost": WHEEL_SPIN_COST}})
         raise ConflictError("Insufficient points to spin", code="insufficient_points")
 
     # Spend the spin cost.
@@ -228,6 +240,9 @@ def spin_wheel(db: Session, *, customer_id: str, merchant_id: str) -> dict:
         prize["voucher_code"] = code
 
     db.flush()
+    logger.info("wheel_spin", extra={"extra": {
+        "customer_id": customer_id, "merchant_id": merchant_id, "index": chosen_index,
+        "prize": prize["label"], "kind": prize["kind"], "balance": acct.points_balance}})
     return {
         "winning_index": chosen_index,
         "prize": prize,
