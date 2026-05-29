@@ -48,14 +48,12 @@ _GRAND_KEY = "grand_jackpot_since"
 
 
 def _grand_prize(db: Session, merchant: Merchant | None) -> int:
+    """Read-only: pot = base + elapsed×rate. Returns base if not yet anchored
+    (the anchor is set at jackpot-seed time / on win — never written during a read)."""
     if merchant is None:
         return GRAND_JACKPOT_BASE
-    settings = merchant.settings or {}
-    since = settings.get(_GRAND_KEY)
+    since = (merchant.settings or {}).get(_GRAND_KEY)
     if not since:
-        # First time: anchor "now" and persist (one-time write on read).
-        merchant.settings = {**settings, _GRAND_KEY: utcnow().isoformat()}
-        db.commit()
         return GRAND_JACKPOT_BASE
     try:
         since_dt = datetime.fromisoformat(since)
@@ -67,6 +65,15 @@ def _grand_prize(db: Session, merchant: Merchant | None) -> int:
 
 def _reset_grand_prize(merchant: Merchant) -> None:
     merchant.settings = {**(merchant.settings or {}), _GRAND_KEY: utcnow().isoformat()}
+
+
+def ensure_grand_anchor(merchant: Merchant) -> bool:
+    """Anchor the progressive pot at seed time if it isn't yet (caller commits).
+    Returns True if it set the anchor. Idempotent."""
+    if not (merchant.settings or {}).get(_GRAND_KEY):
+        _reset_grand_prize(merchant)
+        return True
+    return False
 
 
 def _voucher_code() -> str:
@@ -128,6 +135,7 @@ def play_jackpot(db: Session, *, customer_id: str, merchant_id: str) -> dict:
     acct = get_or_create_account(
         db, customer_id=customer_id,
         scope_type=RewardScope.MERCHANT.value, scope_id=merchant_id,
+        for_update=True,  # row-lock: no concurrent double-spin double-charge
     )
     # 1. Charge the spin — only when a cost is configured. With JACKPOT_SPIN_COST=0
     #    the jackpot is free to play (no food purchase / earned points required),

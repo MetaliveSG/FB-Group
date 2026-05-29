@@ -1,6 +1,6 @@
 ======================================================================
   REWARDS SYSTEM — LIVE PROOF REPORT · FB Group F&B CRM PoC
-  2026-05-29T09:39:33.576404+00:00  ·  API http://localhost:8000/api/v1
+  2026-05-29T09:58:48.745251+00:00  ·  API http://localhost:8000/api/v1
 ======================================================================
 
 Context: merchant=Kampong Eats · outlet=Kampong Eats — Bedok · table=T01
@@ -15,13 +15,13 @@ TEST: Loyalty summary
 REQUEST:
   GET /me/loyalty?merchant_id=188c3eb57c694330922197f18aeda3d5
 RESPONSE:
-  Status: 200  Time: 11ms
-  Body: {"points_balance": 173, "lifetime_points": 673, "tier": "silver", "next_tier": "gold", "points_to_next_tier": 1327, "visit_count": 8, "recent": [{"txn_type": "redeem", "points": -100, "reason": "Jackpot spin", "created_at": "2026-05-28T13:40:32.412242"}, {"txn_type": "redeem", "points": -100, "reason": "Jackpot spin", "created_at": "2026-05-28T13:40:32.406681"}, {"txn_type": "r…
+  Status: 200  Time: 6ms
+  Body: {"points_balance": 188, "lifetime_points": 728, "tier": "silver", "next_tier": "gold", "points_to_next_tier": 1272, "visit_count": 8, "recent": [{"txn_type": "earn", "points": 50, "reason": "Wheel prize: 50 coins", "created_at": "2026-05-29T09:58:32.246775"}, {"txn_type": "redeem", "points": -10, "reason": "Wheel spin", "created_at": "2026-05-29T09:58:32.246768"}, {"txn_type": …
 CHECKS:
   PASS — status 200 (expected 200)
   PASS — points_balance present
   PASS — tier present
-RESULT: PASS  [11ms]
+RESULT: PASS  [6ms]
 
 ======================================================================
 TEST: Rewards catalog — free items only (coins not cash-redeemable)
@@ -29,12 +29,12 @@ TEST: Rewards catalog — free items only (coins not cash-redeemable)
 REQUEST:
   GET /me/rewards/catalog?merchant_id=188c3eb57c694330922197f18aeda3d5
 RESPONSE:
-  Status: 200  Time: 9ms
+  Status: 200  Time: 5ms
   Body: [{"id": "da19ec8cd7054267987b26dc791b4710", "name": "Free Teh Tarik", "description": "", "cost_points": 150, "kind": "free_item", "value": 0.0, "can_afford": true}, {"id": "105d487c1f064857b2360f95203c5ee1", "name": "Free Chendol", "description": "", "cost_points": 250, "kind": "free_item", "value": 0.0, "can_afford": false}]
 CHECKS:
   PASS — status 200 (expected 200)
   PASS — no 'discount' kind present
-RESULT: PASS  [9ms]
+RESULT: PASS  [5ms]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SECTION 2 — SPIN THE WHEEL
@@ -45,13 +45,13 @@ TEST: Wheel config
 REQUEST:
   GET /me/wheel?merchant_id=188c3eb57c694330922197f18aeda3d5
 RESPONSE:
-  Status: 200  Time: 6ms
+  Status: 200  Time: 3ms
   Body: {"spin_cost": 10, "segments": [{"label": "5 coins", "color": "#f87171"}, {"label": "20 coins", "color": "#fbbf24"}, {"label": "Free Teh Tarik", "color": "#34d399"}, {"label": "Try again", "color": "#a3a3a3"}, {"label": "100 coins", "color": "#60a5fa"}, {"label": "50 coins", "color": "#c084fc"}]}
 CHECKS:
   PASS — status 200 (expected 200)
   PASS — spin_cost == 10
   PASS — segments present
-RESULT: PASS  [6ms]
+RESULT: PASS  [3ms]
 
 ======================================================================
 TEST: Wheel spin (deducts 10, returns prize)
@@ -60,13 +60,13 @@ REQUEST:
   POST /me/wheel/spin
   Payload: {"merchant_id": "188c3eb57c694330922197f18aeda3d5"}
 RESPONSE:
-  Status: 200  Time: 13ms
-  Body: {"winning_index": 0, "prize": {"kind": "points", "label": "5 coins", "points": 5, "voucher_code": null}, "points_balance": 168, "spin_cost": 10}
+  Status: 200  Time: 5ms
+  Body: {"winning_index": 5, "prize": {"kind": "points", "label": "50 coins", "points": 50, "voucher_code": null}, "points_balance": 228, "spin_cost": 10}
 CHECKS:
   PASS — status 200 (expected 200)
   PASS — winning_index present
   PASS — balance returned
-RESULT: PASS  [13ms]
+RESULT: PASS  [5ms]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SECTION 3 — 888 JACKPOT + PROGRESSIVE GRAND POT
@@ -77,14 +77,14 @@ TEST: Jackpot config (5/spin + progressive grand_prize)
 REQUEST:
   GET /me/jackpot?merchant_id=188c3eb57c694330922197f18aeda3d5
 RESPONSE:
-  Status: 200  Time: 5ms
-  Body: {"spin_cost": 5, "grid_size": 3, "payline": "middle_row", "grand_prize": 1799, "prizes": [{"item_name": "Fish Ball Noodle", "item_price": 5.5, "emoji": "\ud83c\udf5c", "weight": 1}, {"item_name": "Curry Rice", "item_price": 5.5, "emoji": "\ud83c\udf5b", "weight": 1}, {"item_name": "Burger", "item_price": 4.5, "emoji": "\ud83c\udf54", "weight": 2}, {"item_name": "French Fries", …
+  Status: 200  Time: 3ms
+  Body: {"spin_cost": 5, "grid_size": 3, "payline": "middle_row", "grand_prize": 2376, "prizes": [{"item_name": "Fish Ball Noodle", "item_price": 5.5, "emoji": "\ud83c\udf5c", "weight": 1}, {"item_name": "Curry Rice", "item_price": 5.5, "emoji": "\ud83c\udf5b", "weight": 1}, {"item_name": "Burger", "item_price": 4.5, "emoji": "\ud83c\udf54", "weight": 2}, {"item_name": "French Fries", …
 CHECKS:
   PASS — status 200 (expected 200)
   PASS — spin_cost == 5
   PASS — grand_prize >= 1000
   PASS — grid_size == 3
-RESULT: PASS  [5ms]
+RESULT: PASS  [3ms]
 
 ======================================================================
 TEST: Grand jackpot pot grows over time (persistent/progressive)
@@ -95,7 +95,7 @@ RESPONSE:
   Status: 200  Time: 6ms
 CHECKS:
   PASS — status 200 (expected 200)
-  PASS — pot grew in ~4s: 1799 → 1801
+  PASS — pot grew in ~4s: 2376 → 2378
 RESULT: PASS  [6ms]
 
 ======================================================================
@@ -105,13 +105,13 @@ REQUEST:
   POST /me/jackpot/play
   Payload: {"merchant_id": "188c3eb57c694330922197f18aeda3d5"}
 RESPONSE:
-  Status: 200  Time: 8ms
-  Body: {"spin_cost": 5, "grid": [[{"item_name": "Fish Ball Noodle", "item_price": 5.5, "emoji": "\ud83c\udf5c"}, {"item_name": "Roti Prata (Plain)", "item_price": 1.8, "emoji": "\ud83e\uded3"}, {"item_name": "Teh Tarik", "item_price": 2.2, "emoji": "\ud83e\udd64"}], [{"item_name": "Roti Prata (Plain)", "item_price": 1.8, "emoji": "\ud83e\uded3"}, {"item_name": "Teh Tarik", "item_price…
+  Status: 200  Time: 7ms
+  Body: {"spin_cost": 5, "grid": [[{"item_name": "Chicken Bun", "item_price": 1.8, "emoji": "\ud83d\udc14"}, {"item_name": "Chicken Drumstick", "item_price": 3.5, "emoji": "\ud83c\udf57"}, {"item_name": "Chicken Drumstick", "item_price": 3.5, "emoji": "\ud83c\udf57"}], [{"item_name": "Chicken Bun", "item_price": 1.8, "emoji": "\ud83d\udc14"}, {"item_name": "Chendol", "item_price": 3.0,…
 CHECKS:
   PASS — status 200 (expected 200)
   PASS — grid is 3x3
   PASS — won flag present
-RESULT: PASS  [8ms]
+RESULT: PASS  [7ms]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SECTION 4 — VOUCHERS · ORDERS · PROFILE
@@ -122,12 +122,12 @@ TEST: My vouchers
 REQUEST:
   GET /me/vouchers?merchant_id=188c3eb57c694330922197f18aeda3d5
 RESPONSE:
-  Status: 200  Time: 6ms
-  Body: [{"voucher_code": "JACKPOT-2F67FC79", "reward_name": "Free French Fries", "status": "active", "created_at": "2026-05-28T13:40:32.412037"}, {"voucher_code": "JACKPOT-CA85D782", "reward_name": "Free Teh Tarik", "status": "active", "created_at": "2026-05-28T13:40:32.406391"}, {"voucher_code": "JACKPOT-DAD46C2A", "reward_name": "Free Pork Bun", "status": "active", "created_at": "20…
+  Status: 200  Time: 5ms
+  Body: [{"voucher_code": "VCH-3EE7292F", "reward_name": "Free Teh Tarik", "status": "redeemed", "created_at": "2026-05-29T09:43:57.183175"}, {"voucher_code": "JACKPOT-2F67FC79", "reward_name": "Free French Fries", "status": "active", "created_at": "2026-05-28T13:40:32.412037"}, {"voucher_code": "JACKPOT-CA85D782", "reward_name": "Free Teh Tarik", "status": "active", "created_at": "202…
 CHECKS:
   PASS — status 200 (expected 200)
   PASS — returns a list
-RESULT: PASS  [6ms]
+RESULT: PASS  [5ms]
 
 ======================================================================
 TEST: My orders (history)
@@ -135,12 +135,12 @@ TEST: My orders (history)
 REQUEST:
   GET /me/orders?merchant_id=188c3eb57c694330922197f18aeda3d5
 RESPONSE:
-  Status: 200  Time: 12ms
+  Status: 200  Time: 6ms
   Body: [{"id": "8ab47fbc14d6494ab40b4cb2b757add6", "status": "completed", "total": 44.6, "items_count": 13, "summary": "2\u00d7 Chicken Drumstick, 4\u00d7 Roti Prata (Plain), 3\u00d7 Chendol \u2026", "outlet_name": "Kampong Eats \u2014 Toa Payoh", "created_at": "2026-05-27T01:13:24.434504"}, {"id": "0741cef754534890bcf96a500c40619b", "status": "completed", "total": 37.17, "items_count…
 CHECKS:
   PASS — status 200 (expected 200)
   PASS — returns a list
-RESULT: PASS  [12ms]
+RESULT: PASS  [6ms]
 
 ======================================================================
 TEST: Profile read
@@ -149,7 +149,7 @@ REQUEST:
   GET /me/profile
 RESPONSE:
   Status: 200  Time: 3ms
-  Body: {"full_name": "Ahmad Vip", "phone": "+6581000000", "email": "cust_kpe_0@example.sg", "birthday": "1992-03-14", "gender": "female"}
+  Body: {"full_name": "Ahmad Vip", "phone": "+6581000000", "email": "cust_kpe_0@example.sg", "birthday": "1990-01-15", "gender": "female"}
 CHECKS:
   PASS — status 200 (expected 200)
   PASS — phone present
@@ -180,12 +180,12 @@ REQUEST:
   POST /me/jackpot/play
   Payload: {"merchant_id": "188c3eb57c694330922197f18aeda3d5"}
 RESPONSE:
-  Status: 409  Time: 5ms
+  Status: 409  Time: 4ms
   Body: {"error": {"code": "insufficient_points", "message": "Insufficient points to play"}}
 CHECKS:
   PASS — status 409 (expected 409)
   PASS — error code = insufficient_points
-RESULT: PASS  [5ms]
+RESULT: PASS  [4ms]
 
 ======================================================================
 TEST: Wheel blocked when insufficient coins
@@ -215,18 +215,3 @@ RESULT: PASS  [1ms]
 ======================================================================
 SUMMARY: 14 PASSED, 0 FAILED, 14 TOTAL
 ======================================================================
-
-======================================================================
-STRUCTURED LOG EVIDENCE (app/core/logging.py JSON logs, MMQR-style context)
-======================================================================
-{"ts": "2026-05-29T09:39:33.799834+00:00", "level": "INFO", "logger": "app.rewards", "msg": "wheel_spin", "customer_id": "cd112de41ca44529b7ef87e34715c8ac", "merchant_id": "188c3eb57c694330922197f18aeda3d5", "index": 0, "prize": "5 coins", "kind": "points", "balance": 168}
-{"ts": "2026-05-29T09:39:37.848295+00:00", "level": "INFO", "logger": "app.jackpot", "msg": "jackpot_play", "customer_id": "cd112de41ca44529b7ef87e34715c8ac", "merchant_id": "188c3eb57c694330922197f18aeda3d5", "won": false, "cost": 5, "balance": 163}
-{"ts": "2026-05-29T09:39:37.889480+00:00", "level": "WARNING", "logger": "app.jackpot", "msg": "jackpot_insufficient", "customer_id": "9ad6fe8501c6411d920b925267178e3f", "merchant_id": "188c3eb57c694330922197f18aeda3d5", "balance": 0, "cost": 5}
-{"ts": "2026-05-29T09:39:37.893402+00:00", "level": "WARNING", "logger": "app.rewards", "msg": "wheel_insufficient", "customer_id": "9ad6fe8501c6411d920b925267178e3f", "merchant_id": "188c3eb57c694330922197f18aeda3d5", "balance": 0, "cost": 10}
-
-======================================================================
-AUTOMATED TEST SUITE (pytest) — rewards coverage
-======================================================================
-Backend: 104 passed (incl. test_rewards.py, test_jackpot.py, test_checkout_loyalty.py,
-         test_my_account.py, test_rewards_system.py — happy/negative/boundary/
-         multi-tenant isolation/grand-jackpot grow+reset/voucher durability).

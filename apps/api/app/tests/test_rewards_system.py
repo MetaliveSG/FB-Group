@@ -79,17 +79,24 @@ def test_grand_jackpot_resets_to_base_on_win(db):
     assert jackpot_service._grand_prize(db, m) == jackpot_service.GRAND_JACKPOT_BASE
 
 
-def test_grand_jackpot_persists_across_reads(db):
-    """The pot is anchored on first read and keeps growing from the SAME anchor —
-    it must not reset to base on every read."""
+def test_grand_jackpot_anchor_is_stable_and_readonly(db):
+    """Once anchored (at seed time / on win), reads keep growing from the SAME
+    anchor and never write — the GET path is read-only (no commit-on-read)."""
     w = make_world(db)
     m = db.get(Merchant, w.merchant_id)
-    first = jackpot_service._grand_prize(db, m)        # lazy-inits + commits the anchor
+    # before anchoring, reads return base and do NOT create an anchor (read-only)
+    assert jackpot_service._grand_prize(db, m) == jackpot_service.GRAND_JACKPOT_BASE
+    assert (m.settings or {}).get("grand_jackpot_since") is None
+    # anchor at seed time (as _ensure_kampong_jackpot does)
+    assert jackpot_service.ensure_grand_anchor(m) is True
+    db.commit()
     since1 = (m.settings or {}).get("grand_jackpot_since")
+    first = jackpot_service._grand_prize(db, m)
     second = jackpot_service._grand_prize(db, m)
     since2 = (m.settings or {}).get("grand_jackpot_since")
-    assert since1 == since2 and since1 is not None     # anchor stable (not re-init each read)
+    assert since1 == since2 and since1 is not None     # anchor stable across reads
     assert second >= first                              # monotonic, not reset
+    assert jackpot_service.ensure_grand_anchor(m) is False  # idempotent (already anchored)
 
 
 # ── multi-tenant isolation ───────────────────────────────────────────────────

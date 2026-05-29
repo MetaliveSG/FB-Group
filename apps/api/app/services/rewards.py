@@ -156,7 +156,8 @@ def redeem_catalog_item(db: Session, *, customer_id: str, merchant_id: str, item
     if not item or item.merchant_id != merchant_id or not item.is_active:
         raise NotFoundError("Reward not found", code="reward_not_found")
     acct = get_or_create_account(db, customer_id=customer_id,
-                                 scope_type=RewardScope.MERCHANT.value, scope_id=merchant_id)
+                                 scope_type=RewardScope.MERCHANT.value, scope_id=merchant_id,
+                                 for_update=True)  # row-lock: no concurrent double-redeem
     if acct.points_balance < item.cost_points:
         logger.warning("redeem_insufficient", extra={"extra": {
             "customer_id": customer_id, "merchant_id": merchant_id,
@@ -202,7 +203,8 @@ def spin_wheel(db: Session, *, customer_id: str, merchant_id: str) -> dict:
     if not segs:
         raise NotFoundError("No wheel configured", code="no_wheel")
     acct = get_or_create_account(db, customer_id=customer_id,
-                                 scope_type=RewardScope.MERCHANT.value, scope_id=merchant_id)
+                                 scope_type=RewardScope.MERCHANT.value, scope_id=merchant_id,
+                                 for_update=True)  # row-lock: no concurrent double-spin
     if acct.points_balance < WHEEL_SPIN_COST:
         logger.warning("wheel_insufficient", extra={"extra": {
             "customer_id": customer_id, "merchant_id": merchant_id,

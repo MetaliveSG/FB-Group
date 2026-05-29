@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ConflictError
+from app.core.logging import get_logger
 from app.core.money import money
 from app.db.base import utcnow
 from app.models.enums import LoyaltyTier, RewardRuleType, RewardScope, RewardTxnType
@@ -26,6 +27,8 @@ from app.models.loyalty import (
     RewardTransaction,
     coalition_members,
 )
+
+logger = get_logger("app.loyalty")
 
 # Default tier thresholds by lifetime points (merchant override = PoC limitation).
 TIER_THRESHOLDS: list[tuple[int, LoyaltyTier]] = [
@@ -58,14 +61,19 @@ class EarnBreakdown:
         return int(round(subtotal * self.multiplier))
 
 
-def get_or_create_account(db: Session, *, customer_id: str, scope_type: str, scope_id: str) -> LoyaltyAccount:
-    acct = db.scalar(
-        select(LoyaltyAccount).where(
-            LoyaltyAccount.customer_id == customer_id,
-            LoyaltyAccount.scope_type == scope_type,
-            LoyaltyAccount.scope_id == scope_id,
-        )
+def get_or_create_account(db: Session, *, customer_id: str, scope_type: str, scope_id: str,
+                          for_update: bool = False) -> LoyaltyAccount:
+    """Fetch (or create) a loyalty account. `for_update=True` row-locks it so a
+    concurrent spend (wheel/jackpot/redeem) can't double-spend the balance —
+    `SELECT ... FOR UPDATE` on Postgres; a harmless no-op on SQLite (tests)."""
+    stmt = select(LoyaltyAccount).where(
+        LoyaltyAccount.customer_id == customer_id,
+        LoyaltyAccount.scope_type == scope_type,
+        LoyaltyAccount.scope_id == scope_id,
     )
+    if for_update:
+        stmt = stmt.with_for_update()
+    acct = db.scalar(stmt)
     if not acct:
         acct = LoyaltyAccount(customer_id=customer_id, scope_type=scope_type, scope_id=scope_id)
         db.add(acct)
@@ -198,6 +206,9 @@ def accrue_on_transaction(
                 db, customer=customer, scope_type=RewardScope.COALITION.value, scope_id=cid,
                 amount=amount, order_id=order_id, now=now,
             )
+    logger.info("loyalty_accrued", extra={"extra": {
+        "customer_id": customer.id, "merchant_id": merchant_id,
+        "amount": float(amount), "coins_earned": merchant_points, "order_id": order_id}})
     return merchant_points
 
 

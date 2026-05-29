@@ -39,6 +39,7 @@ from app.models.payments import Payment, Transaction
 from app.models.tenancy import Brand, DiningTable, Merchant, Outlet, QRCode
 from app.core.errors import ConflictError
 from app.services import campaigns as campaign_service
+from app.services.jackpot import ensure_grand_anchor
 from app.services import winback as winback_service
 from app.services.activities import log_activity
 from app.services.opportunities import create_opportunity
@@ -488,6 +489,12 @@ def _ensure_kampong_jackpot(db: Session, merchant_id: str) -> dict:
         if name not in seed_by_name:
             db.delete(row)
             removed += 1
+
+    # Anchor the progressive grand-jackpot pot at seed time (idempotent) so it
+    # starts ticking without a write-on-read in the GET path.
+    merchant = db.get(Merchant, merchant_id)
+    if merchant is not None:
+        ensure_grand_anchor(merchant)
 
     db.flush()
     return {"inserted": inserted, "updated": updated, "removed": removed}
