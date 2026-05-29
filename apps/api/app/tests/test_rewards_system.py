@@ -208,11 +208,14 @@ def test_merchant_can_override_spin_costs_via_settings(client, db):
     assert jackpot_service.jackpot_config(db, merchant_id=w.merchant_id)["spin_cost"] == 0
 
 
-def test_negative_spin_cost_rejected(client, db):
+def test_spin_cost_out_of_bounds_rejected(client, db):
     w = make_world(db)
     otok = staff_token(client, w.owner_email)
-    r = client.patch("/api/v1/org/settings", json={"wheel_spin_cost": -1}, headers=H(otok))
-    assert r.status_code == 422  # pydantic ge=0 boundary
+    # below 0 (ge=0) and above the sane upper cap (le=100000) both rejected
+    assert client.patch("/api/v1/org/settings", json={"wheel_spin_cost": -1},
+                        headers=H(otok)).status_code == 422
+    assert client.patch("/api/v1/org/settings", json={"jackpot_spin_cost": 100001},
+                        headers=H(otok)).status_code == 422
 
 
 def test_wheel_gates_on_overridden_cost(client, db):

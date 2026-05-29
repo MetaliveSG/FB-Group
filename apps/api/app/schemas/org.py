@@ -62,8 +62,10 @@ class SettingsOut(BaseModel):
 
 class SettingsUpdateIn(BaseModel):
     pipeline_enabled: bool | None = None
-    wheel_spin_cost: int | None = Field(default=None, ge=0)
-    jackpot_spin_cost: int | None = Field(default=None, ge=0)
+    # Spin costs bounded both ends: 0 = free play; upper cap keeps a typo from setting
+    # an absurd cost (only affects the merchant's own games, but keeps data sane).
+    wheel_spin_cost: int | None = Field(default=None, ge=0, le=100000)
+    jackpot_spin_cost: int | None = Field(default=None, ge=0, le=100000)
 
 
 class TableCreateIn(BaseModel):

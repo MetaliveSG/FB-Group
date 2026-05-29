@@ -75,13 +75,34 @@ def test_profile_phone_required_and_unique(client, db):
     a = register_customer(client, email="pa@b.sg", phone="+6590000202")
     register_customer(client, email="pb@b.sg", phone="+6590000203")
 
-    # blank phone rejected (compulsory)
+    # blank phone rejected (compulsory) — now caught at validation (422, phone format)
+    # or the service's required-check (409); either way it's rejected.
     blank = client.patch("/api/v1/me/profile", json={"phone": "   "}, headers=H(a["access_token"]))
-    assert blank.status_code == 409
+    assert blank.status_code in (409, 422)
 
     # taking another customer's phone rejected
     taken = client.patch("/api/v1/me/profile", json={"phone": "+6590000203"}, headers=H(a["access_token"]))
     assert taken.status_code == 409
+
+
+def test_profile_update_rejects_malformed_or_overlong_input(client, db):
+    """Security: PATCH /me/profile must validate like registration — bad phone format,
+    out-of-range gender, and over-column-length values are rejected with 422 (not stored,
+    and not left to 500 on Postgres via VARCHAR overflow)."""
+    w = make_world(db)
+    cust = register_customer(client, email="sec@b.sg", phone="+6590000301")
+    tok = cust["access_token"]
+
+    # phone format (letters / too long) — _PhoneMixin
+    assert client.patch("/api/v1/me/profile", json={"phone": "<script>"}, headers=H(tok)).status_code == 422
+    assert client.patch("/api/v1/me/profile", json={"phone": "+" + "9" * 30}, headers=H(tok)).status_code == 422
+    # gender outside the allowed set (and longer than String(16))
+    assert client.patch("/api/v1/me/profile", json={"gender": "x" * 50}, headers=H(tok)).status_code == 422
+    assert client.patch("/api/v1/me/profile", json={"gender": "alien"}, headers=H(tok)).status_code == 422
+    # full_name longer than String(160)
+    assert client.patch("/api/v1/me/profile", json={"full_name": "n" * 200}, headers=H(tok)).status_code == 422
+    # the stored profile is unchanged after all the rejected attempts
+    assert client.get("/api/v1/me/profile", headers=H(tok)).json()["phone"] == "+6590000301"
 
 
 def test_my_vouchers_lists_redemptions(client, db):

@@ -3,8 +3,9 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
+from app.schemas.auth import _PhoneMixin
 from app.schemas.common import ORMModel
 
 
@@ -16,11 +17,14 @@ class MyProfileOut(ORMModel):
     gender: str | None = None
 
 
-class ProfileUpdate(BaseModel):
+class ProfileUpdate(BaseModel, _PhoneMixin):
+    # Mirror registration's validation so this PII write path can't bypass it:
+    # phone format via _PhoneMixin (≤15 digits < phone String(20)); length caps match
+    # the DB columns so a too-long value 422s here instead of 500-ing on Postgres.
     phone: str | None = None
     birthday: date | None = None
-    gender: str | None = None
-    full_name: str | None = None
+    gender: str | None = Field(default=None, max_length=16, pattern="^(male|female|other)?$")
+    full_name: str | None = Field(default=None, max_length=160)
 
 
 class MyOrderOut(ORMModel):
