@@ -164,6 +164,52 @@ so B is always made whole. Mechanics:
 - **Two-sided cold-start** — coin value depends on acceptance breadth; merchant opt-in depends
   on coin volume. Needs anchor merchants + a platform-funded early boost.
 
+### 5b. FUNDED vs UNFUNDED — cross-merchant is a CLEARING RAIL, not a loyalty toggle (THE GATE)
+This is the hard gate on all network monetization. Two diligence questions expose the same truth:
+*"the merchant never paid to buy the coins"* and *"why would B hand over food before it gets the
+cash?"* — both are the same problem.
+
+- **Today (and for closed-loop): coins are UNFUNDED.** Issuing a coin just increments a number;
+  no cash moves. That is **fine for closed-loop** (earn & redeem at the SAME merchant) because the
+  merchant never needs cash — it **pays in-kind at redemption** (gives a free item; eats the COGS
+  *then*). No reserve, no guarantee, no payments rail needed. **This is what is buildable now and
+  carries the SaaS deal.**
+- **Cross-merchant CANNOT run on unfunded coins.** If A's coins are just a number and the diner
+  redeems at B, B hands over **real food** for value **A never funded** → B is out of pocket and
+  the platform's "fee" is a clip on nothing. **Asking B to accept unfunded cross-merchant coins is
+  asking B to give food on a promise the platform cannot back — B is right to refuse.**
+- **So cross-merchant requires ALL of the following (it is a payments/clearing product):**
+  1. **Funded coins** — the issuing merchant actually pays at issuance, via **payout-netting**
+     (platform withholds the funding from the merchant's settlement) or a **prepaid loyalty
+     wallet**. Issuing a coin MOVES REAL CASH into the reserve.
+  2. **Pre-funded reserve (escrow)**, kept **≥ outstanding coin liability** at all times
+     (solvency invariant).
+  3. **Real-time authorization** at redemption (like a card tap): platform checks the reserve
+     covers it → authorizes → B sees "Approved, S$X confirmed" → B hands over food → cash
+     **settles to B on the normal payout cycle**. **B trusts the PLATFORM (guarantor), not A.**
+  4. **Platform sits in the settlement/payment flow** and **bears the float/credit risk** (and
+     earns the spread/fee for it).
+  5. **Likely MAS-regulated** (stored-value / e-money / money-transmission).
+- **The platform here is NOT a money machine** — it is a **clearing house clipping merchants'
+  loyalty spend as it flows across the network.** The real money is the merchants' marketing
+  budget; the platform's spread/fee is a cut of that flow when it crosses a merchant. **No
+  merchant funding → no real cross-merchant value → no network revenue (SaaS only).**
+
+| | Closed-loop coin (ship now) | Cross-merchant network coin |
+|---|---|---|
+| Merchant pays cash? | No — pays in-kind at redemption | **Yes — funds at issuance (netting / wallet)** |
+| Reserve / guarantee needed? | No | **Yes — escrow + real-time auth + solvency invariant** |
+| Platform in payments/settlement flow? | No | **Yes (it is the guarantor)** |
+| Licensing? | No | **Likely MAS stored-value/e-money** |
+| Platform revenue | SaaS only | SaaS + FX spread + fees + breakage |
+
+**STRATEGIC GATE:** the cross-merchant funded network is a **fintech/payments rail bolted on top of
+the CRM**, not a Phase-3 loyalty feature. **Recommendation: build & demo the CLOSED-LOOP coin
+(Phases 1–3 menu/foodcourt/merchant loyalty) for the deal — it needs none of the above. Green-light
+the funded cross-merchant network only once the platform is in the payment flow, holds a real
+reserve, and has licensing handled. The FX/fee/breakage monetization is gated on THAT, not on the
+loyalty logic.**
+
 ## 6. Build phases (frontend-first by risk; nothing coded yet)
 
 ### Phase 1 — Menu redesign  *(frontend only · low risk · ships first)*
