@@ -173,6 +173,26 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(27,108,168,0.12);
 }
 
+/* Phone field: country-code picker + local-number input on one row */
+.phone-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.phone-row input { flex: 1; min-width: 0; }
+.country-select {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 9px 8px;
+  /* 16px to avoid the iOS focus-zoom */
+  font-size: 16px;
+  font-family: var(--font);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--color-text);
+}
+
 /* ─── Tables ───────────────────────────────────────────────── */
 
 .table-wrapper {

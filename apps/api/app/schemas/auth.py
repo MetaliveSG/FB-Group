@@ -1,24 +1,27 @@
 """Auth request/response schemas (Pydantic v2)."""
 from __future__ import annotations
 
-import re
 from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
+from app.core.phone import to_e164
 from app.schemas.common import ORMModel
 
-_PHONE_RE = re.compile(r"^\+?[0-9]{7,15}$")
+_REGION_RE = "^(SG|MY|ID|TH)$"
 
 
 class _PhoneMixin:
-    @field_validator("phone")
-    @classmethod
-    def _check_phone(cls, v):  # type: ignore[no-untyped-def]
-        if v is not None and not _PHONE_RE.match(v):
-            raise ValueError("phone must be 7-15 digits, optional leading +")
-        return v
+    """Normalize `phone` → canonical E.164 using the `region` field (default SG).
+    Subclasses that carry a phone should declare a `region: str` field. National
+    trunk prefixes are handled correctly (e.g. MY '016…' → '+6016…')."""
+
+    @model_validator(mode="after")
+    def _normalize_phone(self):  # type: ignore[no-untyped-def]
+        if getattr(self, "phone", None) is not None:
+            self.phone = to_e164(self.phone, getattr(self, "region", "SG") or "SG")
+        return self
 
 
 class CustomerRegisterRequest(BaseModel, _PhoneMixin):
@@ -26,6 +29,7 @@ class CustomerRegisterRequest(BaseModel, _PhoneMixin):
     password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(default="", max_length=160)
     phone: str | None = None
+    region: str = Field(default="SG", pattern=_REGION_RE)
     birthday: date | None = None
 
 
@@ -36,10 +40,12 @@ class CustomerLoginRequest(BaseModel):
 
 class OtpRequest(BaseModel, _PhoneMixin):
     phone: str
+    region: str = Field(default="SG", pattern=_REGION_RE)
 
 
 class OtpVerifyRequest(BaseModel, _PhoneMixin):
     phone: str
+    region: str = Field(default="SG", pattern=_REGION_RE)
     code: str = Field(min_length=4, max_length=8)
     full_name: str = Field(default="", max_length=160)
 

@@ -6,6 +6,7 @@ import { getMyProfile, updateMyProfile, getApiBase, installAuthHandler } from "@
 import { getCustomerToken, getCustomerData, setCustomerData, clearCustomerToken } from "@/lib/auth";
 import { Card, Button, Skeleton, Icons } from "@/components/ui";
 import CustomerTabBar from "@/components/CustomerTabBar";
+import CountrySelect, { DEFAULT_REGION } from "@/components/CountrySelect";
 import type { MyProfile } from "@fbgroup/api-client";
 
 const GENDERS = [
@@ -42,6 +43,7 @@ export default function MePage() {
 
   // editable fields
   const [phone, setPhone] = useState("");
+  const [region, setRegion] = useState(DEFAULT_REGION);
   const [editingPhone, setEditingPhone] = useState(false);
   const [birthday, setBirthday] = useState("");
   const [gender, setGender] = useState("");
@@ -85,6 +87,7 @@ export default function MePage() {
     try {
       const updated = await updateMyProfile(base, tok, {
         phone: phone.trim(),
+        region,
         birthday: birthday || null,
         gender: gender || null,
         full_name: fullName || undefined,
@@ -162,16 +165,20 @@ export default function MePage() {
             <label>Mobile Number <span style={{ color: "var(--color-danger)" }}>*</span></label>
             {editingPhone ? (
               <>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+65 9123 4567"
-                  required
-                  autoFocus
-                />
+                <div className="phone-row">
+                  <CountrySelect region={region} onChange={setRegion} disabled={saving} />
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="9123 4567"
+                    required
+                    autoFocus
+                  />
+                </div>
                 <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", marginTop: 4 }}>
-                  Include your country code (e.g. +65). Used to log in.
+                  Pick your country, then enter your local number. Used to log in.
                 </div>
               </>
             ) : (

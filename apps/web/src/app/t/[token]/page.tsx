@@ -25,6 +25,7 @@ import { Button, Card, Sheet, EmptyState, Icons } from "@/components/ui";
 import CustomerTabBar from "@/components/CustomerTabBar";
 import MenuCategoryNav from "@/components/MenuCategoryNav";
 import CustomiseSheet from "@/components/CustomiseSheet";
+import CountrySelect, { DEFAULT_REGION } from "@/components/CountrySelect";
 import type {
   QrResolution,
   MenuItem,
@@ -154,6 +155,7 @@ function MenuItemCard({
 function OtpPanel({ onSuccess }: { onSuccess: (token: string, customer: Record<string, unknown>) => void }) {
   const base = getApiBase();
   const [phone, setPhone] = useState("");
+  const [region, setRegion] = useState(DEFAULT_REGION);
   const [code, setCode] = useState("");
   const [fullName, setFullName] = useState("");
   const [step, setStep] = useState<"phone" | "code">("phone");
@@ -166,7 +168,7 @@ function OtpPanel({ onSuccess }: { onSuccess: (token: string, customer: Record<s
     setError(null);
     setLoading(true);
     try {
-      const res = await otpRequest(base, phone);
+      const res = await otpRequest(base, phone, region);
       if (res.debug_code) {
         setDebugCode(res.debug_code);
         setCode(res.debug_code);
@@ -184,7 +186,7 @@ function OtpPanel({ onSuccess }: { onSuccess: (token: string, customer: Record<s
     setError(null);
     setLoading(true);
     try {
-      const res = await otpVerify(base, phone, code, fullName || undefined);
+      const res = await otpVerify(base, phone, code, fullName || undefined, region);
       setCustomerToken(res.access_token);
       setCustomerRefreshToken(res.refresh_token);
       if (res.customer) setCustomerData(res.customer as Record<string, unknown>);
@@ -205,8 +207,11 @@ function OtpPanel({ onSuccess }: { onSuccess: (token: string, customer: Record<s
       {step === "phone" ? (
         <form onSubmit={requestOtp}>
           <div className="form-group">
-            <label>Phone Number</label>
-            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+6591234567" required />
+            <label>Mobile Number</label>
+            <div className="phone-row">
+              <CountrySelect region={region} onChange={setRegion} disabled={loading} />
+              <input type="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9123 4567" required />
+            </div>
           </div>
           <Button block variant="primary" size="lg" type="submit" loading={loading}>Send OTP</Button>
         </form>

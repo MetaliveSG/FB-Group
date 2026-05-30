@@ -18,10 +18,11 @@ class MyProfileOut(ORMModel):
 
 
 class ProfileUpdate(BaseModel, _PhoneMixin):
-    # Mirror registration's validation so this PII write path can't bypass it:
-    # phone format via _PhoneMixin (≤15 digits < phone String(20)); length caps match
-    # the DB columns so a too-long value 422s here instead of 500-ing on Postgres.
+    # Mirror registration's validation on this PII write path: phone is normalized to
+    # canonical E.164 (region-aware) by _PhoneMixin, and length caps match the DB
+    # columns so a too-long value 422s here instead of 500-ing on Postgres.
     phone: str | None = None
+    region: str = Field(default="SG", pattern="^(SG|MY|ID|TH)$")
     birthday: date | None = None
     gender: str | None = Field(default=None, max_length=16, pattern="^(male|female|other)?$")
     full_name: str | None = Field(default=None, max_length=160)

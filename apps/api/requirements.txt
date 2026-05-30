@@ -16,3 +16,4 @@ psycopg[binary]==3.2.3
 # Claude / Anthropic SDK — powers the AI Insights advisor (optional at runtime:
 # the advisor falls back to a deterministic heuristic when no API key is set).
 anthropic==0.104.1
+phonenumbers==8.13.52

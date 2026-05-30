@@ -307,6 +307,7 @@ export interface MyProfile {
 
 export interface ProfileUpdate {
   phone?: string;
+  region?: string;
   birthday?: string | null;
   gender?: string | null;
   full_name?: string;
@@ -926,10 +927,10 @@ export function resolveQr(baseUrl: string, token: string): Promise<QrResolution>
   });
 }
 
-export function otpRequest(baseUrl: string, phone: string): Promise<OtpRequestResponse> {
+export function otpRequest(baseUrl: string, phone: string, region: string = "SG"): Promise<OtpRequestResponse> {
   return request(baseUrl, "/auth/customer/otp/request", {
     method: "POST",
-    body: JSON.stringify({ phone }),
+    body: JSON.stringify({ phone, region }),
   });
 }
 
@@ -937,11 +938,12 @@ export function otpVerify(
   baseUrl: string,
   phone: string,
   code: string,
-  full_name?: string
+  full_name?: string,
+  region: string = "SG"
 ): Promise<TokenResponse> {
   return request(baseUrl, "/auth/customer/otp/verify", {
     method: "POST",
-    body: JSON.stringify({ phone, code, full_name }),
+    body: JSON.stringify({ phone, code, full_name, region }),
   });
 }
 
