@@ -116,6 +116,28 @@ than (reimbursement gap + fee). **Design rule: total rake (FX spread + redemptio
 comfortably below the incremental value the network creates — benchmark ~2–3% (card-network
 range).** Above that you tax growth instead of enabling it.
 
+### 5a. "If A issues and B redeems, does B lose money?" — NO (the load-bearing rule)
+The merchant who **issues** coins funds them; the merchant who **honors** them is reimbursed —
+so B is always made whole. Mechanics:
+- **Fund-at-issuance + reserve.** When coins are earned at A, the platform **collects A's funding
+  (redeem value + spread) from A's settlement/payout** and holds it in a **reserve pool**. The
+  cash is in the pool *before* B ever redeems.
+- **Honorer reimbursed in full, in local currency.** When B honors a redemption, B is reimbursed
+  the **value it gave away** from the pool (the money A funded). **B is never out of pocket.**
+- **Platform margin never comes out of B's reimbursement.** It comes from (a) the **spread baked
+  into A's funding** and (b) B's **optional cross-merchant acquisition fee** — never by shorting
+  B. (Shorting B's reimbursement is the one anti-pattern to avoid.)
+- **Net effect:** A bears the loyalty cost *by choice* (retention spend, A sets its own earn
+  rate); B is reimbursed **and** gains incremental footfall (the redemption is usually a partial
+  discount on a larger order); platform earns spread + fee + **breakage** (A's funding stays in
+  the pool if coins are never redeemed); customer feels rewarded.
+- **Worked example** (100 coins = S$1): spend S$10 at A → A keeps S$10, funds S$1.05 (S$1 + 5%
+  spread), nets S$8.95. Redeem 100 coins at B → customer gets S$1 value, B reimbursed S$1.00
+  (− optional ~S$0.02 fee) on a larger order → B net-positive. Platform keeps ~S$0.07 + breakage.
+- **Guardrails:** opt-in acceptance + merchant-set earn rate mean neither A nor B is ever forced
+  into a losing position. Settlement is **fund-at-issuance**, not pay-on-redeem, so the pool is
+  never short.
+
 **Other standing risks (keep clean, not blockers):**
 - **Float & liability** — outstanding coins are a redeemable liability that moves with FX; need
   **expiry + reserve + breakage** discipline.
@@ -154,8 +176,11 @@ range).** Above that you tax growth instead of enabling it.
 - **FX rate table** (currency → `earn_rate`/`redeem_rate`, versioned) + manual-rate **admin screen**.
 - **Currency-stamped ledger** — every `RewardTransaction` records currency, FX rate, coins, local value.
 - **Earn** credits the one balance via FX × (merchant × coalition × platform multipliers).
-- **Redeem** = FX at burn + **settlement ledger** (honoring merchant reimbursed in local currency;
-  funding source; platform keeps the spread; **optional cross-merchant redemption fee field**).
+- **Earn also writes the funding leg** — debit the issuing merchant's settlement (redeem value +
+  spread) into the **reserve pool** (fund-at-issuance; see §5a).
+- **Redeem** = FX at burn + **settlement ledger** (honoring merchant **reimbursed in full** in
+  local currency *from the reserve pool*; platform keeps the spread; **optional cross-merchant
+  redemption fee** off the honorer — never shorting the reimbursement).
 - **Coalition = acceptance/economics ring**: opt-in accept-coins toggle (platform program default);
   named coalitions add boosted earn + shared catalog + private settlement.
 - **FX/fee P&L report** — *shows the spread + fees as revenue* (the monetization pitch slide).
