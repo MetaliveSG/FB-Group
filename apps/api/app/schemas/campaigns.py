@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.schemas.common import ORMModel
+from app.schemas.common import ORMModel, UtcDatetime
 
 CampaignTypeLit = Literal[
     "whatsapp_promo", "birthday", "winback", "weekday_boost", "new_customer_return", "vip_reward"
@@ -31,8 +31,8 @@ class CampaignCreateIn(BaseModel):
     segment_key: str | None = None
     message_template: str = Field(default="", max_length=1000)
     reward_points: int = Field(default=0, ge=0)
-    starts_at: datetime | None = None
-    ends_at: datetime | None = None
+    starts_at: UtcDatetime | None = None
+    ends_at: UtcDatetime | None = None
 
 
 class CampaignOut(ORMModel):
@@ -43,9 +43,9 @@ class CampaignOut(ORMModel):
     message_template: str
     reward_points: int
     is_active: bool
-    starts_at: datetime | None = None
-    ends_at: datetime | None = None
-    created_at: datetime
+    starts_at: UtcDatetime | None = None
+    ends_at: UtcDatetime | None = None
+    created_at: UtcDatetime
 
 
 class CampaignListItemOut(BaseModel):
@@ -54,7 +54,7 @@ class CampaignListItemOut(BaseModel):
     campaign_type: str
     segment_key: str | None = None
     is_active: bool
-    created_at: datetime
+    created_at: UtcDatetime
     metrics: CampaignMetricsOut
 
 
@@ -66,7 +66,7 @@ class MessageOut(ORMModel):
     status: str
     provider_ref: str | None = None
     attempts: int
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class CampaignDetailOut(BaseModel):

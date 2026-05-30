@@ -32,12 +32,24 @@ export function round2(n: number): number {
 }
 
 /**
+ * Parse an API timestamp as UTC, then let the browser render it in the user's local
+ * timezone. The API emits ISO-8601 with 'Z'; if any value arrives without a timezone
+ * marker we treat it as UTC (the backend stores UTC) — otherwise `new Date()` would
+ * read a bare "…T05:11:30" as *local* time (wrong across regions).
+ */
+export function parseApiDate(s: string): Date {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return new Date(s);              // date-only (e.g. birthday)
+  if (/[zZ]|[+-]\d{2}:?\d{2}$/.test(s)) return new Date(s);           // already has Z / offset
+  return new Date(s + "Z");                                          // bare datetime → assume UTC
+}
+
+/**
  * Format a date string to a human-readable local date.
  */
 export function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "—";
   try {
-    return new Date(dateStr).toLocaleDateString("en-SG", {
+    return parseApiDate(dateStr).toLocaleDateString("en-SG", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -77,7 +89,7 @@ export function churnColor(label: string): string {
  */
 export function relativeTime(dateStr: string | null | undefined, now: Date = new Date()): string {
   if (!dateStr) return "—";
-  const then = new Date(dateStr).getTime();
+  const then = parseApiDate(dateStr).getTime();
   if (Number.isNaN(then)) return "—";
   const diffSec = Math.round((now.getTime() - then) / 1000);
   if (diffSec < 0) return "soon";

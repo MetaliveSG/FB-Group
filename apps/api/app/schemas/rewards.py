@@ -6,7 +6,7 @@ from datetime import date, datetime
 from pydantic import BaseModel, Field
 
 from app.schemas.auth import _PhoneMixin
-from app.schemas.common import ORMModel
+from app.schemas.common import ORMModel, UtcDatetime
 
 
 class MyProfileOut(ORMModel):
@@ -35,21 +35,21 @@ class MyOrderOut(ORMModel):
     items_count: int
     summary: str
     outlet_name: str | None = None
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class MyVoucherOut(ORMModel):
     voucher_code: str
     reward_name: str
     status: str
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class RewardTxnOut(ORMModel):
     txn_type: str
     points: int
     reason: str
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class LoyaltySummaryOut(BaseModel):

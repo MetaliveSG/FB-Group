@@ -8,7 +8,24 @@ import {
   wheelTargetRotation,
   relativeTime,
   prettyStage,
+  parseApiDate,
 } from "./format";
+
+describe("parseApiDate (UTC)", () => {
+  const utcInstant = Date.UTC(2026, 4, 30, 5, 11, 30); // 2026-05-30T05:11:30Z
+  it("treats a bare (no-offset) timestamp as UTC", () => {
+    expect(parseApiDate("2026-05-30T05:11:30").getTime()).toBe(utcInstant);
+  });
+  it("honors an explicit Z", () => {
+    expect(parseApiDate("2026-05-30T05:11:30Z").getTime()).toBe(utcInstant);
+  });
+  it("honors an explicit offset (same instant)", () => {
+    expect(parseApiDate("2026-05-30T13:11:30+08:00").getTime()).toBe(utcInstant);
+  });
+  it("leaves a date-only value alone (no UTC shift)", () => {
+    expect(parseApiDate("1990-05-20").getTime()).toBe(new Date("1990-05-20").getTime());
+  });
+});
 
 describe("prettyStage", () => {
   it("title-cases single words", () => {

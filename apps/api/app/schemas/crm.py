@@ -5,7 +5,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
-from app.schemas.common import ORMModel
+from app.schemas.common import ORMModel, UtcDatetime
 
 
 class CustomerMetricsOut(ORMModel):
@@ -15,8 +15,8 @@ class CustomerMetricsOut(ORMModel):
     points_balance: int
     lifetime_points: int
     tier: str
-    first_visit_at: datetime | None = None
-    last_visit_at: datetime | None = None
+    first_visit_at: UtcDatetime | None = None
+    last_visit_at: UtcDatetime | None = None
     days_since_last_visit: int | None = None
     visits_per_month: float
     churn_risk: float
@@ -36,7 +36,7 @@ class CustomerSummaryOut(BaseModel):
     avg_spend: float
     visit_count: int
     points_balance: int
-    last_visit_at: datetime | None = None
+    last_visit_at: UtcDatetime | None = None
     days_since_last_visit: int | None = None
     churn_risk: float
     churn_label: str
@@ -56,8 +56,8 @@ class TaskOut(ORMModel):
     status: str
     priority: str
     assignee_user_id: str | None = None
-    created_at: datetime
-    completed_at: datetime | None = None
+    created_at: UtcDatetime
+    completed_at: UtcDatetime | None = None
 
 
 class TaskCreateIn(BaseModel):
@@ -77,7 +77,7 @@ class OwnerAssignIn(BaseModel):
 
 
 class TimelineEvent(BaseModel):
-    ts: datetime
+    ts: UtcDatetime
     type: str
     title: str
     detail: str = ""
@@ -96,8 +96,8 @@ class OpportunityOut(ORMModel):
     amount: float
     expected_close_date: date | None = None
     owner_user_id: str | None = None
-    closed_at: datetime | None = None
-    created_at: datetime
+    closed_at: UtcDatetime | None = None
+    created_at: UtcDatetime
 
 
 class OpportunityCreateIn(BaseModel):
@@ -136,16 +136,16 @@ class ActivityOut(ORMModel):
     activity_type: str
     subject: str
     body: str
-    occurred_at: datetime | None = None
+    occurred_at: UtcDatetime | None = None
     logged_by_user_id: str | None = None
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class ActivityCreateIn(BaseModel):
     activity_type: str = Field(pattern="^(call|email|meeting|whatsapp|note)$")
     subject: str = Field(min_length=1, max_length=200)
     body: str = Field(default="", max_length=1000)
-    occurred_at: datetime | None = None
+    occurred_at: UtcDatetime | None = None
 
 
 # --- Bulk actions ---
@@ -213,7 +213,7 @@ class OrderHistoryItem(ORMModel):
     tax: float = 0.0
     total: float
     items: list[OrderItemOut] = []
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class TransactionHistoryItem(ORMModel):
@@ -222,7 +222,7 @@ class TransactionHistoryItem(ORMModel):
     method: str = ""
     status: str = ""
     points_earned: int = 0
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class RewardHistoryItem(ORMModel):
@@ -230,14 +230,14 @@ class RewardHistoryItem(ORMModel):
     points: int
     reason: str
     rule_code: str | None = None
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class NoteOut(ORMModel):
     id: str
     body: str
     author_user_id: str | None = None
-    created_at: datetime
+    created_at: UtcDatetime
 
 
 class CustomerProfileOut(BaseModel):
