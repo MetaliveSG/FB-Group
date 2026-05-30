@@ -28,5 +28,6 @@ export {
   CreditCard,
   Utensils,
   PartyPopper,
+  Search,
 } from "lucide-react";
 export type { LucideIcon } from "lucide-react";

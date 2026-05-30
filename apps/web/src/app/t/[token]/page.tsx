@@ -20,8 +20,11 @@ import {
   setCustomerData,
 } from "@/lib/auth";
 import { formatSGD } from "@/lib/format";
-import { Button, Card, Sheet, Stepper, EmptyState, Icons } from "@/components/ui";
+import { filterMenuItems } from "@/lib/menu";
+import { Button, Card, Sheet, EmptyState, Icons } from "@/components/ui";
 import CustomerTabBar from "@/components/CustomerTabBar";
+import MenuCategoryNav from "@/components/MenuCategoryNav";
+import CustomiseSheet from "@/components/CustomiseSheet";
 import type {
   QrResolution,
   MenuItem,
@@ -91,22 +94,18 @@ function Banner({ qr, right }: { qr: QrResolution | null; right?: React.ReactNod
 function MenuItemCard({
   item,
   onAdd,
+  onCustomise,
 }: {
   item: MenuItem;
   onAdd: (item: MenuItem, modifierIds: string[], qty: number) => void;
+  onCustomise: (item: MenuItem) => void;
 }) {
-  const [selectedMods, setSelectedMods] = useState<string[]>([]);
-  const [qty, setQty] = useState(1);
-
-  function toggleMod(id: string) {
-    setSelectedMods((prev) => (prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]));
-  }
-  const modDelta = item.modifiers.filter((m) => selectedMods.includes(m.id)).reduce((s, m) => s + m.price_delta, 0);
   const available = item.is_available;
+  const hasOptions = item.modifiers.length > 0;
 
   return (
     <Card pad style={{ marginBottom: "var(--space-3)", opacity: available ? 1 : 0.55 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-3)" }}>
+      <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
         {item.image_url && (
           <img
             src={item.image_url}
@@ -125,52 +124,25 @@ function MenuItemCard({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>{item.name}</div>
           {item.description && item.description !== item.name && (
-            <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginTop: 2 }}>{item.description}</div>
+            <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{item.description}</div>
           )}
           <div style={{ marginTop: 6, fontWeight: 800, color: "var(--color-primary)" }}>
-            {formatSGD(item.price + modDelta)}
-            {modDelta !== 0 && (
-              <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", marginLeft: 4, fontWeight: 400 }}>
-                (base {formatSGD(item.price)})
-              </span>
+            {formatSGD(item.price)}
+            {hasOptions && (
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", marginLeft: 6, fontWeight: 400 }}>+ options</span>
             )}
           </div>
         </div>
-      </div>
-
-      {item.modifiers.length > 0 && (
-        <div style={{ marginTop: "var(--space-2)" }}>
-          <div className="modifier-list">
-            {item.modifiers.map((mod) => (
-              <button
-                key={mod.id}
-                className={`modifier-chip ${selectedMods.includes(mod.id) ? "selected" : ""}`}
-                onClick={() => toggleMod(mod.id)}
-                disabled={!available}
-              >
-                {mod.name}
-                {mod.price_delta !== 0 && (
-                  <span style={{ opacity: 0.7 }}> ({mod.price_delta > 0 ? "+" : ""}{formatSGD(mod.price_delta)})</span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-2)", marginTop: "var(--space-3)" }}>
-        <Stepper value={qty} onChange={setQty} />
         <Button
           size="sm"
           variant="primary"
           leftIcon={Icons.Plus}
           disabled={!available}
-          onClick={() => {
-            onAdd(item, selectedMods, qty);
-            setQty(1);
-          }}
+          style={{ flexShrink: 0, alignSelf: "center" }}
+          aria-label={hasOptions ? `Customise ${item.name}` : `Add ${item.name}`}
+          onClick={() => (hasOptions ? onCustomise(item) : onAdd(item, [], 1))}
         >
-          {available ? "Add" : "Unavailable"}
+          {available ? "Add" : "Sold out"}
         </Button>
       </div>
     </Card>
@@ -275,6 +247,9 @@ export default function TablePage() {
   const [cart, setCart] = useState<CartEntry[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [resumeCheckout, setResumeCheckout] = useState(false);
+  const [search, setSearch] = useState("");
+  const [activeCat, setActiveCat] = useState<string | null>(null);
+  const [customiseItem, setCustomiseItem] = useState<MenuItem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [customerToken, setCustomerTokenState] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState<string | null>(null);
@@ -334,6 +309,34 @@ export default function TablePage() {
     if (!cartLoaded.current) { cartLoaded.current = true; return; }
     try { localStorage.setItem(cartKey, JSON.stringify(cart)); } catch { /* quota/private mode */ }
   }, [cart, cartKey]);
+
+  // Scroll-spy: highlight the category whose section is nearest the top of the
+  // viewport (under the sticky header + category bar). Re-arms when the menu data
+  // loads or search is cleared (no sections while searching).
+  const categories = qrData?.menu.categories ?? [];
+  useEffect(() => {
+    if (step !== "menu" || search || categories.length < 2) return;
+    setActiveCat((prev) => prev ?? categories[0]?.id ?? null);
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const top = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (top) setActiveCat(top.target.getAttribute("data-cat"));
+      },
+      { rootMargin: "-120px 0px -65% 0px", threshold: 0 }
+    );
+    categories.forEach((c) => {
+      const el = document.getElementById(`menu-cat-${c.id}`);
+      if (el) obs.observe(el);
+    });
+    return () => obs.disconnect();
+  }, [step, search, qrData]);
+
+  const scrollToCat = useCallback((id: string) => {
+    setActiveCat(id);
+    document.getElementById(`menu-cat-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
 
   const addToCart = useCallback((item: MenuItem, modifierIds: string[], qty: number = 1) => {
     const addQty = Math.max(1, qty);
@@ -550,6 +553,8 @@ export default function TablePage() {
   // ── Menu ──
   const subtotal = cartTotal(cart);
   const count = cartCount(cart);
+  const allMenuItems = categories.flatMap((c) => c.items);
+  const filteredItems = filterMenuItems(allMenuItems, search);
 
   return (
     <Shell>
@@ -568,6 +573,15 @@ export default function TablePage() {
         }
       />
 
+      <MenuCategoryNav
+        categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+        activeCat={activeCat}
+        onSelect={scrollToCat}
+        search={search}
+        onSearch={setSearch}
+        showSearch={allMenuItems.length > 6}
+      />
+
       <main style={{ flex: 1, padding: "var(--space-4)", paddingBottom: count > 0 ? 172 : 92 }}>
         {customerName && (
           <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginBottom: "var(--space-3)" }}>
@@ -576,14 +590,24 @@ export default function TablePage() {
         )}
         {error && <div style={{ color: "var(--color-danger)", fontSize: "var(--text-sm)", marginBottom: "var(--space-3)" }}>{error}</div>}
 
-        {qrData?.menu.categories.map((cat: MenuCategory) => (
-          <section key={cat.id} style={{ marginBottom: "var(--space-5)" }}>
-            <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 800, margin: "0 0 var(--space-3)" }}>{cat.name}</h2>
-            {cat.items.map((item) => (
-              <MenuItemCard key={item.id} item={item} onAdd={addToCart} />
-            ))}
-          </section>
-        ))}
+        {search ? (
+          filteredItems.length === 0 ? (
+            <Card flush><EmptyState icon={Icons.Search} title="No matches">Try another dish or category.</EmptyState></Card>
+          ) : (
+            filteredItems.map((item) => (
+              <MenuItemCard key={item.id} item={item} onAdd={addToCart} onCustomise={setCustomiseItem} />
+            ))
+          )
+        ) : (
+          categories.map((cat: MenuCategory) => (
+            <section key={cat.id} id={`menu-cat-${cat.id}`} data-cat={cat.id} style={{ marginBottom: "var(--space-5)", scrollMarginTop: 64 }}>
+              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 800, margin: "0 0 var(--space-3)" }}>{cat.name}</h2>
+              {cat.items.map((item) => (
+                <MenuItemCard key={item.id} item={item} onAdd={addToCart} onCustomise={setCustomiseItem} />
+              ))}
+            </section>
+          ))
+        )}
       </main>
 
       {/* Cart CTA — floats just above the tab bar when the cart has items */}
@@ -638,6 +662,15 @@ export default function TablePage() {
           </>
         )}
       </Sheet>
+
+      {/* Customise sheet — opens when an item with options is tapped */}
+      {customiseItem && (
+        <CustomiseSheet
+          item={customiseItem}
+          onClose={() => setCustomiseItem(null)}
+          onAdd={addToCart}
+        />
+      )}
     </Shell>
   );
 }

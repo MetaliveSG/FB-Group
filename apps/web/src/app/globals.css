@@ -875,6 +875,96 @@ code {
   font-weight: 600;
 }
 
+/* ─── Menu redesign: sticky search + category bar (scroll-spy) ─────────────── */
+.menu-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-2) var(--space-4) var(--space-2);
+}
+.menu-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-surface-alt, #f1f1f1);
+  border-radius: var(--radius-pill);
+  padding: 8px 12px;
+  color: var(--color-text-muted);
+}
+.menu-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  /* 16px to avoid the iOS focus-zoom */
+  font-size: 16px;
+  color: var(--color-text);
+  font-family: var(--font);
+}
+.menu-search__clear {
+  display: inline-flex;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 2px;
+}
+.menu-cats {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin-top: 8px;
+  padding-bottom: 2px;
+}
+.menu-cats::-webkit-scrollbar { display: none; }
+.menu-cat {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.menu-cat--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+/* ─── Customise bottom-sheet ───────────────────────────────────────────────── */
+.customise__img {
+  width: 100%;
+  height: 170px;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-alt, #f1f1f1);
+  margin-bottom: var(--space-3);
+}
+.customise__title { font-size: var(--text-xl); font-weight: 800; }
+.customise__desc { font-size: var(--text-sm); color: var(--color-text-muted); margin-top: 2px; }
+.customise__base { margin-top: 6px; font-weight: 800; color: var(--color-primary); }
+.customise__group { margin-top: var(--space-4); }
+.customise__group-label {
+  font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 1;
+  color: var(--color-text-muted); font-weight: 700; margin-bottom: 6px;
+}
+.customise__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
 /* ─── Section divider ──────────────────────────────────────── */
 
 .section-title {
