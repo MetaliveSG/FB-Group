@@ -116,24 +116,40 @@ than (reimbursement gap + fee). **Design rule: total rake (FX spread + redemptio
 comfortably below the incremental value the network creates — benchmark ~2–3% (card-network
 range).** Above that you tax growth instead of enabling it.
 
+### 5z. Closed-loop is FREE — the platform only monetizes the NETWORK (LOCKED)
+The spread + redemption fee are a **clearing charge for moving value across a boundary**
+(merchant / region / platform). If nothing crosses a boundary, there is **no cut**:
+- **Same merchant** (all its brands, outlets, **and foodcourt stalls under one operator-merchant**)
+  → earn and redeem are closed-loop → **$0 spread, $0 fee.** It is the merchant's own loyalty,
+  run at the merchant's own cost (only the loyalty value it chose to give). The platform must NOT
+  tax a merchant's own program.
+- **Cross-merchant** (coalition acceptance, issuer ≠ honorer) → spread + optional fee apply.
+- **Cross-currency** (cross-region / cross-platform) → **FX spread on top**, only when the
+  currency differs.
+- **Fund-at-issuance funds the PAR value only** (reserve = credit-risk cover so a cross-merchant
+  redemption is always payable). **The spread is assessed only when the coin is actually redeemed
+  cross-merchant** — a same-merchant redemption simply reclaims the issuer's own funding (a wash).
+
 ### 5a. "If A issues and B redeems, does B lose money?" — NO (the load-bearing rule)
 The merchant who **issues** coins funds them; the merchant who **honors** them is reimbursed —
 so B is always made whole. Mechanics:
 - **Fund-at-issuance + reserve.** When coins are earned at A, the platform **collects A's funding
-  (redeem value + spread) from A's settlement/payout** and holds it in a **reserve pool**. The
-  cash is in the pool *before* B ever redeems.
+  (the PAR/redeem value) from A's settlement/payout** into a **reserve pool** — credit-risk cover
+  so a cross-merchant redemption is always payable. The spread is NOT taken here (see §5z).
 - **Honorer reimbursed in full, in local currency.** When B honors a redemption, B is reimbursed
   the **value it gave away** from the pool (the money A funded). **B is never out of pocket.**
-- **Platform margin never comes out of B's reimbursement.** It comes from (a) the **spread baked
-  into A's funding** and (b) B's **optional cross-merchant acquisition fee** — never by shorting
-  B. (Shorting B's reimbursement is the one anti-pattern to avoid.)
+- **Platform margin never comes out of B's reimbursement.** On a **cross-merchant** redemption it
+  comes from (a) the **clearing spread debited to A's funding** and (b) B's **optional acquisition
+  fee** — never by shorting B. (Shorting B's reimbursement is the one anti-pattern to avoid.)
 - **Net effect:** A bears the loyalty cost *by choice* (retention spend, A sets its own earn
   rate); B is reimbursed **and** gains incremental footfall (the redemption is usually a partial
   discount on a larger order); platform earns spread + fee + **breakage** (A's funding stays in
   the pool if coins are never redeemed); customer feels rewarded.
-- **Worked example** (100 coins = S$1): spend S$10 at A → A keeps S$10, funds S$1.05 (S$1 + 5%
-  spread), nets S$8.95. Redeem 100 coins at B → customer gets S$1 value, B reimbursed S$1.00
-  (− optional ~S$0.02 fee) on a larger order → B net-positive. Platform keeps ~S$0.07 + breakage.
+- **Worked example** (100 coins = S$1): spend S$10 at A → A keeps S$10, funds S$1.00 par into the
+  reserve, nets S$9.00. **Same-merchant redeem at A:** A reclaims the S$1.00 — wash, platform cut
+  $0. **Cross-merchant redeem at B:** B reimbursed S$1.00, platform debits A ~S$0.05 spread (+
+  optional ~S$0.02 fee off B) → B net-positive on a larger order, platform keeps ~S$0.07 +
+  breakage.
 - **Guardrails:** opt-in acceptance + merchant-set earn rate mean neither A nor B is ever forced
   into a losing position. Settlement is **fund-at-issuance**, not pay-on-redeem, so the pool is
   never short.
