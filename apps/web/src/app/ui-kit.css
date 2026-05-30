@@ -242,7 +242,7 @@
   max-width: 480px;
   margin: 0 auto;
   min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
   background: var(--color-bg);
@@ -250,5 +250,5 @@
 /* Full-height helper for shells that style their own background (e.g. the arcade). */
 .app-viewport {
   min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100svh;
 }

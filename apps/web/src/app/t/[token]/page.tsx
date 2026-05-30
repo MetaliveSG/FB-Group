@@ -274,6 +274,7 @@ export default function TablePage() {
   const [qrData, setQrData] = useState<QrResolution | null>(null);
   const [cart, setCart] = useState<CartEntry[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [resumeCheckout, setResumeCheckout] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customerToken, setCustomerTokenState] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState<string | null>(null);
@@ -434,6 +435,12 @@ export default function TablePage() {
               if (cust.full_name) setCustomerName(cust.full_name as string);
               setError(null);
               setStep("menu");
+              // If they came here from "Log in to Order", reopen the cart so they can
+              // pay straight away (now signed in → the sheet shows "Place Order").
+              if (resumeCheckout) {
+                setResumeCheckout(false);
+                setCartOpen(true);
+              }
             }}
           />
         </main>
@@ -531,7 +538,7 @@ export default function TablePage() {
           {error && <div style={{ color: "var(--color-danger)", fontSize: "var(--text-sm)", marginTop: "var(--space-3)" }}>{error}</div>}
         </main>
 
-        <div style={{ position: "sticky", bottom: 0, padding: "var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom))", background: "var(--color-surface)", borderTop: "1px solid var(--color-border)", boxShadow: "0 -2px 12px rgba(0,0,0,0.06)" }}>
+        <div style={{ position: "sticky", bottom: 0, padding: "var(--space-3) var(--space-4) calc(var(--tab-bar-h) + env(safe-area-inset-bottom))", background: "var(--color-surface)", borderTop: "1px solid var(--color-border)", boxShadow: "0 -2px 12px rgba(0,0,0,0.06)" }}>
           <Button block variant="primary" size="lg" leftIcon={Icons.CreditCard} onClick={doCheckout} loading={checkingOut}>
             Pay {formatSGD(order.total)}
           </Button>
@@ -626,7 +633,7 @@ export default function TablePage() {
             {customerToken ? (
               <Button block variant="primary" size="lg" loading={placingOrder} onClick={placeOrder}>Place Order</Button>
             ) : (
-              <Button block variant="primary" size="lg" onClick={() => { setCartOpen(false); setStep("auth"); }}>Log in to Order</Button>
+              <Button block variant="primary" size="lg" onClick={() => { setResumeCheckout(true); setCartOpen(false); setStep("auth"); }}>Log in to Order</Button>
             )}
           </>
         )}
