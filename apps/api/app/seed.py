@@ -535,6 +535,11 @@ def build_demo(db: Session) -> dict:
     # --- Merchant 5: Bedok Food Hall (foodcourt → stall directory, token 'foodhall-01') ---
     seed_foodhall(db)
 
+    # --- Org spine: mirror all entities into the member-tree-map (Phase 1) ---
+    from app.services.org_tree import sync_org_tree
+    sync_org_tree(db)
+    db.commit()
+
     return {
         "merchants": [m1.name, m2.name, m3.name, kampong.get("merchant_name", "Kampong Eats")],
         "merchant1_id": m1.id,
@@ -841,6 +846,16 @@ def seed_if_empty() -> dict | None:
         if db.scalar(select(func.count()).select_from(Merchant)):
             return None
         return build_demo(db)
+
+
+def ensure_org_tree() -> dict:
+    """Idempotently (re)build the org spine from the typed tables on a live DB. Safe to run
+    repeatedly; run after any structural change (new merchant/brand/outlet/stall)."""
+    from app.services.org_tree import sync_org_tree
+    with SessionLocal() as db:
+        counts = sync_org_tree(db)
+        db.commit()
+        return counts
 
 
 def ensure_foodhall() -> dict:
