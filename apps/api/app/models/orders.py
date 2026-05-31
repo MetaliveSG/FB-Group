@@ -25,6 +25,12 @@ class Order(PKMixin, TimestampMixin, Base):
     order_type: Mapped[str] = mapped_column(String(12), default=OrderType.DINE_IN.value)
     status: Mapped[str] = mapped_column(String(12), default=OrderStatus.PENDING.value, index=True)
 
+    # External-system reference (an Order is the first instance of the document+lines pattern;
+    # `source` = the originating system e.g. 'pos:qashier', `external_id` = its order id). Used by
+    # the POS integration API (Phase 3) to reconcile + dedup pushed orders. Null for native QR.
+    source: Mapped[str | None] = mapped_column(String(40), index=True)
+    external_id: Mapped[str | None] = mapped_column(String(80), index=True)
+
     subtotal: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     service_charge: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     tax: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))

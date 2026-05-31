@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, JSON, Numeric, String, Table, UniqueConstraint
+from sqlalchemy import Boolean, Column, ForeignKey, Index, Integer, JSON, Numeric, String, Table, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, PKMixin, TimestampMixin
@@ -76,16 +76,33 @@ class RewardRule(PKMixin, TimestampMixin, Base):
 
 
 class RewardTransaction(PKMixin, TimestampMixin, Base):
-    """Append-only points ledger entry (earn / redeem / adjust / expire)."""
+    """Append-only points ledger entry — the generic **posting** substrate (earn / redeem /
+    adjust / expire). Treated as the source of truth: `LoyaltyAccount.points_balance` is a
+    cache that must always equal `SUM(points)` for the account (see `engine.ledger_balance`).
+    Never mutate or delete a row; corrections are new compensating postings.
+
+    `loyalty_domain_id` stamps the loyalty domain the posting belongs to (the account's scope
+    today; a group-level domain once the org tree lands) — recorded at mint so cross-domain
+    economics are computable later without reconstructing history. `idempotency_key` makes a
+    single posting safely replay-proof (POS retries, webhooks); multi-line accrual is instead
+    deduped by `(account_id, order_id)` existence (see `engine.accrue_for_scope`)."""
 
     __tablename__ = "reward_transactions"
+    __table_args__ = (
+        UniqueConstraint("idempotency_key", name="uq_reward_txn_idempotency"),
+        Index("ix_reward_txn_acct_order_type", "account_id", "order_id", "txn_type"),
+    )
 
     account_id: Mapped[str] = mapped_column(ForeignKey("loyalty_accounts.id", ondelete="CASCADE"), index=True)
     order_id: Mapped[str | None] = mapped_column(ForeignKey("orders.id", ondelete="SET NULL"))
+    # Posting's loyalty domain (= account scope today). Stamped at mint, never reconstructed.
+    loyalty_domain_id: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     txn_type: Mapped[str] = mapped_column(String(12), nullable=False)  # RewardTxnType
     points: Mapped[int] = mapped_column(Integer, nullable=False)  # +earn / -redeem
     reason: Mapped[str] = mapped_column(String(160), default="")
     rule_code: Mapped[str | None] = mapped_column(String(48))
+    # Caller-supplied dedup key for a single posting (NULL = not deduped; many NULLs allowed).
+    idempotency_key: Mapped[str | None] = mapped_column(String(80))
     expires_at: Mapped[datetime | None] = mapped_column()
 
     account: Mapped["LoyaltyAccount"] = relationship(back_populates="transactions")

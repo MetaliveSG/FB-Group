@@ -10,10 +10,18 @@ from app.services.rewards import WHEEL_SPIN_COST
 
 # Per-merchant settings surfaced via /org/settings. Spin-cost defaults mirror the
 # service constants — a merchant can override them; the games read the override.
+#
+# Module flags (Phase 0c) — which parts of the suite a merchant has adopted. Recorded here
+# now; behaviour-gating wired in Phase 2. Backward-compatible defaults: rewards + QR on (every
+# current merchant uses them), POS off (opt-in, no external-POS integration yet). When the org
+# tree lands (Phase 1) these move to per-node org_node columns, inherited down the subtree.
 DEFAULTS = {
     "pipeline_enabled": True,
     "wheel_spin_cost": WHEEL_SPIN_COST,
     "jackpot_spin_cost": JACKPOT_SPIN_COST,
+    "rewards_enabled": True,
+    "qr_ordering_enabled": True,
+    "pos_enabled": False,
 }
 
 

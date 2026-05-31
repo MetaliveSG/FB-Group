@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import ConflictError, NotFoundError
 from app.core.logging import get_logger
-from app.loyalty.engine import TIER_THRESHOLDS, get_or_create_account
+from app.loyalty.engine import TIER_THRESHOLDS, get_or_create_account, record_reward_txn
 from app.models.engagement import RewardCatalogItem, WheelSegment
 from app.models.enums import RewardTxnType, RewardScope, WheelPrizeKind
 from app.models.identity import Customer
@@ -180,8 +180,8 @@ def redeem_catalog_item(db: Session, *, customer_id: str, merchant_id: str, item
         raise ConflictError("Insufficient points", code="insufficient_points")
 
     acct.points_balance -= item.cost_points
-    db.add(RewardTransaction(account_id=acct.id, txn_type=RewardTxnType.REDEEM.value,
-                             points=-item.cost_points, reason=f"Redeemed: {item.name}"))
+    record_reward_txn(db, account=acct, txn_type=RewardTxnType.REDEEM.value,
+                      points=-item.cost_points, reason=f"Redeemed: {item.name}")
     code = _voucher_code()
     db.add(RewardRedemption(account_id=acct.id, reward_name=item.name,
                             points_spent=item.cost_points, status="redeemed", voucher_code=code))
@@ -230,8 +230,8 @@ def spin_wheel(db: Session, *, customer_id: str, merchant_id: str) -> dict:
 
     # Spend the spin cost.
     acct.points_balance -= cost
-    db.add(RewardTransaction(account_id=acct.id, txn_type=RewardTxnType.REDEEM.value,
-                             points=-cost, reason="Wheel spin"))
+    record_reward_txn(db, account=acct, txn_type=RewardTxnType.REDEEM.value,
+                      points=-cost, reason="Wheel spin")
 
     # Weighted random selection.
     total = sum(max(s.weight, 0) for s in segs) or len(segs)
@@ -249,8 +249,8 @@ def spin_wheel(db: Session, *, customer_id: str, merchant_id: str) -> dict:
     if seg.prize_kind == WheelPrizeKind.POINTS.value and seg.prize_value > 0:
         acct.points_balance += seg.prize_value
         acct.lifetime_points += seg.prize_value
-        db.add(RewardTransaction(account_id=acct.id, txn_type=RewardTxnType.EARN.value,
-                                 points=seg.prize_value, reason=f"Wheel prize: {seg.label}"))
+        record_reward_txn(db, account=acct, txn_type=RewardTxnType.EARN.value,
+                          points=seg.prize_value, reason=f"Wheel prize: {seg.label}")
         prize["points"] = seg.prize_value
     elif seg.prize_kind == WheelPrizeKind.VOUCHER.value:
         code = _voucher_code()

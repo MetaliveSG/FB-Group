@@ -1,2 +1,4 @@
-.........................................................                [100%]
-129 passed in 122.63s (0:02:02)
+140 passed (Phase 0a-0d: +11 tests on baseline 129)
+  test_loyalty_ledger.py (6): domain stamp, coalition stamp, balance==SUM(ledger) recon, idempotent accrual, keyless-not-deduped, idempotency-key dup rejected
+  test_order_external_ref.py (2): external ref + POS channel persisted; native order null ref
+  test_module_flags_boundaries.py (3): module flags default/override; boundary resolvers

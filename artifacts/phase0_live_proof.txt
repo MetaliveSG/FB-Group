@@ -1,0 +1,11 @@
+Phase 0 — live Postgres verification (2026-05-31)
+Migrations applied on live DB (real seed data):
+  j6f7g8stallmenu -> k7h8i9ledger -> l8i9j0orderref  (clean)
+
+1. reward_transactions: 640 total, 0 NULL loyalty_domain_id   (backfill OK)
+2. stamp <> account scope: 0 mismatches                       (correct backfill)
+3. accounts where points_balance <> SUM(ledger): 0            (RECONCILIATION HOLDS)
+4. orders.source + orders.external_id: present
+5. uq_reward_txn_idempotency constraint: present
+
+Backend suite: 140 passed. Web: 45 passed (unchanged). Behaviour-neutral.

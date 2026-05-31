@@ -28,6 +28,7 @@ class AuthProvider(str, Enum):
 class OrderChannel(str, Enum):
     QR = "qr"
     CASHIER = "cashier"
+    POS = "pos"  # pushed in from a merchant's external POS (integrations API, Phase 3)
 
 
 class OrderType(str, Enum):

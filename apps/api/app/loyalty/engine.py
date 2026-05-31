@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ConflictError
@@ -59,6 +59,61 @@ class EarnBreakdown:
     def total(self) -> int:
         subtotal = self.base + self.first_visit + self.birthday + self.repeat_visit
         return int(round(subtotal * self.multiplier))
+
+
+def record_reward_txn(
+    db: Session,
+    *,
+    account: LoyaltyAccount,
+    txn_type: str,
+    points: int,
+    reason: str = "",
+    rule_code: str | None = None,
+    order_id: str | None = None,
+    expires_at: datetime | None = None,
+    idempotency_key: str | None = None,
+) -> RewardTransaction:
+    """Single entry point for the append-only points ledger (the posting substrate).
+
+    Every posting MUST go through here so the loyalty-domain stamp can never be forgotten:
+    `loyalty_domain_id` is derived from the account's scope. Callers still own the balance
+    mutation on `account` — this only appends the immutable ledger row.
+    """
+    txn = RewardTransaction(
+        account_id=account.id,
+        loyalty_domain_id=account.scope_id,
+        order_id=order_id,
+        txn_type=txn_type,
+        points=points,
+        reason=reason,
+        rule_code=rule_code,
+        expires_at=expires_at,
+        idempotency_key=idempotency_key,
+    )
+    db.add(txn)
+    return txn
+
+
+def ledger_balance(db: Session, account_id: str) -> int:
+    """Authoritative balance = SUM of the append-only ledger for an account. The cached
+    `LoyaltyAccount.points_balance` must always equal this (enforced by tests)."""
+    return int(db.scalar(
+        select(func.coalesce(func.sum(RewardTransaction.points), 0))
+        .where(RewardTransaction.account_id == account_id)
+    ) or 0)
+
+
+def _already_accrued(db: Session, *, account_id: str, order_id: str) -> int | None:
+    """Idempotency: if this (account, order) already has EARN postings, return the points
+    already earned so a replay (retry, double-submit, POS resend) does not double-credit."""
+    total = db.scalar(
+        select(func.coalesce(func.sum(RewardTransaction.points), 0)).where(
+            RewardTransaction.account_id == account_id,
+            RewardTransaction.order_id == order_id,
+            RewardTransaction.txn_type == RewardTxnType.EARN.value,
+        )
+    )
+    return int(total) if total else None
 
 
 def get_or_create_account(db: Session, *, customer_id: str, scope_type: str, scope_id: str,
@@ -149,6 +204,17 @@ def accrue_for_scope(
     """Apply all active rules for one scope (merchant or coalition); returns points earned."""
     now = now or utcnow()
     acct = get_or_create_account(db, customer_id=customer.id, scope_type=scope_type, scope_id=scope_id)
+
+    # Idempotency: a replayed order (retry / double-submit) must not double-accrue. Keyed by
+    # (account, order); skipped for keyless accrual (order_id is None — e.g. manual/test paths).
+    if order_id is not None:
+        prior = _already_accrued(db, account_id=acct.id, order_id=order_id)
+        if prior is not None:
+            logger.info("loyalty_accrue_idempotent_skip", extra={"extra": {
+                "account_id": acct.id, "scope_id": scope_id, "order_id": order_id,
+                "already_earned": prior}})
+            return prior
+
     is_first = acct.visit_count == 0
     next_count = acct.visit_count + 1
     rules = _active_rules(db, scope_type, scope_id, now)
@@ -157,16 +223,17 @@ def accrue_for_scope(
         customer=customer, now=now,
     )
 
-    # Ledger entries (one per contributing rule line, multiplier applied proportionally).
-    earned = bd.total
+    # Ledger is the source of truth: write one posting per contributing rule line (multiplier
+    # applied proportionally) and derive `earned` from the SUM of those postings, so the cached
+    # balance can never drift from the ledger by per-line rounding.
+    earned = 0
     for code, pts, reason in bd.lines:
         scaled = int(round(pts * bd.multiplier))
         if scaled == 0:
             continue
-        db.add(RewardTransaction(
-            account_id=acct.id, order_id=order_id, txn_type=RewardTxnType.EARN.value,
-            points=scaled, reason=reason, rule_code=code,
-        ))
+        record_reward_txn(db, account=acct, txn_type=RewardTxnType.EARN.value,
+                          points=scaled, reason=reason, rule_code=code, order_id=order_id)
+        earned += scaled
 
     acct.points_balance += earned
     acct.lifetime_points += earned
@@ -225,10 +292,8 @@ def redeem(
     if account.points_balance < points:
         raise ConflictError("Insufficient points", code="insufficient_points")
     account.points_balance -= points
-    db.add(RewardTransaction(
-        account_id=account.id, order_id=order_id, txn_type=RewardTxnType.REDEEM.value,
-        points=-points, reason=f"Redeemed: {reward_name}",
-    ))
+    record_reward_txn(db, account=account, txn_type=RewardTxnType.REDEEM.value,
+                      points=-points, reason=f"Redeemed: {reward_name}", order_id=order_id)
     redemption = RewardRedemption(
         account_id=account.id, order_id=order_id, reward_name=reward_name, points_spent=points,
     )

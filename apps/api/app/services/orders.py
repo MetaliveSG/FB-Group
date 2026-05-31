@@ -26,6 +26,7 @@ from app.models.identity import Customer
 from app.models.orders import Order, OrderItem
 from app.models.payments import Payment, Transaction
 from app.models.tenancy import Outlet
+from app.services import boundaries
 
 
 @dataclass
@@ -60,6 +61,8 @@ def create_order(
     channel: OrderChannel = OrderChannel.QR,
     order_type: OrderType = OrderType.DINE_IN,
     created_by_user_id: str | None = None,
+    source: str | None = None,
+    external_id: str | None = None,
 ) -> Order:
     if not items:
         raise ConflictError("Order must contain at least one item", code="empty_order")
@@ -76,6 +79,8 @@ def create_order(
         order_type=order_type.value,
         status=OrderStatus.PENDING.value,
         placed_at=utcnow(),
+        source=source,
+        external_id=external_id,
     )
     db.add(order)
     db.flush()
@@ -169,8 +174,10 @@ def checkout(
     if not success:
         return CheckoutResult(payment=payment, transaction=None, points_earned=0)
 
+    # Settle to the resolved settlement account (= the merchant today; Phase 2 resolves the
+    # venue's settlement_mode). Routed through the boundary seam so the call site never changes.
     txn = Transaction(
-        merchant_id=order.merchant_id,
+        merchant_id=boundaries.settlement_account_id(db, order=order),
         outlet_id=order.outlet_id,
         customer_id=order.customer_id,
         order_id=order.id,

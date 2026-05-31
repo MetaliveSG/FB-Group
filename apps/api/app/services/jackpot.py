@@ -26,10 +26,10 @@ from sqlalchemy.orm import Session
 from app.core.errors import ConflictError, NotFoundError
 from app.core.logging import get_logger
 from app.db.base import utcnow
-from app.loyalty.engine import get_or_create_account
+from app.loyalty.engine import get_or_create_account, record_reward_txn
 from app.models.engagement import JackpotPrize
 from app.models.enums import RewardScope, RewardTxnType
-from app.models.loyalty import RewardRedemption, RewardTransaction
+from app.models.loyalty import RewardRedemption
 from app.models.tenancy import Merchant
 
 logger = get_logger("app.jackpot")
@@ -165,10 +165,8 @@ def play_jackpot(db: Session, *, customer_id: str, merchant_id: str) -> dict:
                 "balance": acct.points_balance, "cost": spin_cost}})
             raise ConflictError("Insufficient points to play", code="insufficient_points")
         acct.points_balance -= spin_cost
-        db.add(RewardTransaction(
-            account_id=acct.id, txn_type=RewardTxnType.REDEEM.value,
-            points=-spin_cost, reason="Jackpot spin",
-        ))
+        record_reward_txn(db, account=acct, txn_type=RewardTxnType.REDEEM.value,
+                          points=-spin_cost, reason="Jackpot spin")
 
     # 2. Weighted outcome (lose vs win-which-item) — server is authoritative.
     item_weights_total = sum(max(p.weight, 0) for p in prizes) or len(prizes)
