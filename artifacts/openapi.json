@@ -9986,6 +9986,11 @@
             "type": "boolean",
             "title": "Pos Enabled",
             "default": false
+          },
+          "can_manage_merchant": {
+            "type": "boolean",
+            "title": "Can Manage Merchant",
+            "default": false
           }
         },
         "type": "object",
@@ -9993,7 +9998,7 @@
           "pipeline_enabled"
         ],
         "title": "NavFlagsOut",
-        "description": "Minimal, non-sensitive UI toggles any staff member may read to render nav \u2014\ndeliberately omits economic config (spin costs, earn rates). Full settings stay\nowner-only (`merchant.manage`); these \"which features the venue runs\" booleans are\nalready public (the anonymous QR context exposes rewards/ordering to diners)."
+        "description": "Minimal, non-sensitive UI toggles any staff member may read to render nav \u2014\ndeliberately omits economic config (spin costs, earn rates). Full settings stay\nowner-only (`merchant.manage`); these \"which features the venue runs\" booleans are\nalready public (the anonymous QR context exposes rewards/ordering to diners).\n\n`can_manage_merchant` is the caller's capability (holds `merchant.manage` \u2192 owner or\noperator), so the client can hide owner-only nav (Settings / Team) without a second call."
       },
       "NoteCreate": {
         "properties": {

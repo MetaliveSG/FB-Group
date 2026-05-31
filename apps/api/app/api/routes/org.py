@@ -41,7 +41,11 @@ def _mid(scope, merchant_id, perm):
 @router.get("/nav-flags", response_model=NavFlagsOut)
 def get_nav_flags(merchant_id: str | None = Query(None), scope=Depends(get_scope), db: Session = Depends(get_db)):
     mid = _mid(scope, merchant_id, "order.view")
-    return merchant_settings.get_nav_flags(db, merchant_id=mid)
+    flags = merchant_settings.get_nav_flags(db, merchant_id=mid)
+    # Capability for client nav-gating: whether the caller may manage merchant-level config
+    # (true for the owner + an operator drilled into the merchant). Lets the UI hide
+    # owner-only nav without exposing the settings themselves.
+    return {**flags, "can_manage_merchant": scope.can("merchant.manage", mid)}
 
 
 @router.get("/settings", response_model=SettingsOut)

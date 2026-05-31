@@ -68,11 +68,15 @@ class NavFlagsOut(BaseModel):
     """Minimal, non-sensitive UI toggles any staff member may read to render nav —
     deliberately omits economic config (spin costs, earn rates). Full settings stay
     owner-only (`merchant.manage`); these "which features the venue runs" booleans are
-    already public (the anonymous QR context exposes rewards/ordering to diners)."""
+    already public (the anonymous QR context exposes rewards/ordering to diners).
+
+    `can_manage_merchant` is the caller's capability (holds `merchant.manage` → owner or
+    operator), so the client can hide owner-only nav (Settings / Team) without a second call."""
     pipeline_enabled: bool
     rewards_enabled: bool = True
     qr_ordering_enabled: bool = True
     pos_enabled: bool = False
+    can_manage_merchant: bool = False
 
 
 class SettingsUpdateIn(BaseModel):

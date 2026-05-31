@@ -36,6 +36,9 @@ export default function MerchantSidebar({
   const [operator, setOperator] = useState<OperatorMerchant | null>(null);
   // Default to showing Pipeline until settings load (avoids a flicker-hide).
   const [pipelineEnabled, setPipelineEnabled] = useState(true);
+  // Owner-only nav (Settings / Team) stays hidden until we confirm the caller can manage
+  // the merchant — the safe default for a permission-gated link (don't flash what they can't use).
+  const [canManage, setCanManage] = useState(false);
 
   useEffect(() => {
     setOperator(getOperatorMerchant());
@@ -51,10 +54,12 @@ export default function MerchantSidebar({
       if (!t) return;
       getNavFlags(getApiBase(), t, getOperatorMerchant()?.id)
         .then((s) => {
-          if (!cancelled) setPipelineEnabled(s.pipeline_enabled);
+          if (cancelled) return;
+          setPipelineEnabled(s.pipeline_enabled);
+          setCanManage(s.can_manage_merchant);
         })
         .catch(() => {
-          /* keep default (shown) on error */
+          /* keep defaults (pipeline shown, owner-only nav hidden) on error */
         });
     }
     refresh();
@@ -141,24 +146,28 @@ export default function MerchantSidebar({
           >
             Menu Editor
           </a>
-          <a
-            className={`sidebar-link ${active === "team" ? "active" : ""}`}
-            href="/merchant/team"
-          >
-            Team
-          </a>
+          {canManage && (
+            <a
+              className={`sidebar-link ${active === "team" ? "active" : ""}`}
+              href="/merchant/team"
+            >
+              Team
+            </a>
+          )}
           <a
             className={`sidebar-link ${active === "tasks" ? "active" : ""}`}
             href="/merchant/tasks"
           >
             My Tasks
           </a>
-          <a
-            className={`sidebar-link ${active === "settings" ? "active" : ""}`}
-            href="/merchant/settings"
-          >
-            Settings
-          </a>
+          {canManage && (
+            <a
+              className={`sidebar-link ${active === "settings" ? "active" : ""}`}
+              href="/merchant/settings"
+            >
+              Settings
+            </a>
+          )}
           {!operator && (
             <a className="sidebar-link" href="/">
               ← Customer Demo

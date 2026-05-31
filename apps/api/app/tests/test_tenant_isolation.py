@@ -87,8 +87,11 @@ def test_downline_manager_isolated_from_merchant_settings(client, db):
     # Nav flags: allowed (the only thing the sidebar needs) — and it carries no economic config.
     nav = client.get("/api/v1/org/nav-flags", headers=H(mgrtok))
     assert nav.status_code == 200
-    assert set(nav.json()) == {"pipeline_enabled", "rewards_enabled", "qr_ordering_enabled", "pos_enabled"}
+    assert set(nav.json()) == {"pipeline_enabled", "rewards_enabled", "qr_ordering_enabled",
+                               "pos_enabled", "can_manage_merchant"}
     assert "wheel_spin_cost" not in nav.json()  # spin costs never exposed to downline
+    # Capability flag is False for a downline manager → client hides owner-only nav (Settings/Team).
+    assert nav.json()["can_manage_merchant"] is False
 
     # Full settings + loyalty program: READ blocked (this is the hardened boundary).
     assert client.get("/api/v1/org/settings", headers=H(mgrtok)).status_code == 403
@@ -102,9 +105,11 @@ def test_downline_manager_isolated_from_merchant_settings(client, db):
 
 
 def test_owner_still_reads_full_settings_and_nav_flags(client, db):
-    """The split must not lock out the owner: owner reads both full settings and nav-flags."""
+    """The split must not lock out the owner: owner reads both full settings and nav-flags,
+    and the nav capability flag is True (so the client shows owner-only nav)."""
     a = make_world(db, name="AlphaCo", token_suffix="A")
     otok = staff_token(client, a.owner_email)
     assert client.get("/api/v1/org/settings", headers=H(otok)).status_code == 200
     assert client.get("/api/v1/org/loyalty", headers=H(otok)).status_code == 200
-    assert client.get("/api/v1/org/nav-flags", headers=H(otok)).status_code == 200
+    nav = client.get("/api/v1/org/nav-flags", headers=H(otok))
+    assert nav.status_code == 200 and nav.json()["can_manage_merchant"] is True

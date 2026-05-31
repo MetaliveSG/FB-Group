@@ -642,14 +642,14 @@ export default function OperatorConsolePage() {
         }}
       >
         <h2 className="card-title" style={{ fontSize: 18 }}>
-          Platform Operators
+          Operators
         </h2>
         <button className="btn btn-primary btn-sm" onClick={() => setShowOpForm((s) => !s)}>
           {showOpForm ? "Cancel" : "+ Add Operator"}
         </button>
       </div>
       <p style={{ fontSize: 13, color: "var(--color-text-muted)", marginTop: 0, marginBottom: 14 }}>
-        Operators are platform super-admins with full access to this console.
+        Operators have full super-admin access to this console.
       </p>
 
       {showOpForm && (

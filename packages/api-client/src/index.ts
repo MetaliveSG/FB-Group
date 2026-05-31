@@ -577,6 +577,8 @@ export interface NavFlags {
   rewards_enabled: boolean;
   qr_ordering_enabled: boolean;
   pos_enabled: boolean;
+  /** Caller holds `merchant.manage` (owner or operator) — gate owner-only nav (Settings/Team) on this. */
+  can_manage_merchant: boolean;
 }
 
 export interface LoyaltyProgram {
