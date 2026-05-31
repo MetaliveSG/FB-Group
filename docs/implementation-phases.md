@@ -33,7 +33,7 @@ descendants · `merchant.settings` JSON · Menu-as-stall foodcourt model.
 ## Phase 0 — Foundational seams · ✅ DONE (2026-05-31)
 
 Behaviour-neutral; lays the irreversible bits so everything else is additive. Kept all
-tests green (152 backend / 45 web at completion).
+tests green throughout (140 backend at Phase 0 completion; suite has since grown).
 
 - **0a — Domain-stamp the ledger.** Add `loyalty_domain_id` to `RewardTransaction` (= `scope_id`
   today) + an **idempotency key**. Add an invariant test: `points_balance == SUM(ledger)`.
@@ -68,13 +68,19 @@ tests green (152 backend / 45 web at completion).
   `/my-tester` (two-world isolation + subtree cascade), `/my-ops` (deploy verify).
 - **Exit:** validated against NTUC/BreadTalk + aircon/non-aircon fixtures before cutover.
 
-## Phase 2 — Boundaries + modular gating live · ~1 week
+## Phase 2 — Boundaries + modular gating · 🟡 PARTIAL (2026-05-31)
 
-- `settlement_account_id` + per-venue `settlement_mode` (operator vs per_stall); orders/payments
-  settle to the resolved account. `LoyaltyDomain` first-class (default 1:1 with merchant).
-- Module flags now **gate behaviour**: QR resolver branches (menu vs earn/rewards screen); POS
-  roles + settlement exist only when `pos_enabled`.
-- **Handoffs:** `/my-security-audit` (settlement scoping), `/my-tester`.
+- ✅ **2a Module gating (done):** flags gate behaviour server-side — `rewards_enabled` off → no
+  accrual; `qr_ordering_enabled` off → QR orders rejected (`ordering_disabled`) + inline menu
+  suppressed; `QrContextOut` exposes the flags. (`pos_enabled` gating is forward-looking — POS
+  surfaces arrive in Phase 3.)
+- ✅ **2c Rewards-only QR landing (done):** customer page shows an earn/rewards EmptyState when
+  `ordering_enabled` is false.
+- ⏸️ **2b Settlement (`settlement_mode` operator vs per_stall) — DEFERRED, GTM-gated:** per-stall
+  *routing* needs the operator-vs-independent-vendor decision + one-order-per-stall +
+  stalls-as-payees + Phase 3 payments. The Phase 0d boundary seam already covers attribution
+  (resolves to merchant today). Build when the GTM call is made.
+- **Handoffs:** `/my-security-audit` (gating is server-enforced, low surface — done), `/my-tester` (done).
 
 ## Phase 3 — POS integration API · ~1–1.5 weeks
 

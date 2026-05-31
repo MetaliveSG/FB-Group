@@ -1,4 +1,3 @@
-152 passed (backend) — Phase 0 + Phase 1
-45 passed (frontend, unchanged — Phase 0/1 are backend-only)
-New test files: test_loyalty_ledger.py(7), test_order_external_ref.py(2),
-  test_module_flags_boundaries.py(3), test_org_tree.py(8), test_rbac_node_cascade.py(3)
+157 passed (backend) — through Phase 2a
+45 passed (frontend)
+New since Phase 1: test_module_gating.py (5) — rewards/qr_ordering flags gate behaviour, per-merchant.

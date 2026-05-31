@@ -28,7 +28,7 @@ Token response: `{access_token, refresh_token, token_type, actor, customer?, use
 ## QR + Menu (Modules 3, 4)
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| GET | `/api/v1/qr/{token}` | – | dining context + `is_foodcourt`/`stalls[]`; inline `menu` for single-stall, null for foodcourt |
+| GET | `/api/v1/qr/{token}` | – | dining context + `is_foodcourt`/`stalls[]`; inline `menu` for single-stall, null for foodcourt; module flags `ordering_enabled`/`rewards_enabled` (Phase 2 — rewards-only when ordering off) |
 | GET | `/api/v1/qr/{token}/menu/{menu_id}` | – | full menu for one stall, validated to the token's outlet (cross-outlet → 404 `menu_not_found`) |
 | GET | `/api/v1/outlets/{outlet_id}/menu` | – | menu only |
 

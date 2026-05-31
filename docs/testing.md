@@ -6,10 +6,10 @@ cd apps/api && .venv/bin/python -m pytest -v      # full backend suite
 ```
 Tests use an isolated in-memory SQLite DB (StaticPool) shared between the test
 session and the FastAPI `TestClient`, with RBAC seeded and rate-limiter/OTP reset per
-test (`app/tests/conftest.py`). Latest run: **152 passed** across 29 files (see
+test (`app/tests/conftest.py`). Latest run: **157 passed** across 30 files (see
 `artifacts/pytest_results.txt`). Frontend: **45 Vitest tests**.
 
-## Coverage by file (152 backend tests)
+## Coverage by file (157 backend tests)
 | File | Module(s) | What it proves |
 |---|---|---|
 | `test_health.py` | 12 | health endpoint + secure headers |
@@ -36,6 +36,7 @@ test (`app/tests/conftest.py`). Latest run: **152 passed** across 29 files (see
 | `test_module_flags_boundaries.py` | 0c/0d | module flags default/override (rewards/qr/pos) + boundary resolvers (= merchant today) |
 | `test_org_tree.py` | 1 | **org spine** (Phase 1): one node/entity, parent/depth/path, `sellable_under` + spine-backed stall resolution + fallback, network scope, **two-world path-prefix isolation** |
 | `test_rbac_node_cascade.py` | 1, 10 | **RBAC node cascade** (Phase 1c): `outlet_ids_under` excludes sibling brand + other merchant; brand-manager limited to brand outlets e2e |
+| `test_module_gating.py` | 2a | **module gating** (Phase 2a): rewards_enabled off → 0 coins; qr_ordering_enabled off → 409 `ordering_disabled` + QR context flag; per-merchant isolation |
 | `test_platform.py` | operator | ecosystem overview, merchant directory, **non-operator blocked**, onboard merchant, suspend, coalitions |
 | `test_permissions.py` | 1, 10 | super admin all, **merchant can't see another**, **outlet manager scoped**, staff lacks CRM, **audit log** |
 | `test_e2e_capture_loop.py` | 1-11 | golden flow end-to-end (below) |
