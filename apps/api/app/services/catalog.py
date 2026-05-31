@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.errors import NotFoundError
@@ -11,15 +11,50 @@ from app.core.money import money
 from app.models.catalog import Menu, MenuCategory, MenuItem, MenuModifier
 from app.models.tenancy import Outlet
 
+_MENU_LOAD = selectinload(Menu.categories).selectinload(MenuCategory.items).selectinload(MenuItem.modifiers)
+
 
 def get_active_menu(db: Session, outlet_id: str) -> Menu:
     menu = db.scalar(
         select(Menu)
         .where(Menu.outlet_id == outlet_id, Menu.is_active.is_(True))
-        .options(selectinload(Menu.categories).selectinload(MenuCategory.items).selectinload(MenuItem.modifiers))
+        .order_by(Menu.sort_order, Menu.id)
+        .options(_MENU_LOAD)
     )
     if not menu:
         raise NotFoundError("No active menu for this outlet", code="no_menu")
+    return menu
+
+
+def list_outlet_menus(db: Session, outlet_id: str) -> list[Menu]:
+    """All active menus (stalls) at an outlet, ordered. One for a single stall/restaurant,
+    many for a foodcourt — the frontend shows a stall directory when there is >1."""
+    return list(db.scalars(
+        select(Menu)
+        .where(Menu.outlet_id == outlet_id, Menu.is_active.is_(True))
+        .order_by(Menu.sort_order, Menu.id)
+    ).all())
+
+
+def menu_item_count(db: Session, menu_id: str) -> int:
+    return db.scalar(
+        select(func.count(MenuItem.id))
+        .select_from(MenuItem)
+        .join(MenuCategory, MenuItem.category_id == MenuCategory.id)
+        .where(MenuCategory.menu_id == menu_id, MenuItem.is_available.is_(True))
+    ) or 0
+
+
+def get_outlet_menu(db: Session, outlet_id: str, menu_id: str) -> Menu:
+    """Full menu (categories+items+modifiers) for a specific stall, validated to belong
+    to the given outlet — so a QR token can only reach menus at its own outlet."""
+    menu = db.scalar(
+        select(Menu)
+        .where(Menu.id == menu_id, Menu.outlet_id == outlet_id, Menu.is_active.is_(True))
+        .options(_MENU_LOAD)
+    )
+    if not menu:
+        raise NotFoundError("Stall menu not found", code="menu_not_found")
     return menu
 
 

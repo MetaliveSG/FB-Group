@@ -985,6 +985,37 @@ code {
   margin-top: var(--space-5);
 }
 
+/* ─── Foodcourt: stall directory + back bar ────────────────────────────────── */
+.stall-grid { display: flex; flex-direction: column; gap: var(--space-3); }
+.stall-card {
+  display: flex; align-items: center; gap: var(--space-3); width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+  background: var(--color-surface); box-shadow: var(--shadow-sm);
+  cursor: pointer; text-align: left; font-family: var(--font);
+}
+.stall-card:active:not(:disabled) { background: var(--color-surface-alt); }
+.stall-card--closed { opacity: 0.55; cursor: not-allowed; }
+.stall-card__logo {
+  width: 56px; height: 56px; flex-shrink: 0; display: grid; place-items: center;
+  font-size: 30px; background: var(--color-surface-alt); border-radius: var(--radius-md);
+}
+.stall-card__body { flex: 1; min-width: 0; }
+.stall-card__name { font-weight: 800; font-size: var(--text-base); }
+.stall-card__meta { font-size: var(--text-sm); color: var(--color-text-muted); margin-top: 2px; }
+.stall-card__chev { color: var(--color-text-muted); flex-shrink: 0; }
+.stall-card__closed-tag { font-size: var(--text-xs); font-weight: 700; color: var(--color-danger); flex-shrink: 0; }
+
+.stall-backbar {
+  position: sticky; top: 0; z-index: 101;
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  padding: var(--space-2) var(--space-4);
+  border: none; border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface); color: var(--color-primary);
+  font-weight: 700; font-size: var(--text-sm); cursor: pointer;
+}
+.stall-backbar__name { margin-left: auto; color: var(--color-text); font-weight: 800; }
+
 /* ─── Section divider ──────────────────────────────────────── */
 
 .section-title {

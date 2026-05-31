@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   resolveQr,
+  resolveStallMenu,
   otpRequest,
   otpVerify,
   createOrder,
@@ -21,15 +22,18 @@ import {
 } from "@/lib/auth";
 import { formatSGD } from "@/lib/format";
 import { filterMenuItems } from "@/lib/menu";
-import { Button, Card, Sheet, EmptyState, Icons } from "@/components/ui";
+import { Button, Card, Sheet, EmptyState, Skeleton, Icons } from "@/components/ui";
 import CustomerTabBar from "@/components/CustomerTabBar";
 import MenuCategoryNav from "@/components/MenuCategoryNav";
 import CustomiseSheet from "@/components/CustomiseSheet";
 import CountrySelect, { DEFAULT_REGION } from "@/components/CountrySelect";
+import StallDirectory from "@/components/StallDirectory";
 import type {
   QrResolution,
+  Menu,
   MenuItem,
   MenuCategory,
+  StallRef,
   OrderOut,
   CheckoutResponse,
   PaymentMethod,
@@ -255,6 +259,9 @@ export default function TablePage() {
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [customiseItem, setCustomiseItem] = useState<MenuItem | null>(null);
+  // Foodcourt: which stall (menu) is being browsed, and its fetched full menu.
+  const [selectedStall, setSelectedStall] = useState<StallRef | null>(null);
+  const [stallMenu, setStallMenu] = useState<Menu | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [customerToken, setCustomerTokenState] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState<string | null>(null);
@@ -315,10 +322,13 @@ export default function TablePage() {
     try { localStorage.setItem(cartKey, JSON.stringify(cart)); } catch { /* quota/private mode */ }
   }, [cart, cartKey]);
 
+  // The menu currently shown: a single-stall outlet's inline menu, or the fetched
+  // menu of the stall the diner tapped in a foodcourt.
+  const activeMenu: Menu | null = stallMenu ?? qrData?.menu ?? null;
   // Scroll-spy: highlight the category whose section is nearest the top of the
   // viewport (under the sticky header + category bar). Re-arms when the menu data
   // loads or search is cleared (no sections while searching).
-  const categories = qrData?.menu.categories ?? [];
+  const categories = activeMenu?.categories ?? [];
   useEffect(() => {
     if (step !== "menu" || search || categories.length < 2) return;
     setActiveCat((prev) => prev ?? categories[0]?.id ?? null);
@@ -336,7 +346,22 @@ export default function TablePage() {
       if (el) obs.observe(el);
     });
     return () => obs.disconnect();
-  }, [step, search, qrData]);
+  }, [step, search, qrData, stallMenu]);
+
+  // Foodcourt: open a stall → fetch its full menu, reset menu-local UI state.
+  const selectStall = useCallback((stall: StallRef) => {
+    setSelectedStall(stall);
+    setStallMenu(null);
+    setSearch("");
+    setActiveCat(null);
+    resolveStallMenu(base, token, stall.menu_id).then(setStallMenu).catch(() => setStallMenu(null));
+  }, [base, token]);
+
+  const backToStalls = useCallback(() => {
+    setSelectedStall(null);
+    setStallMenu(null);
+    setSearch("");
+  }, []);
 
   const scrollToCat = useCallback((id: string) => {
     setActiveCat(id);
@@ -560,6 +585,8 @@ export default function TablePage() {
   const count = cartCount(cart);
   const allMenuItems = categories.flatMap((c) => c.items);
   const filteredItems = filterMenuItems(allMenuItems, search);
+  const inDirectory = !!qrData?.is_foodcourt && !selectedStall;   // foodcourt landing
+  const loadingStall = !!selectedStall && !stallMenu;             // stall menu fetching
 
   return (
     <Shell>
@@ -578,24 +605,47 @@ export default function TablePage() {
         }
       />
 
-      <MenuCategoryNav
-        categories={categories.map((c) => ({ id: c.id, name: c.name }))}
-        activeCat={activeCat}
-        onSelect={scrollToCat}
-        search={search}
-        onSearch={setSearch}
-        showSearch={allMenuItems.length > 6}
-      />
+      {/* Foodcourt: a "← All stalls · <stall>" bar when browsing one stall's menu */}
+      {selectedStall && (
+        <button type="button" className="stall-backbar" onClick={backToStalls}>
+          <Icons.ArrowLeft size={18} /> All stalls
+          <span className="stall-backbar__name">{selectedStall.stall_name}</span>
+        </button>
+      )}
+
+      {/* Category bar + search only in a menu view (not the stall directory) */}
+      {!inDirectory && !loadingStall && (
+        <MenuCategoryNav
+          categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+          activeCat={activeCat}
+          onSelect={scrollToCat}
+          search={search}
+          onSearch={setSearch}
+          showSearch={allMenuItems.length > 6}
+        />
+      )}
 
       <main style={{ flex: 1, padding: "var(--space-4)", paddingBottom: count > 0 ? 172 : 92 }}>
-        {customerName && (
+        {customerName && !selectedStall && (
           <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginBottom: "var(--space-3)" }}>
             Welcome back, <strong style={{ color: "var(--color-text)" }}>{customerName}</strong> 👋
           </div>
         )}
         {error && <div style={{ color: "var(--color-danger)", fontSize: "var(--text-sm)", marginBottom: "var(--space-3)" }}>{error}</div>}
 
-        {search ? (
+        {inDirectory ? (
+          <>
+            <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginBottom: "var(--space-3)" }}>
+              Order from any stall — your coins work across the whole food hall.
+            </div>
+            <StallDirectory stalls={qrData?.stalls ?? []} onSelect={selectStall} />
+          </>
+        ) : loadingStall ? (
+          <>
+            <Skeleton width="100%" height={96} radius={12} style={{ marginBottom: 12 }} />
+            <Skeleton width="100%" height={96} radius={12} style={{ marginBottom: 12 }} />
+          </>
+        ) : search ? (
           filteredItems.length === 0 ? (
             <Card flush><EmptyState icon={Icons.Search} title="No matches">Try another dish or category.</EmptyState></Card>
           ) : (

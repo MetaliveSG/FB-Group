@@ -77,6 +77,31 @@ def _menu(db: Session, outlet: Outlet, spec: dict) -> list[str]:
     return item_ids
 
 
+def _stall_menu(db: Session, outlet: Outlet, *, stall_name: str, cuisine: str,
+                logo: str, sort_order: int, spec: dict):
+    """Create one stall (a Menu with stall branding) + its categories/items under an outlet."""
+    from app.models.catalog import Menu, MenuCategory, MenuItem, MenuModifier
+    menu = Menu(merchant_id=outlet.merchant_id, outlet_id=outlet.id, name=stall_name,
+                stall_name=stall_name, cuisine=cuisine, logo=logo, sort_order=sort_order, is_open=True)
+    db.add(menu)
+    db.flush()
+    for ci, (cat_name, items) in enumerate(spec.items()):
+        cat = MenuCategory(menu_id=menu.id, name=cat_name, sort_order=ci)
+        db.add(cat)
+        db.flush()
+        for ii, entry in enumerate(items):
+            name, price, mods = entry[0], entry[1], entry[2]
+            image_url = entry[3] if len(entry) > 3 else None
+            item = MenuItem(category_id=cat.id, name=name, description=f"{name}", price=price,
+                            image_url=image_url, is_available=True, sort_order=ii)
+            db.add(item)
+            db.flush()
+            for mname, delta in mods:
+                db.add(MenuModifier(item_id=item.id, name=mname, price_delta=delta))
+    db.flush()
+    return menu
+
+
 def _outlet(db: Session, brand: Brand, name: str, address: str, slug: str, n_tables: int = 8) -> Outlet:
     outlet = Outlet(merchant_id=brand.merchant_id, brand_id=brand.id, name=name, address=address)
     db.add(outlet)
@@ -149,6 +174,97 @@ def _visit(db: Session, *, customer: Customer, outlet: Outlet, item_ids: list[st
                                 amount=order.total, order_id=order.id, now=when)
     txn.points_earned = pts
     db.flush()
+
+
+FOODHALL_NAME = "Bedok Food Hall"
+
+# Source of truth for the foodcourt's stalls. Edit this list → re-run seed_foodhall /
+# `ensure_foodhall()` → live reflects it. List ORDER is the stall sort order. Each spec is
+# {category: [(item_name, Decimal(price), [(modifier_name, Decimal(delta)), ...]), ...]}.
+FOODHALL_STALLS = [
+    {"stall_name": "Ah Hock Noodle Bar", "cuisine": "Noodles", "logo": "🍜", "spec": {
+        "Signature Bowls": [
+            ("Bak Chor Mee", Decimal("6.50"), [("Extra Mince", Decimal("1.50")), ("Less Chilli", Decimal("0.00"))]),
+            ("Fishball Noodle", Decimal("5.50"), [("Extra Fishball", Decimal("1.50"))]),
+        ],
+        "Sides": [("Fried Wanton", Decimal("4.00"), [])],
+    }},
+    {"stall_name": "Nasi Padang Corner", "cuisine": "Malay", "logo": "🍛", "spec": {
+        "Rice Sets": [
+            ("Ayam Penyet Set", Decimal("7.50"), [("Extra Sambal", Decimal("0.50"))]),
+            ("Beef Rendang Rice", Decimal("8.00"), []),
+        ],
+    }},
+    {"stall_name": "Kopi & Toast", "cuisine": "Drinks & Breakfast", "logo": "☕", "spec": {
+        "Kopitiam": [
+            ("Kopi O", Decimal("1.60"), [("Extra Shot", Decimal("0.60"))]),
+            ("Kaya Toast Set", Decimal("4.80"), [("Soft-boiled Eggs", Decimal("1.20"))]),
+        ],
+    }},
+]
+
+
+def _upsert_foodhall_stalls(db: Session, outlet: Outlet) -> dict:
+    """Sync the foodhall outlet's stalls to FOODHALL_STALLS, keyed by stall_name:
+      - new stall          → created with full menu
+      - existing stall     → branding/sort/open/active refreshed (menu CONTENTS left intact,
+                             so order history and admin-edited items survive)
+      - stall not in list  → deactivated (is_active=False), rows kept so history stays intact
+    Returns a small counts summary."""
+    from app.models.catalog import Menu
+
+    # Match across active AND inactive so re-adding a dropped stall revives the same Menu
+    # (same item ids → history preserved) instead of creating a duplicate.
+    by_name = {m.stall_name: m for m in db.scalars(select(Menu).where(Menu.outlet_id == outlet.id)).all()
+               if m.stall_name}
+    wanted = {s["stall_name"] for s in FOODHALL_STALLS}
+    added = updated = deactivated = 0
+
+    for i, stall in enumerate(FOODHALL_STALLS):
+        menu = by_name.get(stall["stall_name"])
+        if menu is None:
+            _stall_menu(db, outlet, stall_name=stall["stall_name"], cuisine=stall["cuisine"],
+                        logo=stall["logo"], sort_order=i, spec=stall["spec"])
+            added += 1
+        else:
+            menu.name = stall["stall_name"]
+            menu.stall_name = stall["stall_name"]
+            menu.cuisine = stall["cuisine"]
+            menu.logo = stall["logo"]
+            menu.sort_order = i
+            menu.is_open = True
+            menu.is_active = True
+            updated += 1
+
+    for name, menu in by_name.items():
+        if name not in wanted and menu.is_active:
+            menu.is_active = False
+            deactivated += 1
+
+    db.flush()
+    return {"added": added, "updated": updated, "deactivated": deactivated}
+
+
+def seed_foodhall(db: Session) -> Outlet:
+    """A foodcourt outlet hosting stalls (each a Menu), reachable via token 'foodhall-01'.
+    Idempotent UPSERT: creates the merchant/brand/outlet on first run, then syncs stalls to
+    FOODHALL_STALLS on every run (see `_upsert_foodhall_stalls`). Existing tokens stay valid.
+    Edit FOODHALL_STALLS and re-run `ensure_foodhall()` to reflect changes on a live DB."""
+    merchant = db.scalar(select(Merchant).where(Merchant.name == FOODHALL_NAME))
+    if merchant:
+        outlet = db.scalar(select(Outlet).where(Outlet.merchant_id == merchant.id))
+    else:
+        merchant = Merchant(name=FOODHALL_NAME)
+        db.add(merchant)
+        db.flush()
+        brand = Brand(merchant_id=merchant.id, name=FOODHALL_NAME)
+        db.add(brand)
+        db.flush()
+        outlet = _outlet(db, brand, FOODHALL_NAME, "85 Bedok North St 4, Singapore", slug="foodhall", n_tables=8)
+
+    _upsert_foodhall_stalls(db, outlet)
+    db.commit()
+    return outlet
 
 
 # ---- main seed ---------------------------------------------------------
@@ -415,6 +531,9 @@ def build_demo(db: Session) -> dict:
 
     # --- Merchant 4: Kampong Eats (SG local food) — joins the coalition ---
     kampong = seed_kampong(db, coalition_id=coalition.id)
+
+    # --- Merchant 5: Bedok Food Hall (foodcourt → stall directory, token 'foodhall-01') ---
+    seed_foodhall(db)
 
     return {
         "merchants": [m1.name, m2.name, m3.name, kampong.get("merchant_name", "Kampong Eats")],
@@ -722,6 +841,22 @@ def seed_if_empty() -> dict | None:
         if db.scalar(select(func.count()).select_from(Merchant)):
             return None
         return build_demo(db)
+
+
+def ensure_foodhall() -> dict:
+    """Idempotently sync the Bedok Food Hall foodcourt into an already-seeded live DB without
+    wiping it (a restart won't reseed once merchants exist). Safe to run repeatedly: edit
+    FOODHALL_STALLS, run this, and the live stall directory reflects the change."""
+    from app.models.catalog import Menu
+
+    with SessionLocal() as db:
+        outlet = seed_foodhall(db)
+        active = db.scalars(
+            select(Menu).where(Menu.outlet_id == outlet.id, Menu.is_active.is_(True))
+            .order_by(Menu.sort_order, Menu.id)
+        ).all()
+        return {"outlet_id": outlet.id, "outlet_name": outlet.name, "token": "foodhall-01",
+                "active_stalls": [m.stall_name for m in active]}
 
 
 if __name__ == "__main__":

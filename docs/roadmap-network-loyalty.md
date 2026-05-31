@@ -31,6 +31,12 @@ PLATFORM  ──┤  (e.g. "FB Group") — runs the default platform program (= 
 - **Containment (strict 1-to-many):** Platform → Merchant → Brand → Outlet → Stall-menu → Table → QR.
 - **Cross-cutting (many-to-many):** Coalition, Region, Partner-Platform. A merchant ∈ 0..N coalitions.
 
+> **Structural detail:** see `architecture-org-tree.md` for how the containment tree is
+> actually modelled — roles on a self-referential node tree (stall = leaf role, not a fixed
+> layer), a thin spine + typed profiles, adjacency `parent_id` + a materialised `path`
+> (`a1.b2.c3`) for fast `LIKE 'a1.b2.%'` subtree reads, the uniform QR resolver, and the two
+> boundaries (`loyalty_domain_id` vs `settlement_account_id`).
+
 ## 3. The three operating models (one reusable menu view)
 
 Build **one** menu component; put a **conditional venue/stall-directory shell** in front of it

@@ -1,6 +1,6 @@
 # Database Schema
 
-SQLAlchemy 2.0 models (`apps/api/app/models/`), Alembic-managed (**8 migrations**, single
+SQLAlchemy 2.0 models (`apps/api/app/models/`), Alembic-managed (**9 migrations**, single
 head). **40 application tables** (+ `alembic_version`). String UUID PKs (`uuid4().hex`),
 naive-UTC timestamps, money as `Numeric(12,2)`. Full DDL: run `alembic upgrade head` or
 see `artifacts/schema_tables.txt`.
@@ -8,7 +8,7 @@ see `artifacts/schema_tables.txt`.
 ## Tables by domain
 **Tenancy** — `merchants` (+`settings` JSON feature-toggles), `brands`, `outlets`, `tables`, `qr_codes`
 **Identity / RBAC** — `users`, `roles`, `permissions`, `role_permissions`, `user_roles`, `customers`, `customer_auth_identities`
-**Catalog** — `menus`, `menu_categories`, `menu_items` (incl. `image_url` for real food photos), `menu_modifiers`
+**Catalog** — `menus` (a Menu = a stall; foodcourt cols `stall_name`/`cuisine`/`logo`/`sort_order`/`is_open`), `menu_categories`, `menu_items` (incl. `image_url` for real food photos), `menu_modifiers`
 **Orders** — `orders`, `order_items`
 **Payments** — `payments`, `transactions`
 **Loyalty** — `coalitions`, `coalition_members`, `loyalty_accounts` (+`owner_user_id` CRM owner), `reward_rules`, `reward_transactions`, `reward_redemptions` (+`voucher_code`)
@@ -19,7 +19,8 @@ see `artifacts/schema_tables.txt`.
 
 ## Migrations (chain)
 `initial schema` → `rewards catalog/wheel/tasks/owner` → `redemption voucher_code` →
-`opportunities/customer_activities` → `pipeline_type + merchant settings`.
+`opportunities/customer_activities` → `pipeline_type + merchant settings` → `jackpot_prizes` →
+`customers.gender` → `menu_items.image_url` → `menus stall columns`.
 (Target Postgres; SQLite dev/test uses `Base.metadata.create_all`.)
 
 ## Key relationships

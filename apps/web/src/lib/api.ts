@@ -3,6 +3,7 @@
 import {
   FbGroupApiClient,
   resolveQr,
+  resolveStallMenu,
   otpRequest,
   otpVerify,
   customerLogin,
@@ -103,6 +104,7 @@ import {
 export {
   FbGroupApiClient,
   resolveQr,
+  resolveStallMenu,
   otpRequest,
   otpVerify,
   customerLogin,

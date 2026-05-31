@@ -54,13 +54,27 @@ export interface Table {
   label: string;
 }
 
+export interface StallRef {
+  menu_id: string;
+  stall_name: string;
+  cuisine: string | null;
+  logo: string | null;
+  is_open: boolean;
+  item_count: number;
+}
+
 export interface QrResolution {
   qr_token: string;
   merchant: Merchant;
   brand: Brand;
   outlet: Outlet;
   table: Table;
-  menu: Menu;
+  // Foodcourt: an outlet may host many stalls. `stalls` always lists them; `is_foodcourt`
+  // = stalls.length > 1. `menu` is the inline single menu (restaurant/single stall —
+  // backward compat); null for a foodcourt — fetch one via resolveStallMenu().
+  is_foodcourt: boolean;
+  stalls: StallRef[];
+  menu: Menu | null;
 }
 
 export interface TokenResponse {
@@ -924,6 +938,13 @@ export function resolveQr(baseUrl: string, token: string): Promise<QrResolution>
   return fetch(`${baseUrl}/api/v1/qr/${token}`).then(async (res) => {
     if (!res.ok) throw new ApiError(res.status, "QR_ERROR", "Failed to resolve QR token");
     return res.json() as Promise<QrResolution>;
+  });
+}
+
+export function resolveStallMenu(baseUrl: string, token: string, menuId: string): Promise<Menu> {
+  return fetch(`${baseUrl}/api/v1/qr/${token}/menu/${menuId}`).then(async (res) => {
+    if (!res.ok) throw new ApiError(res.status, "MENU_ERROR", "Failed to resolve stall menu");
+    return res.json() as Promise<Menu>;
   });
 }
 
@@ -1908,6 +1929,7 @@ export class FbGroupApiClient {
   }
 
   resolveQr(token: string) { return resolveQr(this.baseUrl, token); }
+  resolveStallMenu(token: string, menuId: string) { return resolveStallMenu(this.baseUrl, token, menuId); }
   refresh(refreshToken: string) { return refresh(this.baseUrl, refreshToken); }
   otpRequest(phone: string) { return otpRequest(this.baseUrl, phone); }
   otpVerify(phone: string, code: string, full_name?: string) { return otpVerify(this.baseUrl, phone, code, full_name); }

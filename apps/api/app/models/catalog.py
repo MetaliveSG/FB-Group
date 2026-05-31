@@ -16,6 +16,14 @@ class Menu(PKMixin, TimestampMixin, Base):
     outlet_id: Mapped[str] = mapped_column(ForeignKey("outlets.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(120), default="Main Menu")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Foodcourt support: a Menu IS a stall. An outlet may have N active menus (stalls);
+    # a single-stall outlet/restaurant just has one. These describe the stall in the
+    # stall directory (null on plain single-menu outlets → they skip the directory).
+    stall_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    cuisine: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    logo: Mapped[str | None] = mapped_column(String(16), nullable=True)  # emoji
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    is_open: Mapped[bool] = mapped_column(Boolean, default=True)
 
     categories: Mapped[list["MenuCategory"]] = relationship(
         back_populates="menu", cascade="all, delete-orphan", order_by="MenuCategory.sort_order"

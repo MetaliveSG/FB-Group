@@ -354,6 +354,58 @@
         }
       }
     },
+    "/api/v1/qr/{token}/menu/{menu_id}": {
+      "get": {
+        "tags": [
+          "qr"
+        ],
+        "summary": "Resolve Stall Menu",
+        "description": "Full menu for one stall \u2014 validated to belong to the token's own outlet, so a QR\ncode can never reach a menu at a different outlet.",
+        "operationId": "resolve_stall_menu_api_v1_qr__token__menu__menu_id__get",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          },
+          {
+            "name": "menu_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Menu Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MenuOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/outlets/{outlet_id}/menu": {
       "get": {
         "tags": [
@@ -6450,8 +6502,7 @@
           "occurred_at": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "date-time"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -6472,7 +6523,6 @@
           },
           "created_at": {
             "type": "string",
-            "format": "date-time",
             "title": "Created At"
           }
         },
@@ -6914,7 +6964,6 @@
           },
           "created_at": {
             "type": "string",
-            "format": "date-time",
             "title": "Created At"
           },
           "metrics": {
@@ -7025,8 +7074,7 @@
           "starts_at": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "date-time"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -7037,8 +7085,7 @@
           "ends_at": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "date-time"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -7048,7 +7095,6 @@
           },
           "created_at": {
             "type": "string",
-            "format": "date-time",
             "title": "Created At"
           }
         },
@@ -7318,8 +7364,7 @@
           "first_visit_at": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "date-time"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -7330,8 +7375,7 @@
           "last_visit_at": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "date-time"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -7559,6 +7603,12 @@
             ],
             "title": "Phone"
           },
+          "region": {
+            "type": "string",
+            "pattern": "^(SG|MY|ID|TH)$",
+            "title": "Region",
+            "default": "SG"
+          },
           "birthday": {
             "anyOf": [
               {
@@ -7638,8 +7688,7 @@
           "last_visit_at": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "date-time"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -8466,7 +8515,6 @@
           },
           "created_at": {
             "type": "string",
-            "format": "date-time",
             "title": "Created At"
           }
         },
@@ -8565,7 +8613,6 @@
           },
           "created_at": {
             "type": "string",
-            "format": "date-time",
             "title": "Created At"
           }
         },
@@ -8654,7 +8701,6 @@
           },
           "created_at": {
             "type": "string",
-            "format": "date-time",
             "title": "Created At"
           }
         },
@@ -8705,7 +8751,6 @@
           },
           "created_at": {
             "type": "string",
-            "format": "date-time",
             "title": "Created At"
           }
         },
@@ -8820,8 +8865,7 @@
           "closed_at": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "date-time"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -8831,7 +8875,6 @@
           },
           "created_at": {
             "type": "string",
-            "format": "date-time",
             "title": "Created At"
           }
         },
@@ -8924,7 +8967,6 @@
           },
           "created_at": {
             "type": "string",
-            "format": "date-time",
             "title": "Created At"
           }
         },
@@ -9098,6 +9140,12 @@
           "phone": {
             "type": "string",
             "title": "Phone"
+          },
+          "region": {
+            "type": "string",
+            "pattern": "^(SG|MY|ID|TH)$",
+            "title": "Region",
+            "default": "SG"
           }
         },
         "type": "object",
@@ -9135,6 +9183,12 @@
           "phone": {
             "type": "string",
             "title": "Phone"
+          },
+          "region": {
+            "type": "string",
+            "pattern": "^(SG|MY|ID|TH)$",
+            "title": "Region",
+            "default": "SG"
           },
           "code": {
             "type": "string",
@@ -9542,6 +9596,12 @@
             ],
             "title": "Phone"
           },
+          "region": {
+            "type": "string",
+            "pattern": "^(SG|MY|ID|TH)$",
+            "title": "Region",
+            "default": "SG"
+          },
           "birthday": {
             "anyOf": [
               {
@@ -9557,7 +9617,9 @@
           "gender": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 16,
+                "pattern": "^(male|female|other)?$"
               },
               {
                 "type": "null"
@@ -9568,7 +9630,8 @@
           "full_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 160
               },
               {
                 "type": "null"
@@ -9598,8 +9661,28 @@
           "table": {
             "$ref": "#/components/schemas/_TableRef"
           },
+          "is_foodcourt": {
+            "type": "boolean",
+            "title": "Is Foodcourt",
+            "default": false
+          },
+          "stalls": {
+            "items": {
+              "$ref": "#/components/schemas/StallRef"
+            },
+            "type": "array",
+            "title": "Stalls",
+            "default": []
+          },
           "menu": {
-            "$ref": "#/components/schemas/MenuOut"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MenuOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -9608,8 +9691,7 @@
           "merchant",
           "brand",
           "outlet",
-          "table",
-          "menu"
+          "table"
         ],
         "title": "QrContextOut"
       },
@@ -9789,7 +9871,6 @@
           },
           "created_at": {
             "type": "string",
-            "format": "date-time",
             "title": "Created At"
           }
         },
@@ -9818,7 +9899,6 @@
           },
           "created_at": {
             "type": "string",
-            "format": "date-time",
             "title": "Created At"
           }
         },
@@ -9928,6 +10008,7 @@
             "anyOf": [
               {
                 "type": "integer",
+                "maximum": 100000.0,
                 "minimum": 0.0
               },
               {
@@ -9940,6 +10021,7 @@
             "anyOf": [
               {
                 "type": "integer",
+                "maximum": 100000.0,
                 "minimum": 0.0
               },
               {
@@ -10054,6 +10136,56 @@
           "password"
         ],
         "title": "StaffLoginRequest"
+      },
+      "StallRef": {
+        "properties": {
+          "menu_id": {
+            "type": "string",
+            "title": "Menu Id"
+          },
+          "stall_name": {
+            "type": "string",
+            "title": "Stall Name"
+          },
+          "cuisine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cuisine"
+          },
+          "logo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo"
+          },
+          "is_open": {
+            "type": "boolean",
+            "title": "Is Open",
+            "default": true
+          },
+          "item_count": {
+            "type": "integer",
+            "title": "Item Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "menu_id",
+          "stall_name"
+        ],
+        "title": "StallRef"
       },
       "TableCreateIn": {
         "properties": {
@@ -10232,14 +10364,12 @@
           },
           "created_at": {
             "type": "string",
-            "format": "date-time",
             "title": "Created At"
           },
           "completed_at": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "date-time"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -10278,7 +10408,6 @@
         "properties": {
           "ts": {
             "type": "string",
-            "format": "date-time",
             "title": "Ts"
           },
           "type": {
@@ -10382,7 +10511,6 @@
           },
           "created_at": {
             "type": "string",
-            "format": "date-time",
             "title": "Created At"
           }
         },

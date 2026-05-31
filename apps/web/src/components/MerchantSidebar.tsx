@@ -129,7 +129,7 @@ export default function MerchantSidebar({
             className={`sidebar-link ${active === "org" ? "active" : ""}`}
             href="/merchant/org"
           >
-            Outlets &amp; Brands
+            Brands &amp; Outlets
           </a>
           <a
             className={`sidebar-link ${active === "menu" ? "active" : ""}`}

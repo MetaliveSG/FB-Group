@@ -220,7 +220,7 @@ export default function OrgPage() {
   return (
     <MerchantSidebar active="org">
       <div className="page-header">
-        <h1 className="page-title">Outlets &amp; Brands</h1>
+        <h1 className="page-title">Brands &amp; Outlets</h1>
         <p className="page-subtitle">Manage your brands, outlets, and table QR codes</p>
       </div>
 

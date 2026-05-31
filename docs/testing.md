@@ -6,10 +6,10 @@ cd apps/api && .venv/bin/python -m pytest -v      # full backend suite
 ```
 Tests use an isolated in-memory SQLite DB (StaticPool) shared between the test
 session and the FastAPI `TestClient`, with RBAC seeded and rate-limiter/OTP reset per
-test (`app/tests/conftest.py`). Latest run: **115 passed** across 23 files (see
-`artifacts/pytest_results.txt`). Frontend: **37 Vitest tests**.
+test (`app/tests/conftest.py`). Latest run: **129 passed** across 24 files (see
+`artifacts/pytest_results.txt`). Frontend: **45 Vitest tests**.
 
-## Coverage by file (115 backend tests)
+## Coverage by file (129 backend tests)
 | File | Module(s) | What it proves |
 |---|---|---|
 | `test_health.py` | 12 | health endpoint + secure headers |
@@ -30,6 +30,7 @@ test (`app/tests/conftest.py`). Latest run: **115 passed** across 23 files (see
 | `test_my_account.py` | 7 | customer **My Account**: order history shape + **customer isolation** (B can't see A's orders), vouchers list, profile get/update, **mobile required + unique** |
 | `test_admin_analytics.py` | 9, 10 | menu CRUD + isolation, **user invite/list/revoke** (+perm+scope), **RFM scoring** |
 | `test_org_admin.py` | 1, 10 | brand→outlet(auto-menu)→table→**QR resolves**, permission, tenant isolation, unique table label |
+| `test_foodcourt.py` | 1, 10 | **foodcourt** stall directory: single-stall inline menu, multi-stall directory + null inline menu, stall-menu fetch + **cross-outlet isolation** (404 menu_not_found) |
 | `test_platform.py` | operator | ecosystem overview, merchant directory, **non-operator blocked**, onboard merchant, suspend, coalitions |
 | `test_permissions.py` | 1, 10 | super admin all, **merchant can't see another**, **outlet manager scoped**, staff lacks CRM, **audit log** |
 | `test_e2e_capture_loop.py` | 1-11 | golden flow end-to-end (below) |
@@ -48,7 +49,7 @@ test (`app/tests/conftest.py`). Latest run: **115 passed** across 23 files (see
 11. Permission boundaries → `test_e2e`, `test_permissions`, `test_platform`
 
 ## Frontend tests
-`apps/web` — **37 Vitest tests** (format helpers, auth-resilience, stage/role/campaign-type contracts, wheel math). Run `npm test` in `apps/web`.
+`apps/web` — **45 Vitest tests** (format helpers, auth-resilience, stage/role/campaign-type contracts, wheel math, menu filtering). Run `npm test` in `apps/web`.
 
 ## Regression checklist (run before any release)
 - [ ] `pytest` green

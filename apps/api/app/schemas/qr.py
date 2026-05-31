@@ -22,10 +22,24 @@ class _OutletRef(BaseModel):
     address: str | None = None
 
 
+class StallRef(BaseModel):
+    menu_id: str
+    stall_name: str
+    cuisine: str | None = None
+    logo: str | None = None
+    is_open: bool = True
+    item_count: int = 0
+
+
 class QrContextOut(BaseModel):
     qr_token: str
     merchant: _Ref
     brand: _Ref
     outlet: _OutletRef
     table: _TableRef
-    menu: MenuOut
+    # Foodcourt: an outlet may host many stalls (menus). `stalls` always lists them;
+    # `is_foodcourt` = len(stalls) > 1. `menu` is the full single menu (single-stall /
+    # restaurant — backward compat); null for a foodcourt (fetch one via /qr/{t}/menu/{id}).
+    is_foodcourt: bool = False
+    stalls: list[StallRef] = []
+    menu: MenuOut | None = None
