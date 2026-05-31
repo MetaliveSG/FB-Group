@@ -6,10 +6,10 @@ cd apps/api && .venv/bin/python -m pytest -v      # full backend suite
 ```
 Tests use an isolated in-memory SQLite DB (StaticPool) shared between the test
 session and the FastAPI `TestClient`, with RBAC seeded and rate-limiter/OTP reset per
-test (`app/tests/conftest.py`). Latest run: **170 passed** across 32 files (see
+test (`app/tests/conftest.py`). Latest run: **175 passed** across 33 files (see
 `artifacts/pytest_results.txt`). Frontend: **45 Vitest tests**.
 
-## Coverage by file (170 backend tests)
+## Coverage by file (175 backend tests)
 | File | Module(s) | What it proves |
 |---|---|---|
 | `test_health.py` | 12 | health endpoint + secure headers |
@@ -38,7 +38,8 @@ test (`app/tests/conftest.py`). Latest run: **170 passed** across 32 files (see
 | `test_rbac_node_cascade.py` | 1, 10 | **RBAC node cascade** (Phase 1c): `outlet_ids_under` excludes sibling brand + other merchant; brand-manager limited to brand outlets e2e |
 | `test_module_gating.py` | 2a | **module gating** (Phase 2a): rewards_enabled off → 0 coins; qr_ordering_enabled off → 409 `ordering_disabled` + QR context flag; per-merchant isolation |
 | `test_loyalty_admin.py` | settings | **loyalty-program admin**: get/update earn-rate/welcome/birthday; earn=0 disables (0 coins); staff 403 + cross-tenant 403; module flags via `/org/settings`; **birthday bonus only in birthday month** |
-| `test_promotions.py` | campaigns | **multiplier promotions**: engine applies in-window 2× / skips expired + deactivated; create/list via API; staff 403; cross-tenant 403 + 404 |
+| `test_promotions.py` | campaigns | **multiplier promotions**: engine applies in-window 2× / skips expired + deactivated; **overlapping → best-wins (max, not stacked)**; create/list via API; staff 403; cross-tenant 403 + 404 |
+| `test_merchant_orders.py` | orders | **merchant-wide feed**: owner sees orders + items + outlet/customer labels; status filter; outlet-scoped user limited to their outlet; cross-merchant 403 |
 | `test_platform.py` | operator | ecosystem overview, merchant directory, **non-operator blocked**, onboard merchant, suspend, coalitions |
 | `test_permissions.py` | 1, 10 | super admin all, **merchant can't see another**, **outlet manager scoped**, staff lacks CRM, **audit log** |
 | `test_e2e_capture_loop.py` | 1-11 | golden flow end-to-end (below) |

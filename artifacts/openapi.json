@@ -449,6 +449,117 @@
       }
     },
     "/api/v1/orders": {
+      "get": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "List Orders",
+        "operationId": "list_orders_api_v1_orders_get",
+        "parameters": [
+          {
+            "name": "merchant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Merchant Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "outlet_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Outlet Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MerchantOrderOut"
+                  },
+                  "title": "Response List Orders Api V1 Orders Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "orders"
@@ -8874,6 +8985,90 @@
           "customers"
         ],
         "title": "MerchantKpiOut"
+      },
+      "MerchantOrderOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "subtotal": {
+            "type": "number",
+            "title": "Subtotal"
+          },
+          "service_charge": {
+            "type": "number",
+            "title": "Service Charge"
+          },
+          "tax": {
+            "type": "number",
+            "title": "Tax"
+          },
+          "total": {
+            "type": "number",
+            "title": "Total"
+          },
+          "outlet_name": {
+            "type": "string",
+            "title": "Outlet Name"
+          },
+          "customer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Name"
+          },
+          "table_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Table Label"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/app__schemas__orders__OrderItemOut"
+            },
+            "type": "array",
+            "title": "Items",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "channel",
+          "created_at",
+          "subtotal",
+          "service_charge",
+          "tax",
+          "total",
+          "outlet_name"
+        ],
+        "title": "MerchantOrderOut",
+        "description": "Row in the merchant-wide orders feed \u2014 order + items + resolved labels."
       },
       "MessageOut": {
         "properties": {

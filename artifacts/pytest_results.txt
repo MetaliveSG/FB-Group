@@ -1,2 +1,2 @@
-170 passed (backend) — + multiplier promotions (test_promotions.py) + birthday accrual e2e
+175 passed (backend) — + merchant orders feed (test_merchant_orders) + best-wins multiplier
 45 passed (frontend)

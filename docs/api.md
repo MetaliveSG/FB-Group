@@ -36,6 +36,7 @@ Token response: `{access_token, refresh_token, token_type, actor, customer?, use
 | Method | Path | Auth | Notes |
 |---|---|---|---|
 | POST | `/api/v1/orders` | customer | `{qr_token, items:[{menu_item_id,quantity,modifier_ids?}], order_type?}` |
+| GET | `/api/v1/orders` | staff `order.view` | merchant-wide orders feed: order+items+breakdown+outlet/customer/table labels; filters `?status=&outlet_id=&limit=`; outlet-scoped users see only their outlets |
 | POST | `/api/v1/orders/manual` | staff `order.manage` | cashier/walk-in order (`{outlet_id, items, customer_phone?}`) |
 | GET | `/api/v1/orders/{id}` | customer (own) | order detail |
 | PATCH | `/api/v1/orders/{id}/status` | staff `order.manage` | `{status}` — validated lifecycle |
