@@ -1,0 +1,23 @@
+Phase 1 — live Postgres verification + security (2026-05-31)
+
+Migrations applied clean on live DB (real seed data):
+  j6f7g8stallmenu -> k7h8i9ledger -> l8i9j0orderref -> m9j0k1orgnode -> n0k1l2idemscope
+
+Org spine (sync_org_tree, idempotent): 5 merchant / 6 brand / 10 outlet / 12 stall = 33 nodes
+  parity with typed tables (5 merchants + 6 brands + 10 outlets + 12 menus = 33).
+
+Kampong/foodcourt regression via the spine-backed QR resolver:
+  kampong-bedok-01 -> single-stall, inline menu present
+  foodhall-01      -> foodcourt, 3 stalls [Ah Hock, Nasi Padang, Kopi & Toast], null inline
+  orchard-01       -> single-stall, inline menu present
+  foodhall stall menu fetch -> categories returned
+  orchard menu via foodhall token -> HTTP 404 (cross-outlet isolation intact)
+
+Security audit (RBAC node-cascade focus): 0 CRITICAL, 0 HIGH.
+  path-prefix tenant leak: SAFE (fixed-len hex ids + trailing-dot anchor; no prefix collision)
+  LIKE/SQL injection: SAFE (parameterised; hex-only path, no wildcards)
+  resolve_scope cascade: fail-closed on spine lag (typed fallback; never leaks)
+  MEDIUM fixed: idempotency_key scoped per loyalty domain (was global) ->
+    live constraint UNIQUE(loyalty_domain_id, idempotency_key)
+
+Counts: 93 endpoints / 41 tables / 13 migrations / 152 backend + 45 frontend tests.

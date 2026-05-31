@@ -23,6 +23,7 @@ merchants
 opportunities
 order_items
 orders
+org_nodes
 outlets
 payments
 permissions
