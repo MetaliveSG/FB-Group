@@ -32,7 +32,7 @@ End the trailer with the Claude co-author line if AI-assisted.
 |---|---|
 | **Backend** | `ruff check app` + `pytest` (in-memory SQLite) — in `apps/api` |
 | **Frontend** | `tsc --noEmit` + `vitest` + `next build` — workspaces installed via `npm ci` |
-| **Migrations** | real Postgres: `alembic upgrade head` → `downgrade base` → `upgrade head`, then a **drift guard** (autogenerate must produce no schema ops). Catches model changes made without a migration — the parity pytest's SQLite path does not exercise. |
+| **Migrations** | real Postgres: clean `alembic upgrade head` from an empty DB + a **drift guard** (autogenerate must produce no schema ops). Catches model changes made without a migration — the parity pytest's SQLite path does not exercise. Migrations are **roll-forward** (no downgrade-to-base; the chain has unnamed constraints PG can't drop). |
 
 Run it all locally before pushing:
 
@@ -44,7 +44,7 @@ npm ci && npx tsc --noEmit --project apps/web/tsconfig.json \
   && npm run test --workspace apps/web && npm run build --workspace apps/web
 # migrations (against a scratch Postgres; see infra/docker-compose.yml for one)
 cd apps/api && DATABASE_URL=postgresql+psycopg://fbgroup:fbgroup@localhost:5432/fbgroup \
-  alembic upgrade head && alembic downgrade base
+  alembic upgrade head
 ```
 
 ## Schema changes — always add a migration

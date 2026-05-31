@@ -51,6 +51,10 @@ jobs:
       - name: Build (next)
         run: npm run build --workspace apps/web
 
+  # Migrations are roll-forward: the PoC chain has unnamed constraints that Postgres can't
+  # DROP, so full downgrade-to-base isn't supported (a deliberate, common stance). CI guards
+  # the two things that matter for deploys: a clean upgrade from an empty DB, and that the
+  # models match the migrations (no un-migrated schema drift).
   migrations:
     name: Migrations — Postgres parity + drift guard
     runs-on: ubuntu-latest
@@ -81,11 +85,7 @@ jobs:
           cache: pip
           cache-dependency-path: apps/api/requirements*.txt
       - run: pip install -r requirements.txt
-      - name: Upgrade to head
-        run: alembic upgrade head
-      - name: Downgrade to base (reversibility)
-        run: alembic downgrade base
-      - name: Re-upgrade to head
+      - name: Upgrade to head (clean apply from empty DB)
         run: alembic upgrade head
       - name: Assert models match migrations (no drift)
         run: |
