@@ -137,3 +137,20 @@ def test_idempotency_key_rejects_duplicate_posting(db):
     with pytest.raises(IntegrityError):
         db.flush()
     db.rollback()
+
+
+def test_idempotency_key_is_scoped_per_domain_not_global(db):
+    """Two different merchants (loyalty domains) may reuse the same idempotency key — the
+    uniqueness is per-domain, so a POS key like 'INV-001' from tenant A never collides with B."""
+    a = make_world(db, name="KeyA", token_suffix="KA")
+    b = make_world(db, name="KeyB", token_suffix="KB")
+    ca, cb = _customer(db, "A"), _customer(db, "B")
+    accrue_on_transaction(db, customer=ca, merchant_id=a.merchant_id, amount=Decimal("10"), order_id=None)
+    accrue_on_transaction(db, customer=cb, merchant_id=b.merchant_id, amount=Decimal("10"), order_id=None)
+    acct_a = _merchant_account(db, a, ca.id)
+    acct_b = _merchant_account(db, b, cb.id)
+
+    record_reward_txn(db, account=acct_a, txn_type=RewardTxnType.ADJUST.value, points=1, idempotency_key="INV-001")
+    record_reward_txn(db, account=acct_b, txn_type=RewardTxnType.ADJUST.value, points=1, idempotency_key="INV-001")
+    db.flush()  # different domains, same key — must NOT collide
+    assert acct_a.scope_id != acct_b.scope_id

@@ -89,7 +89,10 @@ class RewardTransaction(PKMixin, TimestampMixin, Base):
 
     __tablename__ = "reward_transactions"
     __table_args__ = (
-        UniqueConstraint("idempotency_key", name="uq_reward_txn_idempotency"),
+        # Idempotency keys are unique *within a loyalty domain*, not globally — so two
+        # different tenants (or future POS sources) can reuse the same key (e.g. "INV-001")
+        # without a cross-tenant collision. NULLs are exempt (many allowed) on both PG + SQLite.
+        UniqueConstraint("loyalty_domain_id", "idempotency_key", name="uq_reward_txn_idempotency"),
         Index("ix_reward_txn_acct_order_type", "account_id", "order_id", "txn_type"),
     )
 
