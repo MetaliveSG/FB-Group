@@ -90,9 +90,17 @@ All require a `super_admin` staff token (others get 403).
 |---|---|---|
 | GET | `/api/v1/platform/overview` | ecosystem KPIs (GMV, orders, active customers, merchants/brands/outlets, coalitions) |
 | GET | `/api/v1/platform/merchants` | every merchant + KPIs (revenue, orders, customers, outlets, owner, status) |
-| GET | `/api/v1/platform/coalitions` | coalition programs + member merchants + points issued |
+| GET | `/api/v1/platform/coalitions` | coalition programs + member merchants (`members` names + parallel `member_ids`) + points issued |
 | POST | `/api/v1/platform/merchants` | onboard merchant: `{name, owner_email, owner_password, owner_name?}` → creates merchant + brand + owner (409 if email taken) |
 | PATCH | `/api/v1/platform/merchants/{id}` | `{is_active}` — suspend/activate a merchant |
+| PUT | `/api/v1/platform/merchants/{id}` | `{name?, module_flags?}` — rename + flip adoption flags (rewards/qr_ordering/pos); unknown flag → 400 |
+| GET | `/api/v1/platform/operators` | list platform operators (super-admins); `is_self` marks the caller |
+| POST | `/api/v1/platform/operators` | invite operator: `{email, password, full_name?}` → new super-admin (409 if email taken) |
+| DELETE | `/api/v1/platform/operators/{id}` | revoke operator access (403 on self or the **last** remaining operator; 404 if not an operator) |
+| POST | `/api/v1/platform/coalitions` | `{name}` — create a coalition |
+| PATCH | `/api/v1/platform/coalitions/{id}` | `{name?, is_active?}` — rename / activate / deactivate |
+| POST | `/api/v1/platform/coalitions/{id}/members` | `{merchant_id}` — add member (409 if already a member) |
+| DELETE | `/api/v1/platform/coalitions/{id}/members/{merchant_id}` | remove member (404 if not a member) |
 
 Operator drill-down reuses the CRM/reports endpoints with `?merchant_id=` (super admin may target any merchant).
 

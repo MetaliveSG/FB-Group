@@ -26,6 +26,14 @@ class MerchantKpiOut(BaseModel):
     customers: int
     owner_email: str | None = None
     owner_name: str | None = None
+    # The three adoption module flags (Phase 0c) — manageable from the operator side.
+    module_flags: dict = {}
+
+
+class MerchantUpdateIn(BaseModel):
+    """Operator-side merchant edits: rename and/or flip module flags. All optional."""
+    name: str | None = Field(default=None, min_length=1, max_length=160)
+    module_flags: dict[str, bool] | None = None
 
 
 class CoalitionOut(BaseModel):
@@ -33,8 +41,42 @@ class CoalitionOut(BaseModel):
     name: str
     is_active: bool
     members: list[str] = []
+    member_ids: list[str] = []  # parallel to `members`, for membership management
     member_count: int
     points_issued: int
+
+
+class CoalitionCreateIn(BaseModel):
+    name: str = Field(min_length=1, max_length=160)
+
+
+class CoalitionUpdateIn(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=160)
+    is_active: bool | None = None
+
+
+class CoalitionMemberIn(BaseModel):
+    merchant_id: str = Field(min_length=1, max_length=32)
+
+
+class OperatorOut(BaseModel):
+    id: str
+    email: EmailStr
+    full_name: str | None = None
+    is_active: bool
+    is_self: bool = False  # the currently-authenticated operator (can't revoke own access)
+
+
+class OperatorCreateIn(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+    full_name: str = Field(default="", max_length=160)
+
+
+class OperatorCreateOut(BaseModel):
+    id: str
+    email: EmailStr
+    full_name: str | None = None
 
 
 class MerchantCreateIn(BaseModel):

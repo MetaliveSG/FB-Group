@@ -1,2 +1,2 @@
-175 passed (backend) — + merchant orders feed (test_merchant_orders) + best-wins multiplier
-45 passed (frontend)
+........................................................................ [ 37%]
+................................................................

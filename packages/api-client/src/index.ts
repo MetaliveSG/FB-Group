@@ -440,6 +440,12 @@ export interface MerchantKpi {
   customers: number;
   owner_email: string | null;
   owner_name: string | null;
+  module_flags: Record<string, boolean>;
+}
+
+export interface MerchantUpdate {
+  name?: string;
+  module_flags?: Record<string, boolean>;
 }
 
 export interface Coalition {
@@ -447,8 +453,14 @@ export interface Coalition {
   name: string;
   is_active: boolean;
   members: string[];
+  member_ids: string[];
   member_count: number;
   points_issued: number;
+}
+
+export interface CoalitionUpdate {
+  name?: string;
+  is_active?: boolean;
 }
 
 export interface MerchantCreate {
@@ -463,6 +475,20 @@ export interface MerchantCreateResult {
   name: string;
   owner_email: string;
   owner_user_id: string;
+}
+
+export interface Operator {
+  id: string;
+  email: string;
+  full_name: string | null;
+  is_active: boolean;
+  is_self: boolean;
+}
+
+export interface OperatorCreate {
+  email: string;
+  password: string;
+  full_name?: string;
 }
 
 // ─── Round 6: Opportunities / pipeline / activities / bulk ───
@@ -1391,6 +1417,105 @@ export function platformSetMerchantActive(
   );
 }
 
+export function platformUpdateMerchant(
+  baseUrl: string,
+  token: string,
+  merchantId: string,
+  data: MerchantUpdate
+): Promise<MerchantKpi> {
+  return request(
+    baseUrl,
+    `/platform/merchants/${merchantId}`,
+    { method: "PUT", body: JSON.stringify(data) },
+    token
+  );
+}
+
+export function platformOperators(baseUrl: string, token: string): Promise<Operator[]> {
+  return request(baseUrl, "/platform/operators", {}, token);
+}
+
+export function platformInviteOperator(
+  baseUrl: string,
+  token: string,
+  data: OperatorCreate
+): Promise<Operator> {
+  return request(
+    baseUrl,
+    "/platform/operators",
+    { method: "POST", body: JSON.stringify(data) },
+    token
+  );
+}
+
+export function platformRevokeOperator(
+  baseUrl: string,
+  token: string,
+  operatorId: string
+): Promise<void> {
+  return request(
+    baseUrl,
+    `/platform/operators/${operatorId}`,
+    { method: "DELETE" },
+    token
+  );
+}
+
+export function platformCreateCoalition(
+  baseUrl: string,
+  token: string,
+  name: string
+): Promise<Coalition> {
+  return request(
+    baseUrl,
+    "/platform/coalitions",
+    { method: "POST", body: JSON.stringify({ name }) },
+    token
+  );
+}
+
+export function platformUpdateCoalition(
+  baseUrl: string,
+  token: string,
+  coalitionId: string,
+  data: CoalitionUpdate
+): Promise<Coalition> {
+  return request(
+    baseUrl,
+    `/platform/coalitions/${coalitionId}`,
+    { method: "PATCH", body: JSON.stringify(data) },
+    token
+  );
+}
+
+export function platformAddCoalitionMember(
+  baseUrl: string,
+  token: string,
+  coalitionId: string,
+  merchantId: string
+): Promise<Coalition> {
+  return request(
+    baseUrl,
+    `/platform/coalitions/${coalitionId}/members`,
+    { method: "POST", body: JSON.stringify({ merchant_id: merchantId }) },
+    token
+  );
+}
+
+export function platformRemoveCoalitionMember(
+  baseUrl: string,
+  token: string,
+  coalitionId: string,
+  merchantId: string
+): Promise<Coalition> {
+  return request(
+    baseUrl,
+    `/platform/coalitions/${coalitionId}/members/${merchantId}`,
+    { method: "DELETE" },
+    token
+  );
+}
+
 // ─── Round 6: Opportunities / pipeline / activities / bulk ───
 
 export function pipeline(
@@ -2081,6 +2206,14 @@ export class FbGroupApiClient {
   platformCoalitions() { return platformCoalitions(this.baseUrl, this.token!); }
   platformCreateMerchant(data: MerchantCreate) { return platformCreateMerchant(this.baseUrl, this.token!, data); }
   platformSetMerchantActive(merchantId: string, isActive: boolean) { return platformSetMerchantActive(this.baseUrl, this.token!, merchantId, isActive); }
+  platformUpdateMerchant(merchantId: string, data: MerchantUpdate) { return platformUpdateMerchant(this.baseUrl, this.token!, merchantId, data); }
+  platformOperators() { return platformOperators(this.baseUrl, this.token!); }
+  platformInviteOperator(data: OperatorCreate) { return platformInviteOperator(this.baseUrl, this.token!, data); }
+  platformRevokeOperator(operatorId: string) { return platformRevokeOperator(this.baseUrl, this.token!, operatorId); }
+  platformCreateCoalition(name: string) { return platformCreateCoalition(this.baseUrl, this.token!, name); }
+  platformUpdateCoalition(coalitionId: string, data: CoalitionUpdate) { return platformUpdateCoalition(this.baseUrl, this.token!, coalitionId, data); }
+  platformAddCoalitionMember(coalitionId: string, merchantId: string) { return platformAddCoalitionMember(this.baseUrl, this.token!, coalitionId, merchantId); }
+  platformRemoveCoalitionMember(coalitionId: string, merchantId: string) { return platformRemoveCoalitionMember(this.baseUrl, this.token!, coalitionId, merchantId); }
 
   // Round 6 — opportunities / pipeline / activities / bulk
   pipeline(pipelineType?: PipelineType, merchantId?: string) { return pipeline(this.baseUrl, this.token!, pipelineType, merchantId); }

@@ -7,11 +7,18 @@ from sqlalchemy.orm import Session
 from app.auth.deps import require_super_admin
 from app.db.session import get_db
 from app.schemas.platform import (
+    CoalitionCreateIn,
+    CoalitionMemberIn,
     CoalitionOut,
+    CoalitionUpdateIn,
     MerchantActiveIn,
     MerchantCreateIn,
     MerchantCreateOut,
     MerchantKpiOut,
+    MerchantUpdateIn,
+    OperatorCreateIn,
+    OperatorCreateOut,
+    OperatorOut,
     OverviewOut,
 )
 from app.services import platform as platform_service
@@ -55,6 +62,93 @@ def set_merchant_active(merchant_id: str, body: MerchantActiveIn,
                  merchant_id=merchant_id, entity_type="merchant", entity_id=merchant_id,
                  meta={"is_active": body.is_active})
     db.commit()
-    # Return refreshed KPI row for this merchant.
-    row = next((m for m in platform_service.list_merchants(db) if m["id"] == merchant_id), None)
-    return row
+    return _merchant_row(db, merchant_id)
+
+
+def _merchant_row(db: Session, merchant_id: str):
+    """Refreshed KPI row for a single merchant (used by mutating endpoints)."""
+    return next((m for m in platform_service.list_merchants(db) if m["id"] == merchant_id), None)
+
+
+@router.put("/merchants/{merchant_id}", response_model=MerchantKpiOut)
+def update_merchant(merchant_id: str, body: MerchantUpdateIn,
+                    scope=Depends(require_super_admin), db: Session = Depends(get_db)):
+    platform_service.update_merchant(db, merchant_id=merchant_id, name=body.name,
+                                     module_flags=body.module_flags)
+    audit_record(db, action="platform.merchant_update", actor_id=scope.user_id,
+                 merchant_id=merchant_id, entity_type="merchant", entity_id=merchant_id,
+                 meta={"name": body.name, "module_flags": body.module_flags})
+    db.commit()
+    return _merchant_row(db, merchant_id)
+
+
+# ─── Platform operators ─────────────────────────────────────────────────────
+@router.get("/operators", response_model=list[OperatorOut])
+def list_operators(scope=Depends(require_super_admin), db: Session = Depends(get_db)):
+    return platform_service.list_operators(db, current_user_id=scope.user_id)
+
+
+@router.post("/operators", response_model=OperatorCreateOut, status_code=201)
+def invite_operator(body: OperatorCreateIn, scope=Depends(require_super_admin), db: Session = Depends(get_db)):
+    user = platform_service.invite_operator(db, email=body.email, password=body.password,
+                                            full_name=body.full_name)
+    audit_record(db, action="platform.operator_invite", actor_id=scope.user_id,
+                 entity_type="user", entity_id=user.id, meta={"email": body.email})
+    db.commit()
+    db.refresh(user)
+    return OperatorCreateOut(id=user.id, email=user.email, full_name=user.full_name)
+
+
+@router.delete("/operators/{operator_id}", status_code=204)
+def revoke_operator(operator_id: str, scope=Depends(require_super_admin), db: Session = Depends(get_db)):
+    platform_service.revoke_operator(db, operator_id=operator_id, current_user_id=scope.user_id)
+    audit_record(db, action="platform.operator_revoke", actor_id=scope.user_id,
+                 entity_type="user", entity_id=operator_id)
+    db.commit()
+
+
+# ─── Coalitions ─────────────────────────────────────────────────────────────
+def _coalition_row(db: Session, coalition_id: str):
+    return next((c for c in platform_service.list_coalitions(db) if c["id"] == coalition_id), None)
+
+
+@router.post("/coalitions", response_model=CoalitionOut, status_code=201)
+def create_coalition(body: CoalitionCreateIn, scope=Depends(require_super_admin), db: Session = Depends(get_db)):
+    c = platform_service.create_coalition(db, name=body.name)
+    audit_record(db, action="platform.coalition_create", actor_id=scope.user_id,
+                 entity_type="coalition", entity_id=c.id, meta={"name": body.name})
+    db.commit()
+    return _coalition_row(db, c.id)
+
+
+@router.patch("/coalitions/{coalition_id}", response_model=CoalitionOut)
+def update_coalition(coalition_id: str, body: CoalitionUpdateIn,
+                     scope=Depends(require_super_admin), db: Session = Depends(get_db)):
+    platform_service.update_coalition(db, coalition_id=coalition_id, name=body.name, is_active=body.is_active)
+    audit_record(db, action="platform.coalition_update", actor_id=scope.user_id,
+                 entity_type="coalition", entity_id=coalition_id,
+                 meta={"name": body.name, "is_active": body.is_active})
+    db.commit()
+    return _coalition_row(db, coalition_id)
+
+
+@router.post("/coalitions/{coalition_id}/members", response_model=CoalitionOut, status_code=201)
+def add_coalition_member(coalition_id: str, body: CoalitionMemberIn,
+                         scope=Depends(require_super_admin), db: Session = Depends(get_db)):
+    platform_service.add_coalition_member(db, coalition_id=coalition_id, merchant_id=body.merchant_id)
+    audit_record(db, action="platform.coalition_member_add", actor_id=scope.user_id,
+                 merchant_id=body.merchant_id, entity_type="coalition", entity_id=coalition_id,
+                 meta={"merchant_id": body.merchant_id})
+    db.commit()
+    return _coalition_row(db, coalition_id)
+
+
+@router.delete("/coalitions/{coalition_id}/members/{merchant_id}", response_model=CoalitionOut)
+def remove_coalition_member(coalition_id: str, merchant_id: str,
+                            scope=Depends(require_super_admin), db: Session = Depends(get_db)):
+    platform_service.remove_coalition_member(db, coalition_id=coalition_id, merchant_id=merchant_id)
+    audit_record(db, action="platform.coalition_member_remove", actor_id=scope.user_id,
+                 merchant_id=merchant_id, entity_type="coalition", entity_id=coalition_id,
+                 meta={"merchant_id": merchant_id})
+    db.commit()
+    return _coalition_row(db, coalition_id)
