@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import MerchantSidebar from "@/components/MerchantSidebar";
+import { Icons } from "@/components/ui";
 import type { OrgBrand, OrgOutlet, OrgTable } from "@fbgroup/api-client";
 
 export default function OrgPage() {
@@ -395,8 +396,10 @@ export default function OrgPage() {
                                             style={{ padding: "2px 8px" }}
                                             disabled={busy}
                                             onClick={() => removeTable(o.id, t.id)}
+                                            title="Delete table"
+                                            aria-label="Delete table"
                                           >
-                                            Delete
+                                            <Icons.Trash2 size={15} aria-hidden />
                                           </button>
                                         </td>
                                       </tr>

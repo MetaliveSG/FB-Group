@@ -5,7 +5,7 @@ export { default as Card } from "./Card";
 export { default as ListItem } from "./ListItem";
 export { default as BottomNav } from "./BottomNav";
 export type { TabItem } from "./BottomNav";
-export { Stepper, Badge } from "./inputs";
+export { Stepper, Badge, Toggle } from "./inputs";
 export { Skeleton, EmptyState, Sheet } from "./feedback";
 export { CoinBalance, TierProgress } from "./loyalty";
 export * as Icons from "./icons";

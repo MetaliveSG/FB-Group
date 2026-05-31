@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { listPromotions, createPromotion, deactivatePromotion, getApiBase } from "@/lib/api";
 import { getStaffToken, getOperatorMerchant } from "@/lib/auth";
+import { Icons } from "@/components/ui";
 import type { Promotion } from "@fbgroup/api-client";
 
 // Time-bound point-multiplier promos (CAMPAIGN_MULTIPLIER) — distinct from the standing
@@ -122,8 +123,9 @@ export default function PointMultipliers() {
                 </td>
                 <td style={{ textAlign: "right" }}>
                   {p.is_active && (
-                    <button className="btn btn-sm btn-secondary" disabled={busy} onClick={() => deactivate(p.id)}>
-                      Turn off
+                    <button className="btn btn-sm btn-secondary" style={{ padding: "2px 8px" }} disabled={busy}
+                            onClick={() => deactivate(p.id)} title="Turn off promotion" aria-label="Turn off promotion">
+                      <Icons.Trash2 size={15} aria-hidden />
                     </button>
                   )}
                 </td>

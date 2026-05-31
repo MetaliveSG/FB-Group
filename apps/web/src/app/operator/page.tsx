@@ -18,6 +18,7 @@ import {
   setOperatorMerchant,
 } from "@/lib/auth";
 import { formatSGD } from "@/lib/format";
+import { Toggle } from "@/components/ui";
 import type {
   PlatformOverview,
   MerchantKpi,
@@ -340,20 +341,17 @@ export default function OperatorConsolePage() {
                     </div>
                   </td>
                   <td>
-                    <button
-                      onClick={() => toggleActive(m)}
-                      disabled={togglingId === m.id}
-                      className="badge"
-                      title="Toggle active status"
-                      style={{
-                        cursor: "pointer",
-                        border: "none",
-                        background: m.is_active ? "#dcfce7" : "#fee2e2",
-                        color: m.is_active ? "#166534" : "#991b1b",
-                      }}
-                    >
-                      {togglingId === m.id ? "…" : m.is_active ? "● Active" : "○ Suspended"}
-                    </button>
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                      <Toggle
+                        on={m.is_active}
+                        disabled={togglingId === m.id}
+                        onChange={() => toggleActive(m)}
+                        label={m.is_active ? "Suspend merchant" : "Activate merchant"}
+                      />
+                      <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+                        {togglingId === m.id ? "…" : m.is_active ? "Active" : "Suspended"}
+                      </span>
+                    </div>
                   </td>
                   <td>{formatSGD(m.revenue)}</td>
                   <td>{m.orders.toLocaleString()}</td>

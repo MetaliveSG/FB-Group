@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getSettings, updateSettings, getLoyaltyProgram, updateLoyaltyProgram, getApiBase } from "@/lib/api";
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import MerchantSidebar from "@/components/MerchantSidebar";
+import { Toggle } from "@/components/ui";
 import type { MerchantSettings, LoyaltyProgram } from "@fbgroup/api-client";
 
 type ModuleFlag = "rewards_enabled" | "qr_ordering_enabled" | "pos_enabled";
@@ -202,13 +203,12 @@ export default function SettingsPage() {
                 Show the Pipeline section. Walk-in-only merchants can hide it.
               </div>
             </div>
-            <button
-              className={`btn btn-sm ${settings.pipeline_enabled ? "btn-primary" : "btn-secondary"}`}
+            <Toggle
+              on={settings.pipeline_enabled}
               disabled={saving}
-              onClick={() => togglePipeline(!settings.pipeline_enabled)}
-            >
-              {settings.pipeline_enabled ? "Enabled" : "Disabled"}
-            </button>
+              onChange={(next) => togglePipeline(next)}
+              label="Sales & Win-back Pipeline"
+            />
           </div>
         </div>
       ) : null}
@@ -306,13 +306,12 @@ export default function SettingsPage() {
                 <div style={{ fontWeight: 600 }}>{m.label}</div>
                 <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>{m.desc}</div>
               </div>
-              <button
-                className={`btn btn-sm ${settings[m.key] ? "btn-primary" : "btn-secondary"}`}
+              <Toggle
+                on={settings[m.key]}
                 disabled={saving}
-                onClick={() => toggleModule(m.key, !settings[m.key])}
-              >
-                {settings[m.key] ? "On" : "Off"}
-              </button>
+                onChange={(next) => toggleModule(m.key, next)}
+                label={m.label}
+              />
             </div>
           ))}
         </div>

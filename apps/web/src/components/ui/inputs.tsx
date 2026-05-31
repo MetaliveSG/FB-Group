@@ -43,3 +43,56 @@ type Tone = "default" | "success" | "danger" | "warning" | "gold";
 export function Badge({ tone = "default", children }: { tone?: Tone; children: ReactNode }) {
   return <span className={`ui-badge${tone !== "default" ? ` ui-badge--${tone}` : ""}`}>{children}</span>;
 }
+
+// ── Toggle (left/right switch) — replaces Yes/No · Enable/Disable · On/Off ──
+export function Toggle({
+  on,
+  onChange,
+  disabled = false,
+  label,
+}: {
+  on: boolean;
+  onChange: (next: boolean) => void;
+  disabled?: boolean;
+  label?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      onClick={() => onChange(!on)}
+      style={{
+        position: "relative",
+        width: 44,
+        height: 24,
+        flex: "0 0 auto",
+        borderRadius: 999,
+        border: "none",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+        background: on ? "var(--color-primary, #16a34a)" : "var(--color-border, #cbd5e1)",
+        transition: "background .15s",
+        padding: 0,
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: 2,
+          left: on ? 22 : 2,
+          width: 20,
+          height: 20,
+          borderRadius: "50%",
+          background: "#fff",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.25)",
+          transition: "left .15s",
+        }}
+      />
+    </button>
+  );
+}

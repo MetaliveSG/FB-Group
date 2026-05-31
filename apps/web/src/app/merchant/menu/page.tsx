@@ -17,6 +17,7 @@ import {
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import { formatSGD } from "@/lib/format";
 import MerchantSidebar from "@/components/MerchantSidebar";
+import { Icons, Toggle } from "@/components/ui";
 import type { MenuAdminOutlet, Menu } from "@fbgroup/api-client";
 
 export default function MenuEditorPage() {
@@ -257,11 +258,13 @@ export default function MenuEditorPage() {
                   </div>
                   <button
                     className="btn btn-secondary btn-sm"
-                    style={{ padding: "2px 10px" }}
+                    style={{ padding: "2px 10px", display: "inline-flex", alignItems: "center", gap: 4 }}
                     disabled={busy}
                     onClick={() => removeCategory(cat.id)}
+                    title="Delete category"
+                    aria-label="Delete category"
                   >
-                    Delete category
+                    <Icons.Trash2 size={15} aria-hidden />
                   </button>
                 </div>
 
@@ -288,14 +291,14 @@ export default function MenuEditorPage() {
                       </div>
                       <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                         <span style={{ fontWeight: 600 }}>{formatSGD(item.price)}</span>
-                        <button className="btn btn-secondary btn-sm" style={{ padding: "2px 8px" }} disabled={busy} onClick={() => editPrice(item.id, item.price)}>
-                          Edit price
+                        <button className="btn btn-secondary btn-sm" style={{ padding: "2px 8px" }} disabled={busy} onClick={() => editPrice(item.id, item.price)} title="Edit price" aria-label="Edit price">
+                          <Icons.Pencil size={15} aria-hidden />
                         </button>
-                        <button className="btn btn-secondary btn-sm" style={{ padding: "2px 8px" }} disabled={busy} onClick={() => toggleAvail(item.id, item.is_available)}>
-                          {item.is_available ? "Mark unavailable" : "Mark available"}
-                        </button>
-                        <button className="btn btn-secondary btn-sm" style={{ padding: "2px 8px" }} disabled={busy} onClick={() => removeItem(item.id)}>
-                          Delete
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }} title={item.is_available ? "Available" : "Unavailable"}>
+                          <Toggle on={item.is_available} disabled={busy} onChange={() => toggleAvail(item.id, item.is_available)} label="Item available" />
+                        </span>
+                        <button className="btn btn-secondary btn-sm" style={{ padding: "2px 8px" }} disabled={busy} onClick={() => removeItem(item.id)} title="Delete item" aria-label="Delete item">
+                          <Icons.Trash2 size={15} aria-hidden />
                         </button>
                       </div>
                     </div>
@@ -312,10 +315,11 @@ export default function MenuEditorPage() {
                           <button
                             onClick={() => removeModifier(mod.id)}
                             disabled={busy}
-                            style={{ marginLeft: 6, border: "none", background: "none", cursor: "pointer", color: "#991b1b" }}
-                            title="Remove modifier"
+                            style={{ marginLeft: 6, border: "none", background: "none", cursor: "pointer", color: "#991b1b", display: "inline-flex", alignItems: "center", verticalAlign: "middle" }}
+                            title="Delete modifier"
+                            aria-label="Delete modifier"
                           >
-                            ×
+                            <Icons.Trash2 size={13} aria-hidden />
                           </button>
                         </span>
                       ))}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { listUsers, inviteUser, revokeAssignment, menuOutlets, getApiBase } from "@/lib/api";
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import MerchantSidebar from "@/components/MerchantSidebar";
+import { Icons } from "@/components/ui";
 import {
   STAFF_ROLES,
   type AdminUser,
@@ -294,10 +295,12 @@ export default function TeamPage() {
                                   </span>
                                   <button
                                     className="btn btn-secondary btn-sm"
-                                    style={{ padding: "2px 8px", fontSize: 12 }}
+                                    style={{ padding: "2px 8px", fontSize: 12, display: "inline-flex", alignItems: "center" }}
                                     onClick={() => handleRevoke(r.assignment_id)}
+                                    title="Revoke access"
+                                    aria-label="Revoke access"
                                   >
-                                    Revoke
+                                    <Icons.Trash2 size={14} aria-hidden />
                                   </button>
                                 </div>
                               ))}

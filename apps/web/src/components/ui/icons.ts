@@ -8,6 +8,7 @@ export {
   Plus,
   Minus,
   Trash2,
+  Pencil,
   ChevronRight,
   ChevronLeft,
   ArrowLeft,
