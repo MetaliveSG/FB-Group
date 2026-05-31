@@ -1,2 +1,2 @@
-163 passed (backend) — + loyalty-program admin (test_loyalty_admin.py)
+170 passed (backend) — + multiplier promotions (test_promotions.py) + birthday accrual e2e
 45 passed (frontend)

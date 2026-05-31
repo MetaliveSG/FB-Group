@@ -168,3 +168,4 @@ Configurable modes: **sales** (prospecting→qualified→proposal→negotiation�
 | DELETE | `/api/v1/org/tables/{id}` | remove a table + its QR |
 | GET/PATCH | `/api/v1/org/settings` | merchant settings: `{pipeline_enabled, wheel_spin_cost, jackpot_spin_cost, rewards_enabled, qr_ordering_enabled, pos_enabled}` — spin costs + module flags, per-merchant (PATCH needs `merchant.manage`) |
 | GET/PUT | `/api/v1/org/loyalty` | loyalty program (standing earn rules): `{points_per_dollar, welcome_bonus, birthday_bonus}` — 0 disables a rule (GET `report.view`, PUT `merchant.manage`, audited) |
+| GET/POST/DELETE | `/api/v1/promotions[/{id}]` | point-multiplier promos (time-bound `CAMPAIGN_MULTIPLIER`): `{label, multiplier, starts_on, ends_on, is_active}` — engine applies an active in-window multiplier to every earn (`campaign.manage`, audited) |
