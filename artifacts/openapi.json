@@ -5694,6 +5694,144 @@
         }
       }
     },
+    "/api/v1/org/loyalty": {
+      "get": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Get Loyalty Program",
+        "operationId": "get_loyalty_program_api_v1_org_loyalty_get",
+        "parameters": [
+          {
+            "name": "merchant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Merchant Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoyaltyProgramOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Update Loyalty Program",
+        "operationId": "update_loyalty_program_api_v1_org_loyalty_put",
+        "parameters": [
+          {
+            "name": "merchant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Merchant Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoyaltyProgramUpdateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoyaltyProgramOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/org/brands": {
       "get": {
         "tags": [
@@ -8121,6 +8259,58 @@
         ],
         "title": "JackpotWinOut"
       },
+      "LoyaltyProgramOut": {
+        "properties": {
+          "points_per_dollar": {
+            "type": "number",
+            "title": "Points Per Dollar"
+          },
+          "welcome_bonus": {
+            "type": "integer",
+            "title": "Welcome Bonus"
+          },
+          "birthday_bonus": {
+            "type": "integer",
+            "title": "Birthday Bonus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "points_per_dollar",
+          "welcome_bonus",
+          "birthday_bonus"
+        ],
+        "title": "LoyaltyProgramOut"
+      },
+      "LoyaltyProgramUpdateIn": {
+        "properties": {
+          "points_per_dollar": {
+            "type": "number",
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Points Per Dollar"
+          },
+          "welcome_bonus": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Welcome Bonus"
+          },
+          "birthday_bonus": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Birthday Bonus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "points_per_dollar",
+          "welcome_bonus",
+          "birthday_bonus"
+        ],
+        "title": "LoyaltyProgramUpdateIn"
+      },
       "LoyaltySummaryOut": {
         "properties": {
           "points_balance": {
@@ -9683,6 +9873,16 @@
                 "type": "null"
               }
             ]
+          },
+          "ordering_enabled": {
+            "type": "boolean",
+            "title": "Ordering Enabled",
+            "default": true
+          },
+          "rewards_enabled": {
+            "type": "boolean",
+            "title": "Rewards Enabled",
+            "default": true
           }
         },
         "type": "object",
@@ -9981,6 +10181,21 @@
           "jackpot_spin_cost": {
             "type": "integer",
             "title": "Jackpot Spin Cost"
+          },
+          "rewards_enabled": {
+            "type": "boolean",
+            "title": "Rewards Enabled",
+            "default": true
+          },
+          "qr_ordering_enabled": {
+            "type": "boolean",
+            "title": "Qr Ordering Enabled",
+            "default": true
+          },
+          "pos_enabled": {
+            "type": "boolean",
+            "title": "Pos Enabled",
+            "default": false
           }
         },
         "type": "object",
@@ -10029,6 +10244,39 @@
               }
             ],
             "title": "Jackpot Spin Cost"
+          },
+          "rewards_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rewards Enabled"
+          },
+          "qr_ordering_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qr Ordering Enabled"
+          },
+          "pos_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pos Enabled"
           }
         },
         "type": "object",

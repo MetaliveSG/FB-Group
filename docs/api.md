@@ -166,4 +166,5 @@ Configurable modes: **sales** (prospecting→qualified→proposal→negotiation�
 | GET/POST/PATCH | `/api/v1/org/outlets[/{id}]` | outlet CRUD (`outlet.manage`); create auto-provisions an empty menu |
 | GET/POST | `/api/v1/org/outlets/{id}/tables` | list/add tables (auto-generates a stable QR token) |
 | DELETE | `/api/v1/org/tables/{id}` | remove a table + its QR |
-| GET/PATCH | `/api/v1/org/settings` | merchant settings: `{pipeline_enabled, wheel_spin_cost, jackpot_spin_cost}` — spin costs are per-merchant (`ge=0`; PATCH needs `merchant.manage`) |
+| GET/PATCH | `/api/v1/org/settings` | merchant settings: `{pipeline_enabled, wheel_spin_cost, jackpot_spin_cost, rewards_enabled, qr_ordering_enabled, pos_enabled}` — spin costs + module flags, per-merchant (PATCH needs `merchant.manage`) |
+| GET/PUT | `/api/v1/org/loyalty` | loyalty program (standing earn rules): `{points_per_dollar, welcome_bonus, birthday_bonus}` — 0 disables a rule (GET `report.view`, PUT `merchant.manage`, audited) |

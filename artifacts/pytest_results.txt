@@ -1,3 +1,2 @@
-157 passed (backend) — through Phase 2a
+163 passed (backend) — + loyalty-program admin (test_loyalty_admin.py)
 45 passed (frontend)
-New since Phase 1: test_module_gating.py (5) — rewards/qr_ordering flags gate behaviour, per-merchant.
