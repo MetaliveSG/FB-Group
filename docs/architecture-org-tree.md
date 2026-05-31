@@ -58,9 +58,32 @@ toward "chain vs stall" is really one flag: **does this node sell?**
 - A node is a **Chain node** (pass-through structure) or a **Storefront** (`sells=true`) — and it
   can even be **both** (a flagship that has sub-counters *and* sells up front). A flag expresses
   that; two rigid types cannot.
-- `role` (`PLATFORM` / `MERCHANT` / `BRAND` / `OUTLET` / `STALL` …) is kept only as a **display
-  label** for humans; the *engine* keys off the flags, not the label. Adding a level is a new
-  label, never a schema change.
+- `role` (`PLATFORM` / `ENTERPRISE` / `MERCHANT` / `BRAND` / `OUTLET` / `STALL` …) is kept only
+  as a **display label** for humans; the *engine* keys off the flags, not the label. Adding a
+  level is a new label, never a schema change.
+
+> **`ENTERPRISE` — optional conglomerate tier (agreed shape; NOT built / not needed now).**
+> A customer that owns *several merchants* (e.g. NTUC → Foodfare + Kopitiam + leased stalls;
+> BreadTalk → Din Tai Fung + Toast Box + bakery) gets an `ENTERPRISE` node above its merchants.
+> Crucially it is **optional and ragged** — a solo hawker / single restaurant attaches straight
+> under `PLATFORM` with **no** enterprise parent; do not force a hollow Enterprise level on the
+> ~95% single-merchant case. Distinct from `PLATFORM` (the SaaS operator — us): an Enterprise is
+> a *customer* group. **Boundaries:** the Enterprise carries the **loyalty domain**
+> (`is_loyalty_domain=true` → coins free across all its merchants; crossing to another
+> enterprise = a clearing fee) and optionally the billing/contract umbrella — but the
+> **settlement boundary stays at the merchant** (each merchant / leased stall files its own GST
+> and takes its own payout; the Enterprise does not collect money). Additive when a real
+> conglomerate signs: a role label + `is_loyalty_domain` on the enterprise node + point its
+> merchants' `loyalty_domain_id` at it. No schema change (the spine already supports it).
+
+```
+PLATFORM
+  ├── ENTERPRISE "NTUC"            ← loyalty-domain node (only for conglomerates)
+  │     ├── MERCHANT Foodfare            (settles its own money)
+  │     ├── MERCHANT Kopitiam
+  │     └── MERCHANT "Leased Stall X"
+  └── MERCHANT "Joe's Hawker Stall"  ← solo merchant: no enterprise parent
+```
 
 > **Naming:** *Chain node* (structural) and *Storefront* (`sells`) — both intuitive in F&B and
 > scale to stall / restaurant / kiosk / cloud-kitchen. "Stall" is fine only where everything
@@ -261,6 +284,12 @@ fixed level; it is a resolved marker.
 Because these are two separate columns, a stall can settle its own money (`settlement_account
 = stall`) while still sitting inside a group-wide free-coin ring (`loyalty_domain = the group`)
 — the case where independent vendors share one loyalty programme.
+
+When the optional **`ENTERPRISE`** tier exists (§1), it is the natural **loyalty-domain** node:
+coins are free across all the enterprise's merchants, and crossing to another enterprise is the
+clearing fee. The **settlement boundary still stays at the merchant** (each merchant / leased
+stall collects + files its own money) — so loyalty domain (enterprise) and settlement (merchant)
+sit at different levels, which is exactly what these two independent markers allow.
 
 ---
 
