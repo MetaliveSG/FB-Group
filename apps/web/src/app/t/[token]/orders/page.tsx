@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { resolveQr, getMyOrders, getApiBase, installAuthHandler } from "@/lib/api";
+import { resolveQr, getMyOrders, getOrder, getApiBase, installAuthHandler } from "@/lib/api";
 import { getCustomerToken } from "@/lib/auth";
 import { formatSGD, relativeTime } from "@/lib/format";
 import { Card, Badge, Skeleton, EmptyState, Button, Icons } from "@/components/ui";
 import CustomerTabBar from "@/components/CustomerTabBar";
-import type { MyOrder } from "@fbgroup/api-client";
+import type { MyOrder, OrderOut } from "@fbgroup/api-client";
 
 const STATUS_TONE: Record<string, "success" | "warning" | "danger" | "default"> = {
   completed: "success",
@@ -29,6 +29,22 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<MyOrder[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [loggedOut, setLoggedOut] = useState(false);
+  // Expand-a-card → lazily fetch its full detail (line items + cost breakdown).
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [details, setDetails] = useState<Record<string, OrderOut | "loading" | "error">>({});
+
+  const toggleOrder = useCallback((orderId: string) => {
+    setExpandedId((cur) => (cur === orderId ? null : orderId));
+    setDetails((cur) => {
+      if (cur[orderId]) return cur; // already fetched/loading
+      const tok = getCustomerToken();
+      if (!tok) return cur;
+      getOrder(base, tok, orderId)
+        .then((d) => setDetails((c) => ({ ...c, [orderId]: d })))
+        .catch(() => setDetails((c) => ({ ...c, [orderId]: "error" })));
+      return { ...cur, [orderId]: "loading" };
+    });
+  }, [base]);
 
   useEffect(() => {
     installAuthHandler();
@@ -96,23 +112,82 @@ export default function OrdersPage() {
         </Card>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          {orders.map((o) => (
-            <Card pad key={o.id}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-2)" }}>
-                <div style={{ fontWeight: 800 }}>Order #{o.id.slice(0, 8)}</div>
-                <Badge tone={STATUS_TONE[o.status] ?? "default"}>{o.status}</Badge>
-              </div>
-              <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginTop: 4 }}>
-                {o.summary}
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: "var(--space-2)" }}>
-                <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>
-                  {o.outlet_name ? `${o.outlet_name} · ` : ""}{relativeTime(o.created_at)} · {o.items_count} item{o.items_count === 1 ? "" : "s"}
-                </span>
-                <span style={{ fontWeight: 800, color: "var(--color-primary)" }}>{formatSGD(o.total)}</span>
-              </div>
-            </Card>
-          ))}
+          {orders.map((o) => {
+            const expanded = expandedId === o.id;
+            const detail = details[o.id];
+            return (
+              <Card pad key={o.id}>
+                <button
+                  type="button"
+                  onClick={() => toggleOrder(o.id)}
+                  aria-expanded={expanded}
+                  style={{ all: "unset", cursor: "pointer", display: "block", width: "100%" }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-2)" }}>
+                    <div style={{ fontWeight: 800 }}>Order #{o.id.slice(0, 8)}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                      <Badge tone={STATUS_TONE[o.status] ?? "default"}>{o.status}</Badge>
+                      <Icons.ChevronRight
+                        size={18}
+                        style={{ transform: expanded ? "rotate(90deg)" : "none", transition: "transform .15s", color: "var(--color-text-muted)" }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginTop: 4 }}>
+                    {o.summary}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: "var(--space-2)" }}>
+                    <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>
+                      {o.outlet_name ? `${o.outlet_name} · ` : ""}{relativeTime(o.created_at)} · {o.items_count} item{o.items_count === 1 ? "" : "s"}
+                    </span>
+                    <span style={{ fontWeight: 800, color: "var(--color-primary)" }}>{formatSGD(o.total)}</span>
+                  </div>
+                </button>
+
+                {expanded && (
+                  <div style={{ marginTop: "var(--space-3)", borderTop: "1px solid var(--color-border)", paddingTop: "var(--space-3)" }}>
+                    {detail === "loading" || detail === undefined ? (
+                      <Skeleton width="100%" height={72} radius={8} />
+                    ) : detail === "error" ? (
+                      <div style={{ fontSize: "var(--text-sm)", color: "var(--color-danger)" }}>Couldn’t load details. Tap again to retry.</div>
+                    ) : (
+                      <>
+                        {detail.items.map((it, idx) => (
+                          <div key={idx} style={{ marginBottom: "var(--space-2)" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-sm)" }}>
+                              <span><strong>{it.quantity}×</strong> {it.name_snapshot}</span>
+                              <span>{formatSGD(it.line_total)}</span>
+                            </div>
+                            {it.modifiers && it.modifiers.length > 0 && (
+                              <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", paddingLeft: 16 }}>
+                                {it.modifiers.map((m, mi) => (
+                                  <span key={mi}>{m.name}{m.price_delta ? ` (+${formatSGD(m.price_delta)})` : ""}{mi < it.modifiers.length - 1 ? ", " : ""}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        <div style={{ borderTop: "1px dashed var(--color-border)", marginTop: "var(--space-2)", paddingTop: "var(--space-2)", fontSize: "var(--text-sm)" }}>
+                          {[
+                            ["Subtotal", detail.subtotal],
+                            ["Service charge", detail.service_charge],
+                            ["GST", detail.tax],
+                          ].map(([label, val]) => (
+                            <div key={label as string} style={{ display: "flex", justifyContent: "space-between", color: "var(--color-text-muted)" }}>
+                              <span>{label}</span><span>{formatSGD(val as number)}</span>
+                            </div>
+                          ))}
+                          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, marginTop: 4 }}>
+                            <span>Total</span><span style={{ color: "var(--color-primary)" }}>{formatSGD(detail.total)}</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </Card>
+            );
+          })}
         </div>
       )}
     </Shell>

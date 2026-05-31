@@ -1147,6 +1147,10 @@ export function getMyOrders(
   return request(baseUrl, `/me/orders?merchant_id=${encodeURIComponent(merchantId)}`, {}, token);
 }
 
+export function getOrder(baseUrl: string, token: string, orderId: string): Promise<OrderOut> {
+  return request(baseUrl, `/orders/${encodeURIComponent(orderId)}`, {}, token);
+}
+
 export function getMyProfile(baseUrl: string, token: string): Promise<MyProfile> {
   return request(baseUrl, `/me/profile`, {}, token);
 }
