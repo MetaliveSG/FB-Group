@@ -13,7 +13,7 @@ from app.loyalty.engine import TIER_THRESHOLDS, get_or_create_account, record_re
 from app.models.engagement import RewardCatalogItem, WheelSegment
 from app.models.enums import RewardTxnType, RewardScope, WheelPrizeKind
 from app.models.identity import Customer
-from app.models.loyalty import LoyaltyAccount, RewardRedemption, RewardTransaction
+from app.models.loyalty import RewardRedemption, RewardTransaction
 from app.models.orders import Order
 from app.models.tenancy import Merchant, Outlet
 

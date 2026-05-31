@@ -9,7 +9,7 @@ from sqlalchemy import Boolean, Column, ForeignKey, Index, Integer, JSON, Numeri
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, PKMixin, TimestampMixin
-from app.models.enums import LoyaltyTier, RewardRuleType, RewardScope, RewardTxnType
+from app.models.enums import LoyaltyTier, RewardScope
 
 # Coalition membership (merchants participating in a shared rewards program)
 coalition_members = Table(

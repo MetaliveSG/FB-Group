@@ -8,7 +8,7 @@ from sqlalchemy import Boolean, ForeignKey, Integer, JSON, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, PKMixin, TimestampMixin
-from app.models.enums import CampaignType, MessageStatus
+from app.models.enums import MessageStatus
 
 
 class Campaign(PKMixin, TimestampMixin, Base):

@@ -1,0 +1,2 @@
+# Dev/CI-only tooling (pytest + httpx live in requirements.txt, used by the app's TestClient).
+ruff==0.15.15

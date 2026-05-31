@@ -1,0 +1,20 @@
+# Local pre-commit hooks. Install once: `pip install pre-commit && pre-commit install`.
+# Mirrors the cheap half of CI so issues are caught before they reach a PR.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.15
+    hooks:
+      - id: ruff
+        name: ruff (backend lint)
+        args: ["--fix"]
+        files: ^apps/api/app/

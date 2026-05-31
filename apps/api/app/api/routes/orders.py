@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.auth.deps import get_current_customer, get_scope, require, resolve_merchant
 from app.core.errors import ForbiddenError, NotFoundError
 from app.db.session import get_db
-from app.models.enums import OrderChannel, OrderType, PaymentMethod
+from app.models.enums import OrderChannel, PaymentMethod
 from app.models.identity import Customer
 from app.models.orders import Order
 from app.models.tenancy import Outlet
