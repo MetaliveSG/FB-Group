@@ -1,17 +1,18 @@
 # Database Schema
 
-SQLAlchemy 2.0 models (`apps/api/app/models/`), Alembic-managed (**9 migrations**, single
-head). **40 application tables** (+ `alembic_version`). String UUID PKs (`uuid4().hex`),
+SQLAlchemy 2.0 models (`apps/api/app/models/`), Alembic-managed (**13 migrations**, single
+head). **41 application tables** (+ `alembic_version`). String UUID PKs (`uuid4().hex`),
 naive-UTC timestamps, money as `Numeric(12,2)`. Full DDL: run `alembic upgrade head` or
 see `artifacts/schema_tables.txt`.
 
 ## Tables by domain
-**Tenancy** — `merchants` (+`settings` JSON feature-toggles), `brands`, `outlets`, `tables`, `qr_codes`
+**Tenancy** — `merchants` (+`settings` JSON feature-toggles incl. module flags rewards/qr_ordering/pos), `brands`, `outlets`, `tables`, `qr_codes`
+**Org spine** — `org_nodes` (the member-tree-map: one node per Merchant/Brand/Outlet/Menu; adjacency `parent_id` + materialised `path` + `sells`/boundary flags + `loyalty_domain_id`/`settlement_account_id`; typed tables are its profiles)
 **Identity / RBAC** — `users`, `roles`, `permissions`, `role_permissions`, `user_roles`, `customers`, `customer_auth_identities`
 **Catalog** — `menus` (a Menu = a stall; foodcourt cols `stall_name`/`cuisine`/`logo`/`sort_order`/`is_open`), `menu_categories`, `menu_items` (incl. `image_url` for real food photos), `menu_modifiers`
-**Orders** — `orders`, `order_items`
+**Orders** — `orders` (+`source`/`external_id` for POS integration, `OrderChannel.pos`), `order_items`
 **Payments** — `payments`, `transactions`
-**Loyalty** — `coalitions`, `coalition_members`, `loyalty_accounts` (+`owner_user_id` CRM owner), `reward_rules`, `reward_transactions`, `reward_redemptions` (+`voucher_code`)
+**Loyalty** — `coalitions`, `coalition_members`, `loyalty_accounts` (+`owner_user_id` CRM owner; `points_balance` is a cache of the ledger), `reward_rules`, `reward_transactions` (append-only posting ledger; +`loyalty_domain_id` stamp, +`idempotency_key` unique per domain), `reward_redemptions` (+`voucher_code`)
 **Engagement** — `reward_catalog_items` (redeemable rewards), `wheel_segments` (spin-the-wheel), `jackpot_prizes` (3x3 slot reels, server-authoritative), `crm_tasks` (activities/to-dos), `opportunities` (pipeline; `pipeline_type` sales|winback), `customer_activities` (logged call/email/meeting/whatsapp)
 **CRM** — `customer_tags`, `customer_notes`, `customer_segments`
 **Campaigns** — `campaigns`, `campaign_audiences`, `campaign_messages`, `campaign_redemptions`
@@ -20,7 +21,8 @@ see `artifacts/schema_tables.txt`.
 ## Migrations (chain)
 `initial schema` → `rewards catalog/wheel/tasks/owner` → `redemption voucher_code` →
 `opportunities/customer_activities` → `pipeline_type + merchant settings` → `jackpot_prizes` →
-`customers.gender` → `menu_items.image_url` → `menus stall columns`.
+`customers.gender` → `menu_items.image_url` → `menus stall columns` →
+`ledger domain+idempotency` → `orders external ref` → `org_nodes spine` → `idempotency-key domain scope`.
 (Target Postgres; SQLite dev/test uses `Base.metadata.create_all`.)
 
 ## Key relationships

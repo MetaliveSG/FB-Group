@@ -30,10 +30,10 @@ descendants · `merchant.settings` JSON · Menu-as-stall foodcourt model.
 
 ---
 
-## Phase 0 — Foundational seams · ~3–5 days · DO NOW
+## Phase 0 — Foundational seams · ✅ DONE (2026-05-31)
 
-Behaviour-neutral; lays the irreversible bits so everything else is additive. Keeps all
-129 backend / 45 web tests green.
+Behaviour-neutral; lays the irreversible bits so everything else is additive. Kept all
+tests green (152 backend / 45 web at completion).
 
 - **0a — Domain-stamp the ledger.** Add `loyalty_domain_id` to `RewardTransaction` (= `scope_id`
   today) + an **idempotency key**. Add an invariant test: `points_balance == SUM(ledger)`.
@@ -49,7 +49,7 @@ Behaviour-neutral; lays the irreversible bits so everything else is additive. Ke
 - **Handoffs:** `/my-dba` (ledger index + idempotency), `/my-tester` (reconciliation + idempotency).
 - **Exit:** no behaviour change; suite green; the irreversible seams are in.
 
-## Phase 1 — Org spine (Node + path) · ~1.5–2 weeks · the core scale move
+## Phase 1 — Org spine (Node + path) · ✅ DONE (2026-05-31) · the core scale move
 
 - `org_node(id, parent_id, role, depth, path, sells, is_settlement_boundary, is_loyalty_domain,
   module flags, loyalty_domain_id, settlement_account_id, is_active)`.

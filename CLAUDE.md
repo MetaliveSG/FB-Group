@@ -26,7 +26,7 @@ docker-compose -f infra/docker-compose.yml up --build
 cd apps/web && npm install && npm run dev      # dev
 cd apps/web && npm run test                    # Vitest
 ```
-Baseline: **129 backend + 45 frontend tests pass** · 93 endpoints · 40 tables · 9 migrations.
+Baseline: **152 backend + 45 frontend tests pass** · 93 endpoints · 41 tables · 13 migrations.
 
 ## Environment gotchas (this machine)
 - Docker CLI is **`docker-compose`** (hyphenated v1), NOT `docker compose` v2.

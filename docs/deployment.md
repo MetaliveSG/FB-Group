@@ -17,9 +17,11 @@ alembic upgrade head            # apply
 alembic downgrade -1            # roll back one revision
 alembic revision --autogenerate -m "msg"   # new migration after model changes
 ```
-Migration chain: **9 revisions** (initial schema → rewards catalog/wheel/tasks/owner →
+Migration chain: **13 revisions** (initial schema → rewards catalog/wheel/tasks/owner →
 redemption voucher_code → opportunities/activities → pipeline_type + merchant settings →
-jackpot_prizes → customers.gender → menu_items.image_url → menus stall columns), single head, verified to upgrade (40 tables) and downgrade cleanly.
+jackpot_prizes → customers.gender → menu_items.image_url → menus stall columns →
+ledger domain+idempotency → orders external ref → org_nodes spine → idempotency-key domain scope),
+single head, verified to upgrade (41 tables) and downgrade cleanly.
 On container start,
 `alembic upgrade head` runs, then the seed runs **idempotently** (only if the DB is empty,
 so restarts don't wipe data / invalidate tokens).

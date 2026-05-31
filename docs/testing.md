@@ -6,10 +6,10 @@ cd apps/api && .venv/bin/python -m pytest -v      # full backend suite
 ```
 Tests use an isolated in-memory SQLite DB (StaticPool) shared between the test
 session and the FastAPI `TestClient`, with RBAC seeded and rate-limiter/OTP reset per
-test (`app/tests/conftest.py`). Latest run: **129 passed** across 24 files (see
+test (`app/tests/conftest.py`). Latest run: **152 passed** across 29 files (see
 `artifacts/pytest_results.txt`). Frontend: **45 Vitest tests**.
 
-## Coverage by file (129 backend tests)
+## Coverage by file (152 backend tests)
 | File | Module(s) | What it proves |
 |---|---|---|
 | `test_health.py` | 12 | health endpoint + secure headers |
@@ -31,6 +31,11 @@ test (`app/tests/conftest.py`). Latest run: **129 passed** across 24 files (see
 | `test_admin_analytics.py` | 9, 10 | menu CRUD + isolation, **user invite/list/revoke** (+perm+scope), **RFM scoring** |
 | `test_org_admin.py` | 1, 10 | brand→outlet(auto-menu)→table→**QR resolves**, permission, tenant isolation, unique table label |
 | `test_foodcourt.py` | 1, 10 | **foodcourt** stall directory: single-stall inline menu, multi-stall directory + null inline menu, stall-menu fetch + **cross-outlet isolation** (404 menu_not_found) |
+| `test_loyalty_ledger.py` | 6 | **posting ledger** (Phase 0a): domain stamp on every posting, **balance == SUM(ledger)** reconciliation, idempotent accrual per (account,order), keyless-not-deduped, per-domain idempotency-key scoping |
+| `test_order_external_ref.py` | 5 | **POS order primitives** (Phase 0b): `source`/`external_id` persisted + `OrderChannel.POS`; native order leaves them null |
+| `test_module_flags_boundaries.py` | 0c/0d | module flags default/override (rewards/qr/pos) + boundary resolvers (= merchant today) |
+| `test_org_tree.py` | 1 | **org spine** (Phase 1): one node/entity, parent/depth/path, `sellable_under` + spine-backed stall resolution + fallback, network scope, **two-world path-prefix isolation** |
+| `test_rbac_node_cascade.py` | 1, 10 | **RBAC node cascade** (Phase 1c): `outlet_ids_under` excludes sibling brand + other merchant; brand-manager limited to brand outlets e2e |
 | `test_platform.py` | operator | ecosystem overview, merchant directory, **non-operator blocked**, onboard merchant, suspend, coalitions |
 | `test_permissions.py` | 1, 10 | super admin all, **merchant can't see another**, **outlet manager scoped**, staff lacks CRM, **audit log** |
 | `test_e2e_capture_loop.py` | 1-11 | golden flow end-to-end (below) |
