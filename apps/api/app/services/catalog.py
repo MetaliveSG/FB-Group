@@ -36,6 +36,30 @@ def list_outlet_menus(db: Session, outlet_id: str) -> list[Menu]:
     ).all())
 
 
+def list_outlet_stalls(db: Session, outlet_id: str) -> list[Menu]:
+    """Sellable stalls at an outlet, resolved via the org spine (member-tree-map): the set of
+    sellable nodes in the outlet's subtree, mapped back to their Menu profiles. The structural
+    set comes from the spine; the live `is_active` filter and ordering come from the profile.
+
+    Falls back to the direct menu query when the outlet has no spine node yet (e.g. a freshly
+    created outlet whose auto-menu pre-dates a sync), so a stall is never hidden by sync timing.
+    The explicit `outlet_id` predicate is a defense-in-depth tenant guard.
+    """
+    from app.services import org_tree  # local import: avoids any import-order coupling
+
+    node = org_tree.node_for(db, outlet_id)
+    if node is None:
+        return list_outlet_menus(db, outlet_id)
+    sellable_ids = {n.id for n in org_tree.sellable_under(db, node, active_only=False)}
+    if not sellable_ids:
+        return list_outlet_menus(db, outlet_id)
+    return list(db.scalars(
+        select(Menu)
+        .where(Menu.outlet_id == outlet_id, Menu.is_active.is_(True), Menu.id.in_(sellable_ids))
+        .order_by(Menu.sort_order, Menu.id)
+    ).all())
+
+
 def menu_item_count(db: Session, menu_id: str) -> int:
     return db.scalar(
         select(func.count(MenuItem.id))

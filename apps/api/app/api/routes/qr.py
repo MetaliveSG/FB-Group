@@ -23,8 +23,9 @@ def resolve_qr(token: str, db: Session = Depends(get_db)):
     table = db.get(DiningTable, qr.table_id)
 
     # An outlet may host many stalls (menus). One → restaurant (inline menu, backward
-    # compat); many → foodcourt (stall directory, fetch a menu on tap).
-    menus = catalog_service.list_outlet_menus(db, qr.outlet_id)
+    # compat); many → foodcourt (stall directory, fetch a menu on tap). The sellable set is
+    # resolved through the org spine (Phase 1b); behaviour-identical for the current tree.
+    menus = catalog_service.list_outlet_stalls(db, qr.outlet_id)
     is_foodcourt = len(menus) > 1
     stalls = [
         StallRef(

@@ -4,6 +4,7 @@ The spine mirrors the typed tables (Merchant→Brand→Outlet→Menu); it must b
 parent/depth/path/flags, stay idempotent, and answer subtree queries without recursion.
 """
 from app.models.org import OrgNode
+from app.services import catalog as catalog_service
 from app.services import org_tree
 from app.tests.factories import make_world
 
@@ -63,6 +64,23 @@ def test_sync_is_idempotent(db):
     org_tree.sync_org_tree(db)  # re-run
     second = db.query(OrgNode).count()
     assert first == second == 4
+
+
+def test_spine_backed_stall_resolution_matches_profile_query(db):
+    """Phase 1b: list_outlet_stalls (spine) returns the same stalls as list_outlet_menus."""
+    w = make_world(db)
+    org_tree.sync_org_tree(db)
+    via_spine = [m.id for m in catalog_service.list_outlet_stalls(db, w.outlet_id)]
+    via_profile = [m.id for m in catalog_service.list_outlet_menus(db, w.outlet_id)]
+    assert via_spine == via_profile == [w.menu.id]
+
+
+def test_stall_resolution_falls_back_when_spine_unsynced(db):
+    """If the outlet has no spine node yet, resolution falls back to the profile query."""
+    w = make_world(db)  # NOT synced
+    assert org_tree.node_for(db, w.outlet_id) is None
+    via_spine = [m.id for m in catalog_service.list_outlet_stalls(db, w.outlet_id)]
+    assert via_spine == [w.menu.id]  # fallback path still returns the stall
 
 
 def test_tenant_isolation_two_worlds_dont_cross(db):
