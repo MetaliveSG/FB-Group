@@ -2,10 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getSettings, updateSettings, getApiBase } from "@/lib/api";
+import { getSettings, updateSettings, getLoyaltyProgram, updateLoyaltyProgram, getApiBase } from "@/lib/api";
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import MerchantSidebar from "@/components/MerchantSidebar";
-import type { MerchantSettings } from "@fbgroup/api-client";
+import type { MerchantSettings, LoyaltyProgram } from "@fbgroup/api-client";
+
+type ModuleFlag = "rewards_enabled" | "qr_ordering_enabled" | "pos_enabled";
+const MODULES: { key: ModuleFlag; label: string; desc: string }[] = [
+  { key: "rewards_enabled", label: "Rewards / loyalty", desc: "Earn & redeem coins. The core capture loop." },
+  { key: "qr_ordering_enabled", label: "Table-QR ordering", desc: "Diners order from the menu by scanning the table QR." },
+  { key: "pos_enabled", label: "POS integration", desc: "Accept orders pushed from an external POS (coming soon)." },
+];
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -18,6 +25,10 @@ export default function SettingsPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [wheelCost, setWheelCost] = useState("");
   const [jackpotCost, setJackpotCost] = useState("");
+  const [loyalty, setLoyalty] = useState<LoyaltyProgram | null>(null);
+  const [earnRate, setEarnRate] = useState("");
+  const [welcome, setWelcome] = useState("");
+  const [birthday, setBirthday] = useState("");
 
   useEffect(() => {
     const tok = getStaffToken();
@@ -25,11 +36,16 @@ export default function SettingsPage() {
       router.push("/merchant/login");
       return;
     }
-    getSettings(base, tok, getOperatorMerchant()?.id)
-      .then((s) => {
+    const mid = getOperatorMerchant()?.id;
+    Promise.all([getSettings(base, tok, mid), getLoyaltyProgram(base, tok, mid)])
+      .then(([s, lp]) => {
         setSettings(s);
         setWheelCost(String(s.wheel_spin_cost));
         setJackpotCost(String(s.jackpot_spin_cost));
+        setLoyalty(lp);
+        setEarnRate(String(lp.points_per_dollar));
+        setWelcome(String(lp.welcome_bonus));
+        setBirthday(String(lp.birthday_bonus));
         setLoading(false);
       })
       .catch((err: unknown) => {
@@ -43,6 +59,51 @@ export default function SettingsPage() {
         }
       });
   }, [base, router]);
+
+  async function toggleModule(key: ModuleFlag, next: boolean) {
+    const tok = getStaffToken();
+    if (!tok || !settings) return;
+    setSaving(true); setError(null); setMsg(null);
+    try {
+      const updated = await updateSettings(base, tok, { [key]: next }, getOperatorMerchant()?.id);
+      setSettings(updated);
+      setMsg("Settings saved.");
+      setTimeout(() => setMsg(null), 2500);
+    } catch (err: unknown) {
+      const m = err instanceof Error ? err.message : "Failed to save settings";
+      setError(m.includes("403") ? "Settings require the merchant owner role." : m);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveLoyalty() {
+    const tok = getStaffToken();
+    if (!tok) return;
+    const ppd = Number(earnRate), w = Number(welcome), b = Number(birthday);
+    if ([ppd, w, b].some((n) => Number.isNaN(n) || n < 0)) {
+      setError("Loyalty values must be 0 or more.");
+      return;
+    }
+    setSaving(true); setError(null); setMsg(null);
+    try {
+      const updated = await updateLoyaltyProgram(
+        base, tok, { points_per_dollar: ppd, welcome_bonus: w, birthday_bonus: b },
+        getOperatorMerchant()?.id
+      );
+      setLoyalty(updated);
+      setEarnRate(String(updated.points_per_dollar));
+      setWelcome(String(updated.welcome_bonus));
+      setBirthday(String(updated.birthday_bonus));
+      setMsg("Loyalty program saved.");
+      setTimeout(() => setMsg(null), 2500);
+    } catch (err: unknown) {
+      const m = err instanceof Error ? err.message : "Failed to save";
+      setError(m.includes("403") ? "Loyalty rules require the merchant owner role." : m);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function togglePipeline(next: boolean) {
     const tok = getStaffToken();
@@ -104,12 +165,17 @@ export default function SettingsPage() {
   const spinCostsDirty =
     !!settings &&
     (wheelCost !== String(settings.wheel_spin_cost) || jackpotCost !== String(settings.jackpot_spin_cost));
+  const loyaltyDirty =
+    !!loyalty &&
+    (earnRate !== String(loyalty.points_per_dollar) ||
+      welcome !== String(loyalty.welcome_bonus) ||
+      birthday !== String(loyalty.birthday_bonus));
 
   return (
     <MerchantSidebar active="settings">
       <div className="page-header">
         <h1 className="page-title">Settings</h1>
-        <p className="page-subtitle">Merchant feature toggles</p>
+        <p className="page-subtitle">Loyalty program, modules &amp; feature toggles</p>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -190,6 +256,65 @@ export default function SettingsPage() {
               {saving ? "Saving…" : "Save"}
             </button>
           </div>
+        </div>
+      ) : null}
+
+      {/* Loyalty program — the standing earn rules (the self-serve config that was missing) */}
+      {!loading && loyalty ? (
+        <div className="card" style={{ marginTop: 16 }}>
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontWeight: 600 }}>Loyalty program</div>
+            <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
+              Coins customers earn. Set 0 to switch a rule off. (Time-limited promos live under Campaigns.)
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label htmlFor="earn-rate">Coins per $1 spent</label>
+              <input id="earn-rate" type="number" min={0} step="0.1" value={earnRate}
+                     disabled={saving} onChange={(e) => setEarnRate(e.target.value)} style={{ maxWidth: 140 }} />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label htmlFor="welcome-bonus">Welcome bonus (first visit)</label>
+              <input id="welcome-bonus" type="number" min={0} step={1} value={welcome}
+                     disabled={saving} onChange={(e) => setWelcome(e.target.value)} style={{ maxWidth: 140 }} />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label htmlFor="birthday-bonus">Birthday bonus</label>
+              <input id="birthday-bonus" type="number" min={0} step={1} value={birthday}
+                     disabled={saving} onChange={(e) => setBirthday(e.target.value)} style={{ maxWidth: 140 }} />
+            </div>
+            <button className="btn btn-sm btn-primary" disabled={saving || !loyaltyDirty} onClick={saveLoyalty}>
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Modules — which parts of the suite this merchant runs (gates behaviour) */}
+      {!loading && settings ? (
+        <div className="card" style={{ marginTop: 16 }}>
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontWeight: 600 }}>Modules</div>
+            <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
+              Turn features on or off for this merchant.
+            </div>
+          </div>
+          {MODULES.map((m) => (
+            <div key={m.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, padding: "10px 0", borderTop: "1px solid var(--color-border)" }}>
+              <div>
+                <div style={{ fontWeight: 600 }}>{m.label}</div>
+                <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>{m.desc}</div>
+              </div>
+              <button
+                className={`btn btn-sm ${settings[m.key] ? "btn-primary" : "btn-secondary"}`}
+                disabled={saving}
+                onClick={() => toggleModule(m.key, !settings[m.key])}
+              >
+                {settings[m.key] ? "On" : "Off"}
+              </button>
+            </div>
+          ))}
         </div>
       ) : null}
     </MerchantSidebar>

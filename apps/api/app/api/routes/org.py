@@ -10,6 +10,8 @@ from app.schemas.org import (
     BrandCreateIn,
     BrandOut,
     BrandUpdateIn,
+    LoyaltyProgramOut,
+    LoyaltyProgramUpdateIn,
     OutletCreateIn,
     OutletOut,
     OutletUpdateIn,
@@ -18,7 +20,7 @@ from app.schemas.org import (
     TableCreateIn,
     TableOut,
 )
-from app.services import merchant_settings, org_admin
+from app.services import loyalty_admin, merchant_settings, org_admin
 from app.services.audit import record as audit_record
 
 router = APIRouter(prefix="/org", tags=["org"])
@@ -44,6 +46,28 @@ def update_settings(body: SettingsUpdateIn, merchant_id: str | None = Query(None
     out = merchant_settings.update_settings(db, merchant_id=mid, changes=body.model_dump(exclude_none=True))
     audit_record(db, action="merchant.settings_update", actor_id=scope.user_id, merchant_id=mid,
                  meta=body.model_dump(exclude_none=True))
+    db.commit()
+    return out
+
+
+# --- Loyalty program (standing earn rules: earn rate / welcome / birthday) ---
+@router.get("/loyalty", response_model=LoyaltyProgramOut)
+def get_loyalty_program(merchant_id: str | None = Query(None), scope=Depends(get_scope),
+                        db: Session = Depends(get_db)):
+    mid = _mid(scope, merchant_id, "report.view")
+    return loyalty_admin.get_program(db, merchant_id=mid)
+
+
+@router.put("/loyalty", response_model=LoyaltyProgramOut)
+def update_loyalty_program(body: LoyaltyProgramUpdateIn, merchant_id: str | None = Query(None),
+                           scope=Depends(get_scope), db: Session = Depends(get_db)):
+    mid = _mid(scope, merchant_id, "merchant.manage")
+    out = loyalty_admin.update_program(
+        db, merchant_id=mid, points_per_dollar=body.points_per_dollar,
+        welcome_bonus=body.welcome_bonus, birthday_bonus=body.birthday_bonus,
+    )
+    audit_record(db, action="merchant.loyalty_update", actor_id=scope.user_id, merchant_id=mid,
+                 meta=body.model_dump())
     db.commit()
     return out
 

@@ -86,6 +86,8 @@ import {
   launchWinback,
   getSettings,
   updateSettings,
+  getLoyaltyProgram,
+  updateLoyaltyProgram,
   refresh,
   setAuthHandler,
 } from "@fbgroup/api-client";
@@ -188,6 +190,8 @@ export {
   launchWinback,
   getSettings,
   updateSettings,
+  getLoyaltyProgram,
+  updateLoyaltyProgram,
   refresh,
 };
 

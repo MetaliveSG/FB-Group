@@ -524,6 +524,15 @@ export interface MerchantSettings {
   pipeline_enabled: boolean;
   wheel_spin_cost: number;
   jackpot_spin_cost: number;
+  rewards_enabled: boolean;
+  qr_ordering_enabled: boolean;
+  pos_enabled: boolean;
+}
+
+export interface LoyaltyProgram {
+  points_per_dollar: number;
+  welcome_bonus: number;
+  birthday_bonus: number;
 }
 
 export type ActivityType = "call" | "email" | "meeting" | "whatsapp" | "note";
@@ -1506,13 +1515,42 @@ export function getSettings(
 export function updateSettings(
   baseUrl: string,
   token: string,
-  data: { pipeline_enabled?: boolean; wheel_spin_cost?: number; jackpot_spin_cost?: number },
+  data: {
+    pipeline_enabled?: boolean;
+    wheel_spin_cost?: number;
+    jackpot_spin_cost?: number;
+    rewards_enabled?: boolean;
+    qr_ordering_enabled?: boolean;
+    pos_enabled?: boolean;
+  },
   merchantId?: string
 ): Promise<MerchantSettings> {
   return request(
     baseUrl,
     `/org/settings${mq(merchantId)}`,
     { method: "PATCH", body: JSON.stringify(data) },
+    token
+  );
+}
+
+export function getLoyaltyProgram(
+  baseUrl: string,
+  token: string,
+  merchantId?: string
+): Promise<LoyaltyProgram> {
+  return request(baseUrl, `/org/loyalty${mq(merchantId)}`, {}, token);
+}
+
+export function updateLoyaltyProgram(
+  baseUrl: string,
+  token: string,
+  data: LoyaltyProgram,
+  merchantId?: string
+): Promise<LoyaltyProgram> {
+  return request(
+    baseUrl,
+    `/org/loyalty${mq(merchantId)}`,
+    { method: "PUT", body: JSON.stringify(data) },
     token
   );
 }
@@ -2031,5 +2069,7 @@ export class FbGroupApiClient {
   // Round 10 — win-back launcher + merchant settings
   launchWinback(data: WinbackLaunch, merchantId?: string) { return launchWinback(this.baseUrl, this.token!, data, merchantId); }
   getSettings(merchantId?: string) { return getSettings(this.baseUrl, this.token!, merchantId); }
-  updateSettings(data: { pipeline_enabled?: boolean; wheel_spin_cost?: number; jackpot_spin_cost?: number }, merchantId?: string) { return updateSettings(this.baseUrl, this.token!, data, merchantId); }
+  updateSettings(data: Partial<MerchantSettings>, merchantId?: string) { return updateSettings(this.baseUrl, this.token!, data, merchantId); }
+  getLoyaltyProgram(merchantId?: string) { return getLoyaltyProgram(this.baseUrl, this.token!, merchantId); }
+  updateLoyaltyProgram(data: LoyaltyProgram, merchantId?: string) { return updateLoyaltyProgram(this.baseUrl, this.token!, data, merchantId); }
 }

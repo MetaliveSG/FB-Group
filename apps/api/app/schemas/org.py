@@ -58,6 +58,10 @@ class SettingsOut(BaseModel):
     pipeline_enabled: bool
     wheel_spin_cost: int
     jackpot_spin_cost: int
+    # Module-adoption flags (Phase 2) — which parts of the suite this merchant runs.
+    rewards_enabled: bool = True
+    qr_ordering_enabled: bool = True
+    pos_enabled: bool = False
 
 
 class SettingsUpdateIn(BaseModel):
@@ -66,6 +70,22 @@ class SettingsUpdateIn(BaseModel):
     # an absurd cost (only affects the merchant's own games, but keeps data sane).
     wheel_spin_cost: int | None = Field(default=None, ge=0, le=100000)
     jackpot_spin_cost: int | None = Field(default=None, ge=0, le=100000)
+    rewards_enabled: bool | None = None
+    qr_ordering_enabled: bool | None = None
+    pos_enabled: bool | None = None
+
+
+class LoyaltyProgramOut(BaseModel):
+    points_per_dollar: float
+    welcome_bonus: int
+    birthday_bonus: int
+
+
+class LoyaltyProgramUpdateIn(BaseModel):
+    # 0 disables a rule. Bounded to keep a typo from minting absurd balances.
+    points_per_dollar: float = Field(ge=0, le=1000)
+    welcome_bonus: int = Field(ge=0, le=1_000_000)
+    birthday_bonus: int = Field(ge=0, le=1_000_000)
 
 
 class TableCreateIn(BaseModel):
