@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   crmCustomerProfile,
@@ -85,6 +85,7 @@ export default function CustomerProfilePage() {
   const [addingTag, setAddingTag] = useState(false);
   const [addingNote, setAddingNote] = useState(false);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);  // order detail drill-down
 
   // Task form
   const [taskTitle, setTaskTitle] = useState("");
@@ -878,6 +879,7 @@ export default function CustomerProfilePage() {
           <table>
             <thead>
               <tr>
+                <th style={{ width: 24 }}></th>
                 <th>Order ID</th>
                 <th>Status</th>
                 <th>Subtotal</th>
@@ -889,13 +891,21 @@ export default function CustomerProfilePage() {
             <tbody>
               {profile.orders.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: "center", color: "var(--color-text-muted)", padding: 20 }}>
+                  <td colSpan={7} style={{ textAlign: "center", color: "var(--color-text-muted)", padding: 20 }}>
                     No orders
                   </td>
                 </tr>
               ) : (
-                profile.orders.map((o) => (
-                  <tr key={o.id}>
+                profile.orders.map((o) => {
+                  const open = expandedOrderId === o.id;
+                  return (
+                  <Fragment key={o.id}>
+                  <tr
+                    onClick={() => setExpandedOrderId(open ? null : o.id)}
+                    style={{ cursor: "pointer" }}
+                    title="Click to see full order detail"
+                  >
+                    <td style={{ color: "var(--color-text-muted)", textAlign: "center" }}>{open ? "▾" : "▸"}</td>
                     <td>
                       <code style={{ fontSize: 12 }}>{o.id.slice(0, 8)}…</code>
                     </td>
@@ -917,7 +927,43 @@ export default function CustomerProfilePage() {
                       {o.items.map((i) => i.name_snapshot).join(", ")}
                     </td>
                   </tr>
-                ))
+                  {open && (
+                    <tr>
+                      <td colSpan={7} style={{ background: "var(--color-surface-alt, #f8fafc)", padding: "12px 20px" }}>
+                        <table style={{ width: "100%", fontSize: 13 }}>
+                          <tbody>
+                            {o.items.map((it, idx) => (
+                              <tr key={idx}>
+                                <td style={{ padding: "2px 0" }}>
+                                  <strong>{it.quantity}×</strong> {it.name_snapshot}
+                                  {it.modifiers && it.modifiers.length > 0 && (
+                                    <span style={{ color: "var(--color-text-muted)" }}>
+                                      {" "}— {it.modifiers.map((m: { name: string; price_delta?: number }) => m.name).join(", ")}
+                                    </span>
+                                  )}
+                                  <span style={{ color: "var(--color-text-muted)" }}> @ {formatSGD(it.unit_price)}</span>
+                                </td>
+                                <td style={{ textAlign: "right" }}>{formatSGD(it.line_total)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <div style={{ borderTop: "1px dashed var(--color-border)", marginTop: 8, paddingTop: 8, fontSize: 13, maxWidth: 280, marginLeft: "auto" }}>
+                          {([["Subtotal", o.subtotal], ["Service charge", o.service_charge], ["GST", o.tax]] as [string, number][]).map(([label, val]) => (
+                            <div key={label} style={{ display: "flex", justifyContent: "space-between", color: "var(--color-text-muted)" }}>
+                              <span>{label}</span><span>{formatSGD(val)}</span>
+                            </div>
+                          ))}
+                          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, marginTop: 2 }}>
+                            <span>Total</span><span>{formatSGD(o.total)}</span>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>
