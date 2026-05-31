@@ -886,6 +886,16 @@ def seed_if_empty() -> dict | None:
         return build_demo(db)
 
 
+def ensure_rbac() -> int:
+    """Idempotently sync roles + permissions on a live DB — runs on EVERY startup (even when
+    demo data is preserved), so newly-added roles/permissions (e.g. operator roles) reach an
+    already-seeded DB that `seed_if_empty` would otherwise skip. Returns the role count."""
+    with SessionLocal() as db:
+        roles = seed_rbac(db)
+        db.commit()
+        return len(roles)
+
+
 def ensure_org_tree() -> dict:
     """Idempotently (re)build the org spine from the typed tables on a live DB. Safe to run
     repeatedly; run after any structural change (new merchant/brand/outlet/stall)."""
