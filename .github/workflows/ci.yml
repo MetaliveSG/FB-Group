@@ -1,0 +1,100 @@
+name: CI
+
+# Runs on every PR and on pushes to main. Three independent jobs: backend (lint + tests),
+# frontend (typecheck + tests + build), and migrations (real Postgres: upgrade/downgrade +
+# model-drift guard — the parity that pytest's SQLite create_all path does NOT exercise).
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend — lint + tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: apps/api/requirements*.txt
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Lint (ruff)
+        run: ruff check app
+      - name: Tests (pytest — in-memory SQLite)
+        run: python -m pytest -q
+
+  frontend:
+    name: Frontend — typecheck + tests + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Build shared api-client
+        run: npm run build --workspace packages/api-client
+      - name: Typecheck (tsc)
+        run: npx tsc --noEmit --project apps/web/tsconfig.json
+      - name: Tests (vitest)
+        run: npm run test --workspace apps/web
+      - name: Build (next)
+        run: npm run build --workspace apps/web
+
+  # Migrations are roll-forward: the PoC chain has unnamed constraints that Postgres can't
+  # DROP, so full downgrade-to-base isn't supported (a deliberate, common stance). CI guards
+  # the two things that matter for deploys: a clean upgrade from an empty DB, and that the
+  # models match the migrations (no un-migrated schema drift).
+  migrations:
+    name: Migrations — Postgres parity + drift guard
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: fbgroup
+          POSTGRES_PASSWORD: fbgroup
+          POSTGRES_DB: fbgroup
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fbgroup"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://fbgroup:fbgroup@localhost:5432/fbgroup
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: apps/api/requirements*.txt
+      - run: pip install -r requirements.txt
+      - name: Upgrade to head (clean apply from empty DB)
+        run: alembic upgrade head
+      - name: Assert models match migrations (no drift)
+        run: |
+          alembic revision --autogenerate -m _ci_drift_check >/dev/null
+          gen=$(ls -t alembic/versions/*_ci_drift_check.py | head -1)
+          if grep -qE 'op\.(create|drop|add|alter|rename)_' "$gen"; then
+            echo "::error::Model/migration drift — models changed without a migration:"
+            grep -nE 'op\.(create|drop|add|alter|rename)_' "$gen"
+            rm -f "$gen"; exit 1
+          fi
+          rm -f "$gen"
+          echo "No drift — models and migrations are in sync."

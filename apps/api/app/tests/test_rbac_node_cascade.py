@@ -4,7 +4,6 @@ These are written BEFORE wiring the spine into resolve_scope, and must stay gree
 scoped to a node reaches exactly its subtree's outlets — never a sibling brand's, never
 another merchant's.
 """
-from sqlalchemy import select
 
 from app.models.enums import RoleName, ScopeType
 from app.models.identity import User, UserRoleAssignment

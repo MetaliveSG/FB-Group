@@ -11,7 +11,7 @@ Modular-monolith FastAPI backend (one API for all clients), Next.js frontend,
 PostgreSQL, fully Dockerised and AWS-ready by design.
 
 ## 2. What was built
-- **Backend** (`apps/api`): FastAPI + SQLAlchemy 2.0, **41 tables**, **110 API endpoints**, 13 Alembic migrations.
+- **Backend** (`apps/api`): FastAPI + SQLAlchemy 2.0, **41 tables**, **110 API endpoints**, 14 Alembic migrations.
 - **Frontend** (`apps/web`): Next.js 14 App Router, **22 routes** (+ a `/showcase` UI-kit gallery), typed API client in `packages/api-client`. Customer app redesigned mobile-first on a shared **design system** (`packages/ui` tokens + component kit, Lucide icons).
 - **Infra** (`infra/`): docker-compose (Postgres + API + web), Dockerfiles, healthchecks, backup script.
 - **Docs** (`docs/`): architecture, api, security, testing, deployment, bc-dr, database, PRD, this report.

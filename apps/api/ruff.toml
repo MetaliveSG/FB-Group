@@ -1,0 +1,13 @@
+# Backend lint config — conservative, high-signal to start; expand the rule set over time.
+line-length = 120
+target-version = "py312"
+
+[lint]
+# Pyflakes (F): unused imports, undefined names, redefinitions — the rules with the
+# highest signal and ~zero false positives. Add E/I/UP/B incrementally once tuned.
+select = ["F"]
+
+[lint.per-file-ignores]
+# Test bodies bind world/outlet fixtures for their DB side effects, then assert via the API
+# rather than the binding — an unused local there is intentional, not a smell.
+"app/tests/*" = ["F841"]

@@ -6,13 +6,13 @@ on SQLite and Postgres. PoC scale; production would push aggregation into SQL/wa
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.base import utcnow
-from app.models.orders import Order, OrderItem
+from app.models.orders import OrderItem
 from app.models.payments import Transaction
 from app.models.tenancy import Outlet
 

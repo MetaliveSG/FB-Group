@@ -1,7 +1,7 @@
 """Customer rewards + wheel schemas."""
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date
 
 from pydantic import BaseModel, Field
 

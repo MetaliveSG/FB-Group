@@ -13,7 +13,6 @@ from sqlalchemy.exc import IntegrityError
 
 from app.loyalty.engine import (
     accrue_on_transaction,
-    get_or_create_account,
     ledger_balance,
     record_reward_txn,
     redeem,
