@@ -6,6 +6,7 @@ import { listCampaigns, createCampaign, getApiBase } from "@/lib/api";
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import { formatSGD } from "@/lib/format";
 import MerchantSidebar from "@/components/MerchantSidebar";
+import PointMultipliers from "@/components/PointMultipliers";
 import {
   CAMPAIGN_TYPES,
   type CampaignListItem,
@@ -139,6 +140,8 @@ export default function CampaignsPage() {
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
+
+      <PointMultipliers />
 
       {showForm && (
         <div className="card" style={{ marginBottom: 20 }}>

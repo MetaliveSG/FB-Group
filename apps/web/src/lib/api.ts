@@ -88,6 +88,9 @@ import {
   updateSettings,
   getLoyaltyProgram,
   updateLoyaltyProgram,
+  listPromotions,
+  createPromotion,
+  deactivatePromotion,
   refresh,
   setAuthHandler,
 } from "@fbgroup/api-client";
@@ -192,6 +195,9 @@ export {
   updateSettings,
   getLoyaltyProgram,
   updateLoyaltyProgram,
+  listPromotions,
+  createPromotion,
+  deactivatePromotion,
   refresh,
 };
 

@@ -535,6 +535,22 @@ export interface LoyaltyProgram {
   birthday_bonus: number;
 }
 
+export interface Promotion {
+  id: string;
+  label: string;
+  multiplier: number;
+  starts_on: string | null;
+  ends_on: string | null;
+  is_active: boolean;
+}
+
+export interface PromotionCreate {
+  label: string;
+  multiplier: number;
+  starts_on?: string | null;
+  ends_on?: string | null;
+}
+
 export type ActivityType = "call" | "email" | "meeting" | "whatsapp" | "note";
 
 export interface Activity {
@@ -1555,6 +1571,25 @@ export function updateLoyaltyProgram(
   );
 }
 
+export function listPromotions(baseUrl: string, token: string, merchantId?: string): Promise<Promotion[]> {
+  return request(baseUrl, `/promotions${mq(merchantId)}`, {}, token);
+}
+
+export function createPromotion(
+  baseUrl: string,
+  token: string,
+  data: PromotionCreate,
+  merchantId?: string
+): Promise<Promotion> {
+  return request(baseUrl, `/promotions${mq(merchantId)}`,
+    { method: "POST", body: JSON.stringify(data) }, token);
+}
+
+export function deactivatePromotion(baseUrl: string, token: string, promoId: string, merchantId?: string): Promise<void> {
+  return request(baseUrl, `/promotions/${encodeURIComponent(promoId)}${mq(merchantId)}`,
+    { method: "DELETE" }, token);
+}
+
 // ─── Round 7: Campaigns & retention ──────────────────────────
 
 export function listCampaigns(
@@ -2072,4 +2107,7 @@ export class FbGroupApiClient {
   updateSettings(data: Partial<MerchantSettings>, merchantId?: string) { return updateSettings(this.baseUrl, this.token!, data, merchantId); }
   getLoyaltyProgram(merchantId?: string) { return getLoyaltyProgram(this.baseUrl, this.token!, merchantId); }
   updateLoyaltyProgram(data: LoyaltyProgram, merchantId?: string) { return updateLoyaltyProgram(this.baseUrl, this.token!, data, merchantId); }
+  listPromotions(merchantId?: string) { return listPromotions(this.baseUrl, this.token!, merchantId); }
+  createPromotion(data: PromotionCreate, merchantId?: string) { return createPromotion(this.baseUrl, this.token!, data, merchantId); }
+  deactivatePromotion(promoId: string, merchantId?: string) { return deactivatePromotion(this.baseUrl, this.token!, promoId, merchantId); }
 }

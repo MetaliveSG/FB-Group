@@ -101,7 +101,8 @@ def create_app() -> FastAPI:
 
 def _register_routers(app: FastAPI) -> None:
     from app.api.routes import (
-        admin, auth, campaigns, catalog, crm, menu_admin, orders, org, platform, qr, reports, rewards,
+        admin, auth, campaigns, catalog, crm, menu_admin, orders, org, platform, promotions,
+        qr, reports, rewards,
     )
 
     prefix = settings.API_V1_PREFIX
@@ -114,6 +115,7 @@ def _register_routers(app: FastAPI) -> None:
     app.include_router(rewards.router, prefix=prefix)
     app.include_router(platform.router, prefix=prefix)
     app.include_router(campaigns.router, prefix=prefix)
+    app.include_router(promotions.router, prefix=prefix)
     app.include_router(menu_admin.router, prefix=prefix)
     app.include_router(admin.router, prefix=prefix)
     app.include_router(org.router, prefix=prefix)
