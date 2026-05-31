@@ -127,6 +127,21 @@ export interface OrderOut {
   items: OrderItem[];
 }
 
+export interface MerchantOrder {
+  id: string;
+  status: string;
+  channel: string;
+  created_at: string;
+  subtotal: number;
+  service_charge: number;
+  tax: number;
+  total: number;
+  outlet_name: string;
+  customer_name: string | null;
+  table_label: string | null;
+  items: OrderItem[];
+}
+
 export interface CheckoutResponse {
   payment: {
     id: string;
@@ -1177,6 +1192,21 @@ export function getMyOrders(
 
 export function getOrder(baseUrl: string, token: string, orderId: string): Promise<OrderOut> {
   return request(baseUrl, `/orders/${encodeURIComponent(orderId)}`, {}, token);
+}
+
+export function getMerchantOrders(
+  baseUrl: string,
+  token: string,
+  opts: { status?: string; outletId?: string; limit?: number } = {},
+  merchantId?: string
+): Promise<MerchantOrder[]> {
+  const p = new URLSearchParams();
+  if (merchantId) p.set("merchant_id", merchantId);
+  if (opts.status) p.set("status", opts.status);
+  if (opts.outletId) p.set("outlet_id", opts.outletId);
+  if (opts.limit) p.set("limit", String(opts.limit));
+  const qs = p.toString();
+  return request(baseUrl, `/orders${qs ? `?${qs}` : ""}`, {}, token);
 }
 
 export function getMyProfile(baseUrl: string, token: string): Promise<MyProfile> {

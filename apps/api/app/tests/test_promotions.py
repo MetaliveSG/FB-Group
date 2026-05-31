@@ -26,6 +26,19 @@ def test_active_multiplier_doubles_earned_points(db):
     assert pts == 300
 
 
+def test_overlapping_multipliers_dont_stack_best_wins(db):
+    """Two overlapping promos → the HIGHEST applies, not the product (2x & 3x → 3x, not 6x)."""
+    w = make_world(db, earn_rate=1)
+    for label, mult in [("Two", 2), ("Three", 3)]:
+        promo_service.create_promotion(db, merchant_id=w.merchant_id, label=label, multiplier=mult,
+                                       starts_on=date(2026, 6, 1), ends_on=date(2026, 6, 30))
+    c = _cust(db)
+    pts = accrue_on_transaction(db, customer=c, merchant_id=w.merchant_id,
+                                amount=Decimal("100"), order_id=None, now=datetime(2026, 6, 15))
+    # (base 100 + welcome 50) * 3 = 450  (NOT *6 = 900)
+    assert pts == 450
+
+
 def test_expired_multiplier_not_applied(db):
     w = make_world(db, earn_rate=1)
     promo_service.create_promotion(db, merchant_id=w.merchant_id, label="June Only",

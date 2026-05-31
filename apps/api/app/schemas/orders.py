@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from app.models.enums import OrderStatus, OrderType, PaymentMethod
-from app.schemas.common import ORMModel
+from app.schemas.common import ORMModel, UtcDatetime
 
 
 class OrderItemInputSchema(BaseModel):
@@ -52,6 +52,22 @@ class OrderOut(ORMModel):
     service_charge: float
     tax: float
     total: float
+    items: list[OrderItemOut] = []
+
+
+class MerchantOrderOut(BaseModel):
+    """Row in the merchant-wide orders feed — order + items + resolved labels."""
+    id: str
+    status: str
+    channel: str
+    created_at: UtcDatetime
+    subtotal: float
+    service_charge: float
+    tax: float
+    total: float
+    outlet_name: str
+    customer_name: str | None = None
+    table_label: str | None = None
     items: list[OrderItemOut] = []
 
 

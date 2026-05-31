@@ -187,7 +187,9 @@ def _compute_earn(
                 bd.repeat_visit += bonus
                 bd.lines.append((r.code, bonus, f"Every-{every}-visits bonus"))
         elif r.rule_type == RewardRuleType.CAMPAIGN_MULTIPLIER.value:
-            bd.multiplier *= float(cfg.get("multiplier", 1.0))
+            # Best promo wins — overlapping multipliers do NOT stack (no 2x×3x=6x). Take the
+            # highest active multiplier (standard retail rule, predictable for the merchant).
+            bd.multiplier = max(bd.multiplier, float(cfg.get("multiplier", 1.0)))
     return bd
 
 

@@ -14,6 +14,7 @@ import { installAuthHandler, AUTH_LOGOUT_EVENT, getSettings, getApiBase } from "
 type ActiveKey =
   | "crm"
   | "insights"
+  | "orders"
   | "pipeline"
   | "campaigns"
   | "org"
@@ -101,6 +102,9 @@ export default function MerchantSidebar({
           )}
           <a className={`sidebar-link ${active === "crm" ? "active" : ""}`} href="/merchant/crm">
             CRM &amp; Analytics
+          </a>
+          <a className={`sidebar-link ${active === "orders" ? "active" : ""}`} href="/merchant/orders">
+            Orders
           </a>
           <a className={`sidebar-link ${active === "insights" ? "active" : ""}`} href="/merchant/insights">
             ✨ AI Insights

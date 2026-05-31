@@ -1,11 +1,11 @@
 """Ordering routes — QR/customer path + cashier/staff path + status lifecycle + checkout."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.auth.deps import get_current_customer, get_scope, require
+from app.auth.deps import get_current_customer, get_scope, require, resolve_merchant
 from app.core.errors import ForbiddenError, NotFoundError
 from app.db.session import get_db
 from app.models.enums import OrderChannel, OrderType, PaymentMethod
@@ -16,6 +16,7 @@ from app.schemas.orders import (
     CheckoutRequest,
     CheckoutResponse,
     ManualOrderCreate,
+    MerchantOrderOut,
     OrderOut,
     OrderStatusUpdate,
     PaymentOut,
@@ -34,6 +35,23 @@ def _to_inputs(items) -> list[OrderItemInput]:
         OrderItemInput(menu_item_id=i.menu_item_id, quantity=i.quantity, modifier_ids=i.modifier_ids)
         for i in items
     ]
+
+
+# --- Staff: merchant-wide orders feed ----------------------------------
+@router.get("", response_model=list[MerchantOrderOut])
+def list_orders(
+    merchant_id: str | None = Query(default=None),
+    status: str | None = Query(default=None),
+    outlet_id: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    scope=Depends(get_scope),
+    db: Session = Depends(get_db),
+):
+    mid = resolve_merchant(scope, merchant_id)
+    require(scope, "order.view", mid)
+    return orders_service.list_merchant_orders(
+        db, merchant_id=mid, scope=scope, status=status, outlet_id=outlet_id, limit=limit
+    )
 
 
 # --- Customer QR order -------------------------------------------------

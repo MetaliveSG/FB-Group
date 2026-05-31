@@ -22,10 +22,11 @@ from app.models.enums import (
     PaymentMethod,
     PaymentStatus,
 )
+from app.auth.access import ALL_OUTLETS, Scope
 from app.models.identity import Customer
 from app.models.orders import Order, OrderItem
 from app.models.payments import Payment, Transaction
-from app.models.tenancy import Outlet
+from app.models.tenancy import DiningTable, Outlet
 from app.services import boundaries
 
 
@@ -210,3 +211,53 @@ def checkout(
     order.completed_at = utcnow()
     db.flush()
     return CheckoutResult(payment=payment, transaction=txn, points_earned=points)
+
+
+def list_merchant_orders(
+    db: Session,
+    *,
+    merchant_id: str,
+    scope: Scope,
+    status: str | None = None,
+    outlet_id: str | None = None,
+    limit: int = 50,
+) -> list[dict]:
+    """The merchant-wide orders feed: orders for the merchant, newest first, with items +
+    resolved outlet/customer/table labels. Tenant-scoped to the merchant; an outlet-limited
+    user only sees their outlets'. Optional status / outlet filters."""
+    stmt = select(Order).where(Order.merchant_id == merchant_id)
+
+    allowed = scope.outlet_limit(merchant_id)
+    allowed_set = None if allowed is ALL_OUTLETS else set(allowed)
+    if outlet_id:
+        allowed_set = {outlet_id} if allowed_set is None else (allowed_set & {outlet_id})
+    if allowed_set is not None:
+        if not allowed_set:
+            return []  # outlet-scoped user with no matching outlet → nothing
+        stmt = stmt.where(Order.outlet_id.in_(allowed_set))
+
+    if status:
+        stmt = stmt.where(Order.status == status)
+
+    orders = db.scalars(stmt.order_by(Order.created_at.desc()).limit(min(limit, 200))).all()
+
+    out: list[dict] = []
+    for o in orders:
+        outlet = db.get(Outlet, o.outlet_id)
+        customer = db.get(Customer, o.customer_id) if o.customer_id else None
+        table = db.get(DiningTable, o.table_id) if o.table_id else None
+        out.append({
+            "id": o.id,
+            "status": o.status,
+            "channel": o.channel,
+            "created_at": o.created_at,
+            "subtotal": float(o.subtotal),
+            "service_charge": float(o.service_charge),
+            "tax": float(o.tax),
+            "total": float(o.total),
+            "outlet_name": outlet.name if outlet else "—",
+            "customer_name": (customer.full_name or customer.phone) if customer else None,
+            "table_label": table.label if table else None,
+            "items": o.items,
+        })
+    return out
