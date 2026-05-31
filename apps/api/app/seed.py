@@ -264,8 +264,24 @@ def seed_foodhall(db: Session) -> Outlet:
 
     _upsert_foodhall_stalls(db, outlet)
     _ensure_foodhall_rules(db, merchant.id)
+    _ensure_foodhall_owner(db, merchant.id)
     db.commit()
     return outlet
+
+
+FOODHALL_OWNER_EMAIL = "owner@bedokfoodhall.sg"
+
+
+def _ensure_foodhall_owner(db: Session, merchant_id: str) -> None:
+    """Idempotently ensure a merchant-owner login exists for the foodhall — seed_foodhall
+    created the merchant directly (bypassing operator onboarding, which normally also creates
+    the owner), so without this there is no backend login scoped to this merchant and its
+    orders are only visible via the operator console."""
+    if db.scalar(select(User).where(User.email == FOODHALL_OWNER_EMAIL)):
+        return
+    roles = seed_rbac(db)
+    _user(db, roles, FOODHALL_OWNER_EMAIL, f"{FOODHALL_NAME} Owner",
+          RoleName.MERCHANT_OWNER, ScopeType.MERCHANT, merchant_id)
 
 
 def _ensure_foodhall_rules(db: Session, merchant_id: str) -> None:

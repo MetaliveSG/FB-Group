@@ -30,3 +30,7 @@ Seed summary: {
 ## Customers (password: Customer123!; or OTP via mock)
 - Emails cust0@example.sg .. cust24@example.sg
 - Sample QR token (Orchard table 1): orchard-01
+
+## Bedok Food Hall (foodcourt)
+- Merchant owner: `owner@bedokfoodhall.sg` / `Password123!` (operator can also drill in via /operator)
+- Customer QR: `http://localhost:3001/t/foodhall-01` (foodcourt → 3 stalls)
