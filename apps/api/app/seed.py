@@ -263,8 +263,30 @@ def seed_foodhall(db: Session) -> Outlet:
         outlet = _outlet(db, brand, FOODHALL_NAME, "85 Bedok North St 4, Singapore", slug="foodhall", n_tables=8)
 
     _upsert_foodhall_stalls(db, outlet)
+    _ensure_foodhall_rules(db, merchant.id)
     db.commit()
     return outlet
+
+
+def _ensure_foodhall_rules(db: Session, merchant_id: str) -> None:
+    """Idempotently ensure the foodhall merchant has loyalty earn rules — without these,
+    transactions accrue 0 coins (the engine has no rule to apply). Keyed by rule `code` so
+    re-running doesn't duplicate. Mirrors the earn config the other seeded merchants get."""
+    existing = {
+        r.code for r in db.scalars(
+            select(RewardRule).where(
+                RewardRule.scope_type == RewardScope.MERCHANT.value,
+                RewardRule.scope_id == merchant_id,
+            )
+        ).all()
+    }
+    if "earn" not in existing:
+        _rule(db, RewardScope.MERCHANT, merchant_id, "earn",
+              RewardRuleType.EARN_RATE, {"points_per_dollar": 1})
+    if "welcome" not in existing:
+        _rule(db, RewardScope.MERCHANT, merchant_id, "welcome",
+              RewardRuleType.FIRST_VISIT, {"bonus": 50})
+    db.flush()
 
 
 # ---- main seed ---------------------------------------------------------
