@@ -91,7 +91,15 @@ def resolve_scope(db: Session, user: User) -> Scope:
             if not brand:
                 continue
             merchant_id = brand.merchant_id
-            outlets = set(db.scalars(select(Outlet.id).where(Outlet.brand_id == brand.id)).all())
+            # Cascade down the subtree via the org spine (generalises to any depth). The
+            # path-prefix is cross-tenant-safe by construction and fail-closed on spine lag;
+            # fall back to the direct query when the brand has no spine node yet.
+            from app.services import org_tree
+            node = org_tree.node_for(db, brand.id)
+            if node is not None:
+                outlets = org_tree.outlet_ids_under(db, node)
+            else:
+                outlets = set(db.scalars(select(Outlet.id).where(Outlet.brand_id == brand.id)).all())
         elif a.scope_type == ScopeType.OUTLET.value:
             outlet = db.get(Outlet, a.scope_id) if a.scope_id else None
             if not outlet:

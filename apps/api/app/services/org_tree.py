@@ -108,3 +108,18 @@ def sellable_under(db: Session, node: OrgNode, *, active_only: bool = True) -> l
     if active_only:
         stmt = stmt.where(OrgNode.is_active.is_(True))
     return list(db.scalars(stmt.order_by(OrgNode.path)).all())
+
+
+def outlet_ids_under(db: Session, node: OrgNode) -> set[str]:
+    """Active OUTLET-role node ids in a node's subtree — the RBAC cascade primitive: a role
+    scoped to a merchant/brand (or any ancestor) reaches exactly the outlets beneath it, via
+    the path-prefix. Cross-tenant-safe by construction (a different tenant's outlets have a
+    different path prefix) and fail-closed on spine lag (a missing node simply isn't returned).
+    """
+    return set(db.scalars(
+        select(OrgNode.id).where(
+            _subtree_filter(node.path),
+            OrgNode.role == ROLE_OUTLET,
+            OrgNode.is_active.is_(True),
+        )
+    ).all())

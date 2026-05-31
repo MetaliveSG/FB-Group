@@ -6,7 +6,7 @@ parent/depth/path/flags, stay idempotent, and answer subtree queries without rec
 from app.models.org import OrgNode
 from app.services import catalog as catalog_service
 from app.services import org_tree
-from app.tests.factories import make_world
+from app.tests.factories import add_outlet, make_world
 
 
 def test_sync_builds_one_node_per_entity_with_correct_shape(db):
@@ -81,6 +81,22 @@ def test_stall_resolution_falls_back_when_spine_unsynced(db):
     assert org_tree.node_for(db, w.outlet_id) is None
     via_spine = [m.id for m in catalog_service.list_outlet_stalls(db, w.outlet_id)]
     assert via_spine == [w.menu.id]  # fallback path still returns the stall
+
+
+def test_network_scope_spans_all_outlets_under_merchant(db):
+    """Phase 1d app/network context: resolving at the merchant returns sellable stalls across
+    ALL its outlets (the browse-the-chain read-path), not just one venue."""
+    w = make_world(db)              # outlet A + its menu(stall)
+    o2 = add_outlet(db, w, "N2")    # outlet B (same merchant) + its menu(stall)
+    org_tree.sync_org_tree(db)
+
+    merchant = org_tree.node_for(db, w.merchant_id)
+    stall_ids = {n.id for n in org_tree.sellable_under(db, merchant)}
+    # both outlets' stalls are reachable from the merchant (network scope)
+    assert w.menu.id in stall_ids and len(stall_ids) == 2
+    # but a single outlet's location scope sees only its own stall
+    outlet_a = org_tree.node_for(db, w.outlet_id)
+    assert len(org_tree.sellable_under(db, outlet_a)) == 1
 
 
 def test_tenant_isolation_two_worlds_dont_cross(db):
