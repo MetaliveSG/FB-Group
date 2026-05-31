@@ -16,6 +16,7 @@ import {
   platformUpdateCoalition,
   platformAddCoalitionMember,
   platformRemoveCoalitionMember,
+  platformMyPermissions,
   getApiBase,
   installAuthHandler,
   AUTH_LOGOUT_EVENT,
@@ -27,12 +28,22 @@ import {
 } from "@/lib/auth";
 import { formatSGD } from "@/lib/format";
 import { Toggle, Icons } from "@/components/ui";
-import type {
-  PlatformOverview,
-  MerchantKpi,
-  Coalition,
-  Operator,
+import {
+  OPERATOR_ROLE_LABELS,
+  type PlatformOverview,
+  type MerchantKpi,
+  type Coalition,
+  type Operator,
+  type OperatorRole,
+  type PlatformCapabilities,
 } from "@fbgroup/api-client";
+
+const OPERATOR_ROLE_OPTIONS: { value: OperatorRole; label: string; hint: string }[] = [
+  { value: "platform_admin", label: "Admin", hint: "Merchants + coalitions + drill-in (no operator mgmt)" },
+  { value: "platform_onboarder", label: "Onboarding", hint: "Onboard/edit merchants only" },
+  { value: "platform_support", label: "Support", hint: "Read-only (overview, merchants, read drill-in)" },
+  { value: "super_admin", label: "Owner", hint: "Full access, incl. managing operators" },
+];
 
 // The three adoption module flags, in display order.
 const MODULE_FLAGS: { key: string; label: string }[] = [
@@ -58,6 +69,7 @@ export default function OperatorConsolePage() {
   const [merchants, setMerchants] = useState<MerchantKpi[]>([]);
   const [coalitions, setCoalitions] = useState<Coalition[]>([]);
   const [operators, setOperators] = useState<Operator[]>([]);
+  const [caps, setCaps] = useState<PlatformCapabilities | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -83,6 +95,7 @@ export default function OperatorConsolePage() {
   const [opEmail, setOpEmail] = useState("");
   const [opPassword, setOpPassword] = useState("");
   const [opName, setOpName] = useState("");
+  const [opRole, setOpRole] = useState<OperatorRole>("platform_admin");
   const [opCreating, setOpCreating] = useState(false);
   const [opError, setOpError] = useState<string | null>(null);
   const [opSuccess, setOpSuccess] = useState<string | null>(null);
@@ -98,16 +111,20 @@ export default function OperatorConsolePage() {
 
   const loadAll = useCallback(
     async (tok: string) => {
-      const [ov, ms, cs, ops] = await Promise.all([
+      // Capabilities first — they decide which sections this operator may load/render.
+      const c = await platformMyPermissions(base, tok);
+      setCaps(c);
+      const has = (p: string) => c.is_owner || c.permissions.includes(p);
+      const [ov, ms, cs] = await Promise.all([
         platformOverview(base, tok),
         platformMerchants(base, tok),
         platformCoalitions(base, tok),
-        platformOperators(base, tok),
       ]);
       setOverview(ov);
       setMerchants(ms);
       setCoalitions(cs);
-      setOperators(ops);
+      // Operators list is Owner-only — only fetch it when allowed (else it 403s).
+      setOperators(has("platform.operators.manage") ? await platformOperators(base, tok) : []);
     },
     [base]
   );
@@ -231,11 +248,13 @@ export default function OperatorConsolePage() {
         email: opEmail.trim(),
         password: opPassword,
         full_name: opName.trim() || undefined,
+        role: opRole,
       });
-      setOpSuccess(`Added operator ${op.email}.`);
+      setOpSuccess(`Added ${OPERATOR_ROLE_LABELS[op.role]} operator ${op.email}.`);
       setOpEmail("");
       setOpPassword("");
       setOpName("");
+      setOpRole("platform_admin");
       const ops = await platformOperators(base, tok);
       setOperators(ops);
     } catch (err: unknown) {
@@ -346,6 +365,13 @@ export default function OperatorConsolePage() {
   }
 
   const merchantName = (id: string) => merchants.find((m) => m.id === id)?.name || id;
+  // Capability gate for console actions (server still enforces — this only prunes the UI).
+  const can = (p: string) => !!caps && (caps.is_owner || caps.permissions.includes(p));
+  const canOnboard = can("platform.merchants.onboard");
+  const canSuspend = can("platform.merchants.suspend");
+  const canDrillIn = can("platform.merchant.access");
+  const canCoalitions = can("platform.coalitions.manage");
+  const canOperators = can("platform.operators.manage");
 
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: "28px 32px" }}>
@@ -424,9 +450,11 @@ export default function OperatorConsolePage() {
         <h2 className="card-title" style={{ fontSize: 18 }}>
           Merchant Directory
         </h2>
-        <button className="btn btn-primary btn-sm" onClick={() => setShowForm((s) => !s)}>
-          {showForm ? "Cancel" : "+ Onboard Merchant"}
-        </button>
+        {canOnboard && (
+          <button className="btn btn-primary btn-sm" onClick={() => setShowForm((s) => !s)}>
+            {showForm ? "Cancel" : "+ Onboard Merchant"}
+          </button>
+        )}
       </div>
 
       {/* Onboard form */}
@@ -527,12 +555,14 @@ export default function OperatorConsolePage() {
                     </td>
                     <td>
                       <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                        <Toggle
-                          on={m.is_active}
-                          disabled={togglingId === m.id}
-                          onChange={() => toggleActive(m)}
-                          label={m.is_active ? "Suspend merchant" : "Activate merchant"}
-                        />
+                        {canSuspend && (
+                          <Toggle
+                            on={m.is_active}
+                            disabled={togglingId === m.id}
+                            onChange={() => toggleActive(m)}
+                            label={m.is_active ? "Suspend merchant" : "Activate merchant"}
+                          />
+                        )}
                         <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
                           {togglingId === m.id ? "…" : m.is_active ? "Active" : "Suspended"}
                         </span>
@@ -565,20 +595,24 @@ export default function OperatorConsolePage() {
                     </td>
                     <td>
                       <div style={{ display: "inline-flex", gap: 6 }}>
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          style={{ padding: "4px 8px", display: "inline-flex", alignItems: "center" }}
-                          onClick={() =>
-                            editMerchantId === m.id ? setEditMerchantId(null) : startEditMerchant(m)
-                          }
-                          title="Edit merchant"
-                          aria-label="Edit merchant"
-                        >
-                          <Icons.Pencil size={14} aria-hidden />
-                        </button>
-                        <button className="btn btn-secondary btn-sm" onClick={() => enterMerchant(m)}>
-                          Enter →
-                        </button>
+                        {canOnboard && (
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: "4px 8px", display: "inline-flex", alignItems: "center" }}
+                            onClick={() =>
+                              editMerchantId === m.id ? setEditMerchantId(null) : startEditMerchant(m)
+                            }
+                            title="Edit merchant"
+                            aria-label="Edit merchant"
+                          >
+                            <Icons.Pencil size={14} aria-hidden />
+                          </button>
+                        )}
+                        {canDrillIn && (
+                          <button className="btn btn-secondary btn-sm" onClick={() => enterMerchant(m)}>
+                            Enter →
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -632,7 +666,9 @@ export default function OperatorConsolePage() {
         </table>
       </div>
 
-      {/* Platform operators */}
+      {/* Platform operators — Owner-only (manage other operators' access + roles) */}
+      {canOperators && (
+        <>
       <div
         style={{
           display: "flex",
@@ -649,7 +685,8 @@ export default function OperatorConsolePage() {
         </button>
       </div>
       <p style={{ fontSize: 13, color: "var(--color-text-muted)", marginTop: 0, marginBottom: 14 }}>
-        Operators have full super-admin access to this console.
+        Operators are platform logins. Each holds a role that scopes what they can do;
+        only an <strong>Owner</strong> can add or remove operators.
       </p>
 
       {showOpForm && (
@@ -690,6 +727,23 @@ export default function OperatorConsolePage() {
                   placeholder="min 8 characters"
                 />
               </div>
+              <div className="form-group">
+                <label htmlFor="op-role">Role</label>
+                <select
+                  id="op-role"
+                  value={opRole}
+                  onChange={(e) => setOpRole(e.target.value as OperatorRole)}
+                >
+                  {OPERATOR_ROLE_OPTIONS.map((r) => (
+                    <option key={r.value} value={r.value}>
+                      {r.label}
+                    </option>
+                  ))}
+                </select>
+                <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
+                  {OPERATOR_ROLE_OPTIONS.find((r) => r.value === opRole)?.hint}
+                </span>
+              </div>
             </div>
             <button type="submit" className="btn btn-primary" disabled={opCreating}>
               {opCreating ? "Adding…" : "Add Operator"}
@@ -704,6 +758,7 @@ export default function OperatorConsolePage() {
             <tr>
               <th>Operator</th>
               <th>Email</th>
+              <th>Role</th>
               <th>Status</th>
               <th></th>
             </tr>
@@ -723,6 +778,17 @@ export default function OperatorConsolePage() {
                   )}
                 </td>
                 <td>{op.email}</td>
+                <td>
+                  <span
+                    className="badge"
+                    style={{
+                      background: op.role === "super_admin" ? "#fef3c7" : "#eef2ff",
+                      color: op.role === "super_admin" ? "#92400e" : "#4338ca",
+                    }}
+                  >
+                    {OPERATOR_ROLE_LABELS[op.role]}
+                  </span>
+                </td>
                 <td>
                   <span
                     className="badge"
@@ -752,6 +818,8 @@ export default function OperatorConsolePage() {
           </tbody>
         </table>
       </div>
+        </>
+      )}
 
       {/* Coalitions */}
       <div
@@ -765,9 +833,11 @@ export default function OperatorConsolePage() {
         <h2 className="card-title" style={{ fontSize: 18 }}>
           Coalitions
         </h2>
-        <button className="btn btn-primary btn-sm" onClick={() => setShowCoaForm((s) => !s)}>
-          {showCoaForm ? "Cancel" : "+ New Coalition"}
-        </button>
+        {canCoalitions && (
+          <button className="btn btn-primary btn-sm" onClick={() => setShowCoaForm((s) => !s)}>
+            {showCoaForm ? "Cancel" : "+ New Coalition"}
+          </button>
+        )}
       </div>
 
       {coaError && <div className="alert alert-error">{coaError}</div>}
@@ -826,48 +896,52 @@ export default function OperatorConsolePage() {
                   ) : (
                     <strong>{c.name}</strong>
                   )}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    {editCoaId === c.id ? (
-                      <>
-                        <button
-                          className="btn btn-primary btn-sm"
-                          style={{ padding: "4px 8px" }}
-                          onClick={() => saveCoalitionName(c)}
-                          disabled={!editCoaName.trim()}
-                        >
-                          <Icons.Check size={14} aria-hidden />
-                        </button>
+                  {canCoalitions && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {editCoaId === c.id ? (
+                        <>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            style={{ padding: "4px 8px" }}
+                            onClick={() => saveCoalitionName(c)}
+                            disabled={!editCoaName.trim()}
+                          >
+                            <Icons.Check size={14} aria-hidden />
+                          </button>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: "4px 8px" }}
+                            onClick={() => setEditCoaId(null)}
+                          >
+                            <Icons.X size={14} aria-hidden />
+                          </button>
+                        </>
+                      ) : (
                         <button
                           className="btn btn-secondary btn-sm"
-                          style={{ padding: "4px 8px" }}
-                          onClick={() => setEditCoaId(null)}
+                          style={{ padding: "4px 8px", display: "inline-flex", alignItems: "center" }}
+                          onClick={() => {
+                            setEditCoaId(c.id);
+                            setEditCoaName(c.name);
+                          }}
+                          title="Rename coalition"
+                          aria-label="Rename coalition"
                         >
-                          <Icons.X size={14} aria-hidden />
+                          <Icons.Pencil size={14} aria-hidden />
                         </button>
-                      </>
-                    ) : (
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        style={{ padding: "4px 8px", display: "inline-flex", alignItems: "center" }}
-                        onClick={() => {
-                          setEditCoaId(c.id);
-                          setEditCoaName(c.name);
-                        }}
-                        title="Rename coalition"
-                        aria-label="Rename coalition"
-                      >
-                        <Icons.Pencil size={14} aria-hidden />
-                      </button>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                  <Toggle
-                    on={c.is_active}
-                    onChange={() => toggleCoalitionActive(c)}
-                    label={c.is_active ? "Deactivate coalition" : "Activate coalition"}
-                  />
+                  {canCoalitions && (
+                    <Toggle
+                      on={c.is_active}
+                      onChange={() => toggleCoalitionActive(c)}
+                      label={c.is_active ? "Deactivate coalition" : "Activate coalition"}
+                    />
+                  )}
                   <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
                     {c.is_active ? "Active" : "Inactive"} · {c.points_issued.toLocaleString()} pts issued
                   </span>
@@ -890,27 +964,29 @@ export default function OperatorConsolePage() {
                         }}
                       >
                         {merchantName(mid)}
-                        <button
-                          onClick={() => removeMember(c, mid)}
-                          title="Remove member"
-                          aria-label={`Remove ${merchantName(mid)}`}
-                          style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 0,
-                            display: "inline-flex",
-                            color: "inherit",
-                          }}
-                        >
-                          <Icons.X size={12} aria-hidden />
-                        </button>
+                        {canCoalitions && (
+                          <button
+                            onClick={() => removeMember(c, mid)}
+                            title="Remove member"
+                            aria-label={`Remove ${merchantName(mid)}`}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 0,
+                              display: "inline-flex",
+                              color: "inherit",
+                            }}
+                          >
+                            <Icons.X size={12} aria-hidden />
+                          </button>
+                        )}
                       </span>
                     ))
                   )}
                 </div>
 
-                {nonMembers.length > 0 && (
+                {canCoalitions && nonMembers.length > 0 && (
                   <div style={{ display: "flex", gap: 6 }}>
                     <select
                       value={addMemberSel[c.id] || ""}

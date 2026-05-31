@@ -1,7 +1,7 @@
 """Operator (platform super admin) schemas."""
 from __future__ import annotations
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class OverviewOut(BaseModel):
@@ -59,11 +59,16 @@ class CoalitionMemberIn(BaseModel):
     merchant_id: str = Field(min_length=1, max_length=32)
 
 
+# The four operator (platform-tier) roles a login can hold.
+OPERATOR_ROLES = ("super_admin", "platform_admin", "platform_onboarder", "platform_support")
+
+
 class OperatorOut(BaseModel):
     id: str
     email: EmailStr
     full_name: str | None = None
     is_active: bool
+    role: str = "super_admin"  # one of OPERATOR_ROLES
     is_self: bool = False  # the currently-authenticated operator (can't revoke own access)
 
 
@@ -71,12 +76,28 @@ class OperatorCreateIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(default="", max_length=160)
+    # Which operator role to grant. Defaults to the workhorse Admin (not the all-powerful Owner).
+    role: str = Field(default="platform_admin")
+
+    @field_validator("role")
+    @classmethod
+    def _valid_role(cls, v: str) -> str:
+        if v not in OPERATOR_ROLES:
+            raise ValueError(f"role must be one of {OPERATOR_ROLES}")
+        return v
 
 
 class OperatorCreateOut(BaseModel):
     id: str
     email: EmailStr
     full_name: str | None = None
+    role: str = "platform_admin"
+
+
+class PlatformCapabilitiesOut(BaseModel):
+    """The operator's platform-tier capabilities — drives operator-console section/action gating."""
+    permissions: list[str]
+    is_owner: bool = False
 
 
 class MerchantCreateIn(BaseModel):

@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.auth.permissions import ROLE_PERMISSIONS, WILDCARD
+from app.auth.permissions import DRILLDOWN_READ_PERMS, PLATFORM_WRITE_PERMS, ROLE_PERMISSIONS, WILDCARD
 from app.models.enums import RoleName, ScopeType
 from app.models.identity import User
 from app.models.tenancy import Brand, Outlet
@@ -38,6 +38,9 @@ class Scope:
     platform_perms: set[str] = field(default_factory=set)
     merchant_perms: dict[str, set[str]] = field(default_factory=dict)
     merchant_outlets: dict[str, object] = field(default_factory=dict)  # mid -> set[str] | ALL_OUTLETS
+    # Platform-operator drill-in capability into ANY merchant: None | "read" | "full".
+    # "full" = a managing operator (acts like the merchant owner); "read" = view-only.
+    platform_drilldown: str | None = None
 
     def _perms_for(self, merchant_id: str | None) -> set[str]:
         perms = set(self.platform_perms)
@@ -49,7 +52,15 @@ class Scope:
         if self.is_super_admin:
             return True
         perms = self._perms_for(merchant_id)
-        return WILDCARD in perms or permission in perms
+        if WILDCARD in perms or permission in perms:
+            return True
+        # Platform operator drilling into a specific merchant (not their own assignment):
+        if merchant_id is not None and self.platform_drilldown:
+            if self.platform_drilldown == "full":
+                return True
+            if self.platform_drilldown == "read" and permission in DRILLDOWN_READ_PERMS:
+                return True
+        return False
 
     def effective_permissions(self, merchant_id: str | None = None) -> set[str]:
         """Concrete permission codes in effect for this merchant context (platform +
@@ -84,6 +95,10 @@ def resolve_scope(db: Session, user: User) -> Scope:
             scope.platform_perms |= perms
             if role_name == RoleName.SUPER_ADMIN.value or WILDCARD in perms:
                 scope.is_super_admin = True
+            # Drill-in capability: a managing operator (holds a write platform perm) gets full
+            # merchant access; an access-only operator (e.g. Support) gets read-only. "full" wins.
+            if "platform.merchant.access" in perms and scope.platform_drilldown != "full":
+                scope.platform_drilldown = "full" if (perms & PLATFORM_WRITE_PERMS) else "read"
             continue
 
         merchant_id: str | None = None

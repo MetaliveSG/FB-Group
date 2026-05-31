@@ -6,10 +6,10 @@ cd apps/api && .venv/bin/python -m pytest -v      # full backend suite
 ```
 Tests use an isolated in-memory SQLite DB (StaticPool) shared between the test
 session and the FastAPI `TestClient`, with RBAC seeded and rate-limiter/OTP reset per
-test (`app/tests/conftest.py`). Latest run: **194 passed** (see
+test (`app/tests/conftest.py`). Latest run: **201 passed** (see
 `artifacts/pytest_results.txt`). Frontend: **45 Vitest tests**.
 
-## Coverage by file (194 backend tests)
+## Coverage by file (201 backend tests)
 | File | Module(s) | What it proves |
 |---|---|---|
 | `test_health.py` | 12 | health endpoint + secure headers |
@@ -41,6 +41,7 @@ test (`app/tests/conftest.py`). Latest run: **194 passed** (see
 | `test_promotions.py` | campaigns | **multiplier promotions**: engine applies in-window 2× / skips expired + deactivated; **overlapping → best-wins (max, not stacked)**; create/list via API; staff 403; cross-tenant 403 + 404 |
 | `test_merchant_orders.py` | orders | **merchant-wide feed**: owner sees orders + items + outlet/customer labels; status filter; outlet-scoped user limited to their outlet; cross-merchant 403 |
 | `test_platform.py` | operator | ecosystem overview, merchant directory, **non-operator blocked**, onboard merchant, suspend, coalitions; **operator management**: merchant rename + module flags (unknown-flag 400), platform-operator list/invite/revoke (**can't revoke self / last operator**), coalition create/rename/active + add/remove member (dup 409, non-member 404), all **require-super-admin** |
+| `test_operator_roles.py` | operator | **granular operator roles** (Owner/Admin/Onboarder/Support): Admin manages merchants+coalitions but **not operators** (SoD); Onboarder onboards but **can't suspend/coalitions/drill-in**; Support is **read-only** w/ read-only drill-in (view 200, write 403); Admin full drill-in; invite-with-role + role in list (bad role 422); **can't remove last Owner**; `/platform/permissions` capabilities per role |
 | `test_tenant_isolation.py` | isolation | **cross-tenant guarantee**: foreign `?merchant_id=` → 403 (settings/loyalty/users/crm/campaigns/promotions/orders), foreign entity id (IDOR) → 404, merchant **can't reach `/platform/*` upline** (403); **hard upline isolation**: downline outlet-manager reads only `/org/nav-flags` (200, no spin costs/earn rates) — full `/org/settings` + `/org/loyalty` **403 (read & write)**; owner still 200 on all |
 | `test_tenant_isolation_adversarial.py` | isolation | **adversarial probes**: operator **positive control** (super-admin CAN cross → 200, proves 403s are scope-based not deny-all), **customer-JWT replay** on staff/operator routes → 403, **symmetry** (B→A blocked), operator mutators reject garbage/foreign ids (404/400) leaving the owner assignment intact |
 | `test_permissions.py` | 1, 10 | super admin all, **merchant can't see another**, **outlet manager scoped**, staff lacks CRM, **audit log** |

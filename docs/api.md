@@ -84,25 +84,22 @@ Customer list/profile also return `owner_user_id`, `owner_name`, `open_tasks` (l
 Campaign types: `whatsapp_promo`, `birthday`, `winback`, `weekday_boost`, `new_customer_return`, `vip_reward`.
 WhatsApp send goes through a provider abstraction (`app/services/whatsapp.py`); the mock logs structured delivery + retries transient failures.
 
-## Operator Console — Platform Super Admin only (top of the hierarchy)
-All require a `super_admin` staff token (others get 403).
-| Method | Path | Notes |
-|---|---|---|
-| GET | `/api/v1/platform/overview` | ecosystem KPIs (GMV, orders, active customers, merchants/brands/outlets, coalitions) |
-| GET | `/api/v1/platform/merchants` | every merchant + KPIs (revenue, orders, customers, outlets, owner, status) |
-| GET | `/api/v1/platform/coalitions` | coalition programs + member merchants (`members` names + parallel `member_ids`) + points issued |
-| POST | `/api/v1/platform/merchants` | onboard merchant: `{name, owner_email, owner_password, owner_name?}` → creates merchant + brand + owner (409 if email taken) |
-| PATCH | `/api/v1/platform/merchants/{id}` | `{is_active}` — suspend/activate a merchant |
-| PUT | `/api/v1/platform/merchants/{id}` | `{name?, module_flags?}` — rename + flip adoption flags (rewards/qr_ordering/pos); unknown flag → 400 |
-| GET | `/api/v1/platform/operators` | list platform operators (super-admins); `is_self` marks the caller |
-| POST | `/api/v1/platform/operators` | invite operator: `{email, password, full_name?}` → new super-admin (409 if email taken) |
-| DELETE | `/api/v1/platform/operators/{id}` | revoke operator access (403 on self or the **last** remaining operator; 404 if not an operator) |
-| POST | `/api/v1/platform/coalitions` | `{name}` — create a coalition |
-| PATCH | `/api/v1/platform/coalitions/{id}` | `{name?, is_active?}` — rename / activate / deactivate |
-| POST | `/api/v1/platform/coalitions/{id}/members` | `{merchant_id}` — add member (409 if already a member) |
-| DELETE | `/api/v1/platform/coalitions/{id}/members/{merchant_id}` | remove member (404 if not a member) |
+## Operator Console — platform-tier roles (top of the hierarchy)
+Gated by **operator role**, not a single super-admin flag. Roles: **Owner** (`super_admin`, full + manages operators), **Admin** (`platform_admin`, merchants+coalitions+drill-in), **Onboarding** (`platform_onboarder`, onboard/edit only), **Support** (`platform_support`, read-only + read-only drill-in). Each route below lists the permission it requires; a caller lacking it gets 403.
+| Method | Path | Perm required | Notes |
+|---|---|---|---|
+| GET | `/api/v1/platform/permissions` | any operator | `{permissions:[…], is_owner}` — the caller's own platform capabilities (console section gating) |
+| GET | `/api/v1/platform/overview` | `platform.overview.view` | ecosystem KPIs |
+| GET | `/api/v1/platform/merchants` | `platform.merchants.view` | every merchant + KPIs + owner + status |
+| GET | `/api/v1/platform/coalitions` | `platform.merchants.view` | coalitions + members (`members` names + `member_ids`) + points |
+| POST | `/api/v1/platform/merchants` | `platform.merchants.onboard` | onboard merchant → merchant+brand+owner (409 if email taken) |
+| PUT | `/api/v1/platform/merchants/{id}` | `platform.merchants.onboard` | `{name?, module_flags?}` — rename + flags (unknown flag → 400) |
+| PATCH | `/api/v1/platform/merchants/{id}` | `platform.merchants.suspend` | `{is_active}` — suspend/activate |
+| GET/POST/DELETE | `/api/v1/platform/operators[/{id}]` | `platform.operators.manage` (**Owner-only**) | list/invite/revoke operators; invite body `{email,password,full_name?,role}`; can't revoke self or the **last Owner**; bad role → 422 |
+| POST/PATCH | `/api/v1/platform/coalitions[/{id}]` | `platform.coalitions.manage` | create / rename / activate |
+| POST/DELETE | `/api/v1/platform/coalitions/{id}/members[/{merchant_id}]` | `platform.coalitions.manage` | add (409 dup) / remove (404 non-member) member |
 
-Operator drill-down reuses the CRM/reports endpoints with `?merchant_id=` (super admin may target any merchant).
+**Drill-in:** operators with `platform.merchant.access` reach the CRM/reports endpoints with `?merchant_id=` — **Admin/Owner full**, **Support read-only** (view 200, write 403). Onboarding has no drill-in.
 
 ## Customer Rewards & Spin-the-Wheel (customer)
 | Method | Path | Notes |

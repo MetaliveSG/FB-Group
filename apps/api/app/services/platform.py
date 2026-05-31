@@ -160,70 +160,81 @@ def update_merchant(db: Session, *, merchant_id: str, name: str | None = None,
     return merchant
 
 
-# ─── Platform operators (super admins) ──────────────────────────────────────
-def _super_admin_role(db: Session) -> Role:
-    role = db.scalar(select(Role).where(Role.name == RoleName.SUPER_ADMIN.value))
+# ─── Platform operators (the four operator roles) ───────────────────────────
+# Every role that constitutes an "operator" (a platform-scoped login).
+OPERATOR_ROLE_NAMES = (
+    RoleName.SUPER_ADMIN.value, RoleName.PLATFORM_ADMIN.value,
+    RoleName.PLATFORM_ONBOARDER.value, RoleName.PLATFORM_SUPPORT.value,
+)
+# Roles that hold platform.operators.manage — i.e. "Owners". Must always be ≥1.
+OWNER_ROLE_NAMES = (RoleName.SUPER_ADMIN.value,)
+
+
+def _role_by_name(db: Session, name: str) -> Role:
+    role = db.scalar(select(Role).where(Role.name == name))
     if not role:
-        raise NotFoundError("super_admin role missing (run RBAC seed)", code="role_missing")
+        raise NotFoundError(f"{name} role missing (run RBAC seed)", code="role_missing")
     return role
 
 
-def list_operators(db: Session, *, current_user_id: str = "") -> list[dict]:
-    """All platform super admins (the people who can run the operator console)."""
-    role = db.scalar(select(Role).where(Role.name == RoleName.SUPER_ADMIN.value))
-    if not role:
-        return []
-    user_ids = db.scalars(
-        select(UserRoleAssignment.user_id).where(
-            UserRoleAssignment.role_id == role.id,
-            UserRoleAssignment.scope_type == ScopeType.PLATFORM.value,
-        )
+def _platform_assignments(db: Session, role_names=OPERATOR_ROLE_NAMES):
+    """Platform-scoped role assignments for the given role names, with the role name joined."""
+    return db.execute(
+        select(UserRoleAssignment, Role.name)
+        .join(Role, Role.id == UserRoleAssignment.role_id)
+        .where(Role.name.in_(role_names), UserRoleAssignment.scope_type == ScopeType.PLATFORM.value)
     ).all()
-    out = []
-    for uid in dict.fromkeys(user_ids):  # de-dup, preserve order
-        u = db.get(User, uid)
+
+
+def list_operators(db: Session, *, current_user_id: str = "") -> list[dict]:
+    """All platform operators (any of the four operator roles) + their role."""
+    out, seen = [], set()
+    for a, role_name in _platform_assignments(db):
+        if a.user_id in seen:
+            continue
+        seen.add(a.user_id)
+        u = db.get(User, a.user_id)
         if not u:
             continue
         out.append({
-            "id": u.id, "email": u.email, "full_name": u.full_name,
-            "is_active": u.is_active, "is_self": u.id == current_user_id,
+            "id": u.id, "email": u.email, "full_name": u.full_name, "is_active": u.is_active,
+            "role": role_name, "is_self": u.id == current_user_id,
         })
     out.sort(key=lambda x: x["email"])
     return out
 
 
-def invite_operator(db: Session, *, email: str, password: str, full_name: str = "") -> User:
-    """Create a new platform super admin (operator)."""
-    role = _super_admin_role(db)
+def invite_operator(db: Session, *, email: str, password: str, full_name: str = "",
+                    role: str = RoleName.PLATFORM_ADMIN.value) -> User:
+    """Create a new platform operator with the given operator role."""
+    if role not in OPERATOR_ROLE_NAMES:
+        raise ForbiddenError("Invalid operator role", code="role_not_allowed")
+    role_obj = _role_by_name(db, role)
     if db.scalar(select(User).where(User.email == email)):
         raise ConflictError("A user with this email already exists", code="email_taken")
     user = User(email=email, full_name=full_name or email, password_hash=hash_password(password))
     db.add(user)
     db.flush()
-    db.add(UserRoleAssignment(user_id=user.id, role_id=role.id,
+    db.add(UserRoleAssignment(user_id=user.id, role_id=role_obj.id,
                               scope_type=ScopeType.PLATFORM.value, scope_id=None))
     db.flush()
     return user
 
 
 def revoke_operator(db: Session, *, operator_id: str, current_user_id: str) -> None:
-    """Remove a user's platform super-admin grant. Guards: can't revoke yourself, and
-    can't remove the last remaining operator (avoids locking everyone out of the console)."""
+    """Remove a user's platform-operator grant(s). Guards: can't revoke yourself, and can't
+    remove the last Owner (a login holding platform.operators.manage) — else nobody could ever
+    manage operators again."""
     if operator_id == current_user_id:
         raise ForbiddenError("You cannot revoke your own operator access", code="cannot_revoke_self")
-    role = _super_admin_role(db)
-    assignments = db.scalars(
-        select(UserRoleAssignment).where(
-            UserRoleAssignment.role_id == role.id,
-            UserRoleAssignment.scope_type == ScopeType.PLATFORM.value,
-        )
-    ).all()
-    distinct_operators = {a.user_id for a in assignments}
-    if operator_id not in distinct_operators:
+    rows = _platform_assignments(db)
+    operators = {a.user_id for a, _ in rows}
+    if operator_id not in operators:
         raise NotFoundError("Operator not found", code="operator_not_found")
-    if len(distinct_operators) <= 1:
-        raise ForbiddenError("Cannot remove the last platform operator", code="last_operator")
-    for a in assignments:
+    owners = {a.user_id for a, rn in rows if rn in OWNER_ROLE_NAMES}
+    if operator_id in owners and len(owners) <= 1:
+        raise ForbiddenError("Cannot remove the last platform Owner", code="last_owner")
+    for a, _ in rows:
         if a.user_id == operator_id:
             db.delete(a)
     db.flush()

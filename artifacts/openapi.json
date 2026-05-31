@@ -4005,6 +4005,56 @@
         }
       }
     },
+    "/api/v1/platform/permissions": {
+      "get": {
+        "tags": [
+          "operator"
+        ],
+        "summary": "My Platform Permissions",
+        "description": "The operator's platform capabilities \u2014 drives which console sections/actions render.\nAny platform-tier user may read their own; non-operators get an empty set.",
+        "operationId": "my_platform_permissions_api_v1_platform_permissions_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformCapabilitiesOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/platform/overview": {
       "get": {
         "tags": [
@@ -10155,6 +10205,11 @@
             "maxLength": 160,
             "title": "Full Name",
             "default": ""
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "default": "platform_admin"
           }
         },
         "type": "object",
@@ -10185,6 +10240,11 @@
               }
             ],
             "title": "Full Name"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "default": "platform_admin"
           }
         },
         "type": "object",
@@ -10219,6 +10279,11 @@
           "is_active": {
             "type": "boolean",
             "title": "Is Active"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "default": "super_admin"
           },
           "is_self": {
             "type": "boolean",
@@ -11020,6 +11085,28 @@
           "value"
         ],
         "title": "PipelineStageOut"
+      },
+      "PlatformCapabilitiesOut": {
+        "properties": {
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permissions"
+          },
+          "is_owner": {
+            "type": "boolean",
+            "title": "Is Owner",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "permissions"
+        ],
+        "title": "PlatformCapabilitiesOut",
+        "description": "The operator's platform-tier capabilities \u2014 drives operator-console section/action gating."
       },
       "PrizeOut": {
         "properties": {

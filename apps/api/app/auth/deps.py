@@ -71,10 +71,21 @@ def require(scope: Scope, permission: str, merchant_id: str | None = None) -> No
 
 
 def require_super_admin(scope: Scope = Depends(get_scope)) -> Scope:
-    """Dependency: only the Platform Super Admin (operator) may proceed."""
+    """Dependency: only the Platform Super Admin / Owner (wildcard) may proceed."""
     if not scope.is_super_admin:
         raise ForbiddenError("Platform operator access required", code="forbidden")
     return scope
+
+
+def require_platform(permission: str):
+    """Dependency factory: require a specific platform-tier permission (operator roles).
+    The Owner (super_admin wildcard) always passes; other operator roles pass iff they
+    hold `permission` at platform scope."""
+    def _dep(scope: Scope = Depends(get_scope)) -> Scope:
+        if scope.is_super_admin or permission in scope.platform_perms:
+            return scope
+        raise ForbiddenError(f"Missing platform permission: {permission}", code="forbidden")
+    return _dep
 
 
 def resolve_merchant(scope: Scope, merchant_id: str | None) -> str:
@@ -84,7 +95,8 @@ def resolve_merchant(scope: Scope, merchant_id: str | None) -> str:
     - merchant-scoped user: defaults to their (single) merchant; any explicit
       merchant_id must be one they can access.
     """
-    if scope.is_super_admin:
+    # Owner (wildcard) or a platform operator with drill-in may target any merchant explicitly.
+    if scope.is_super_admin or scope.platform_drilldown:
         if not merchant_id:
             raise AppError("merchant_id is required", code="merchant_required", status_code=400)
         return merchant_id

@@ -477,11 +477,22 @@ export interface MerchantCreateResult {
   owner_user_id: string;
 }
 
+/** The four operator (platform-tier) roles. */
+export type OperatorRole = "super_admin" | "platform_admin" | "platform_onboarder" | "platform_support";
+
+export const OPERATOR_ROLE_LABELS: Record<OperatorRole, string> = {
+  super_admin: "Owner",
+  platform_admin: "Admin",
+  platform_onboarder: "Onboarding",
+  platform_support: "Support",
+};
+
 export interface Operator {
   id: string;
   email: string;
   full_name: string | null;
   is_active: boolean;
+  role: OperatorRole;
   is_self: boolean;
 }
 
@@ -489,6 +500,13 @@ export interface OperatorCreate {
   email: string;
   password: string;
   full_name?: string;
+  role?: OperatorRole;
+}
+
+/** The operator's own platform-tier capabilities — gates operator-console sections/actions. */
+export interface PlatformCapabilities {
+  permissions: string[];
+  is_owner: boolean;
 }
 
 // ─── Round 6: Opportunities / pipeline / activities / bulk ───
@@ -1453,6 +1471,11 @@ export function platformOperators(baseUrl: string, token: string): Promise<Opera
   return request(baseUrl, "/platform/operators", {}, token);
 }
 
+/** The calling operator's own platform capabilities (for console section/action gating). */
+export function platformMyPermissions(baseUrl: string, token: string): Promise<PlatformCapabilities> {
+  return request(baseUrl, "/platform/permissions", {}, token);
+}
+
 export function platformInviteOperator(
   baseUrl: string,
   token: string,
@@ -2244,6 +2267,7 @@ export class FbGroupApiClient {
   platformSetMerchantActive(merchantId: string, isActive: boolean) { return platformSetMerchantActive(this.baseUrl, this.token!, merchantId, isActive); }
   platformUpdateMerchant(merchantId: string, data: MerchantUpdate) { return platformUpdateMerchant(this.baseUrl, this.token!, merchantId, data); }
   platformOperators() { return platformOperators(this.baseUrl, this.token!); }
+  platformMyPermissions() { return platformMyPermissions(this.baseUrl, this.token!); }
   platformInviteOperator(data: OperatorCreate) { return platformInviteOperator(this.baseUrl, this.token!, data); }
   platformRevokeOperator(operatorId: string) { return platformRevokeOperator(this.baseUrl, this.token!, operatorId); }
   platformCreateCoalition(name: string) { return platformCreateCoalition(this.baseUrl, this.token!, name); }

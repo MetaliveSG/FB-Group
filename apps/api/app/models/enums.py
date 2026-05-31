@@ -3,7 +3,11 @@ from enum import Enum
 
 
 class RoleName(str, Enum):
-    SUPER_ADMIN = "super_admin"
+    SUPER_ADMIN = "super_admin"            # Platform Owner — full wildcard (manages operators)
+    # Platform-tier operator roles (least-privilege, below the Owner):
+    PLATFORM_ADMIN = "platform_admin"          # merchants + coalitions + drill-in, NOT operators
+    PLATFORM_ONBOARDER = "platform_onboarder"  # onboard/edit merchants only (no suspend/coalitions/drill-in)
+    PLATFORM_SUPPORT = "platform_support"      # read-only (overview + merchants + read-only drill-in)
     MERCHANT_OWNER = "merchant_owner"
     BRAND_MANAGER = "brand_manager"
     OUTLET_MANAGER = "outlet_manager"
