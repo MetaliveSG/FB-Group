@@ -6,10 +6,10 @@ cd apps/api && .venv/bin/python -m pytest -v      # full backend suite
 ```
 Tests use an isolated in-memory SQLite DB (StaticPool) shared between the test
 session and the FastAPI `TestClient`, with RBAC seeded and rate-limiter/OTP reset per
-test (`app/tests/conftest.py`). Latest run: **175 passed** across 33 files (see
+test (`app/tests/conftest.py`). Latest run: **194 passed** (see
 `artifacts/pytest_results.txt`). Frontend: **45 Vitest tests**.
 
-## Coverage by file (192 backend tests)
+## Coverage by file (194 backend tests)
 | File | Module(s) | What it proves |
 |---|---|---|
 | `test_health.py` | 12 | health endpoint + secure headers |

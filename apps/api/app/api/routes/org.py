@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.auth.deps import get_scope, require, resolve_merchant
+from app.auth.permissions import P, WILDCARD
 from app.db.session import get_db
 from app.schemas.org import (
     BrandCreateIn,
@@ -12,6 +13,7 @@ from app.schemas.org import (
     BrandUpdateIn,
     LoyaltyProgramOut,
     LoyaltyProgramUpdateIn,
+    MyPermissionsOut,
     NavFlagsOut,
     OutletCreateIn,
     OutletOut,
@@ -38,6 +40,24 @@ def _mid(scope, merchant_id, perm):
 # member may read to render navigation. `order.view` is the universal floor (staff, outlet
 # manager, brand manager, owner all hold it). Full /settings + /loyalty are owner-only below,
 # so a downline manager cannot read merchant-level economic config — only what nav needs.
+_ALL_PERMS = sorted(P.keys())  # every defined permission code (wildcard expansion target)
+
+
+@router.get("/permissions", response_model=MyPermissionsOut)
+def my_permissions(merchant_id: str | None = Query(None), scope=Depends(get_scope)):
+    """Caller's effective permissions in a merchant context — the capabilities contract for
+    client nav-gating. Server still enforces per-route; this only prunes the menu."""
+    # Super admin (operator) holds the wildcard everywhere → expand to the full set so the
+    # client can do a simple `permissions.includes(x)` without special-casing '*'.
+    if scope.is_super_admin:
+        return MyPermissionsOut(permissions=_ALL_PERMS, is_super_admin=True)
+    mid = resolve_merchant(scope, merchant_id)  # also enforces the caller belongs to it
+    perms = scope.effective_permissions(mid)
+    if WILDCARD in perms:  # defensive — non-super shouldn't hold it, but expand if so
+        return MyPermissionsOut(permissions=_ALL_PERMS, is_super_admin=True)
+    return MyPermissionsOut(permissions=sorted(perms), is_super_admin=False)
+
+
 @router.get("/nav-flags", response_model=NavFlagsOut)
 def get_nav_flags(merchant_id: str | None = Query(None), scope=Depends(get_scope), db: Session = Depends(get_db)):
     mid = _mid(scope, merchant_id, "order.view")

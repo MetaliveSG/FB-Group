@@ -79,6 +79,14 @@ class NavFlagsOut(BaseModel):
     can_manage_merchant: bool = False
 
 
+class MyPermissionsOut(BaseModel):
+    """The caller's effective permission codes in a merchant context — the capabilities
+    contract that drives client-side nav rendering. `permissions` is expanded (never the
+    raw '*' wildcard); `is_super_admin` short-circuits to "can do everything"."""
+    permissions: list[str]
+    is_super_admin: bool = False
+
+
 class SettingsUpdateIn(BaseModel):
     pipeline_enabled: bool | None = None
     # Spin costs bounded both ends: 0 = free play; upper cap keeps a typo from setting

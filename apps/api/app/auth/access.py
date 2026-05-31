@@ -51,6 +51,12 @@ class Scope:
         perms = self._perms_for(merchant_id)
         return WILDCARD in perms or permission in perms
 
+    def effective_permissions(self, merchant_id: str | None = None) -> set[str]:
+        """Concrete permission codes in effect for this merchant context (platform +
+        merchant grants). May contain WILDCARD; callers expand it. Used by the
+        capabilities endpoint that drives client nav-gating."""
+        return self._perms_for(merchant_id)
+
     @property
     def accessible_merchant_ids(self) -> set[str]:
         return set(self.merchant_perms.keys())

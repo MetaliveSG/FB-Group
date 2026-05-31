@@ -581,6 +581,13 @@ export interface NavFlags {
   can_manage_merchant: boolean;
 }
 
+/** The caller's effective permission codes in a merchant context — drives nav rendering.
+ *  `permissions` is expanded (no '*'); `is_super_admin` means "can do everything". */
+export interface MyPermissions {
+  permissions: string[];
+  is_super_admin: boolean;
+}
+
 export interface LoyaltyProgram {
   points_per_dollar: number;
   welcome_bonus: number;
@@ -1703,6 +1710,15 @@ export function getNavFlags(
   return request(baseUrl, `/org/nav-flags${mq(merchantId)}`, {}, token);
 }
 
+/** Capabilities: the caller's effective permissions in a merchant context (for nav-gating). */
+export function getMyPermissions(
+  baseUrl: string,
+  token: string,
+  merchantId?: string
+): Promise<MyPermissions> {
+  return request(baseUrl, `/org/permissions${mq(merchantId)}`, {}, token);
+}
+
 export function updateSettings(
   baseUrl: string,
   token: string,
@@ -2288,6 +2304,7 @@ export class FbGroupApiClient {
   launchWinback(data: WinbackLaunch, merchantId?: string) { return launchWinback(this.baseUrl, this.token!, data, merchantId); }
   getSettings(merchantId?: string) { return getSettings(this.baseUrl, this.token!, merchantId); }
   getNavFlags(merchantId?: string) { return getNavFlags(this.baseUrl, this.token!, merchantId); }
+  getMyPermissions(merchantId?: string) { return getMyPermissions(this.baseUrl, this.token!, merchantId); }
   updateSettings(data: Partial<MerchantSettings>, merchantId?: string) { return updateSettings(this.baseUrl, this.token!, data, merchantId); }
   getLoyaltyProgram(merchantId?: string) { return getLoyaltyProgram(this.baseUrl, this.token!, merchantId); }
   updateLoyaltyProgram(data: LoyaltyProgram, merchantId?: string) { return updateLoyaltyProgram(this.baseUrl, this.token!, data, merchantId); }

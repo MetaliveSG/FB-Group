@@ -6363,6 +6363,72 @@
         }
       }
     },
+    "/api/v1/org/permissions": {
+      "get": {
+        "tags": [
+          "org"
+        ],
+        "summary": "My Permissions",
+        "description": "Caller's effective permissions in a merchant context \u2014 the capabilities contract for\nclient nav-gating. Server still enforces per-route; this only prunes the menu.",
+        "operationId": "my_permissions_api_v1_org_permissions_get",
+        "parameters": [
+          {
+            "name": "merchant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Merchant Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyPermissionsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/org/nav-flags": {
       "get": {
         "tags": [
@@ -9879,6 +9945,28 @@
           "created_at"
         ],
         "title": "MyOrderOut"
+      },
+      "MyPermissionsOut": {
+        "properties": {
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permissions"
+          },
+          "is_super_admin": {
+            "type": "boolean",
+            "title": "Is Super Admin",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "permissions"
+        ],
+        "title": "MyPermissionsOut",
+        "description": "The caller's effective permission codes in a merchant context \u2014 the capabilities\ncontract that drives client-side nav rendering. `permissions` is expanded (never the\nraw '*' wildcard); `is_super_admin` short-circuits to \"can do everything\"."
       },
       "MyProfileOut": {
         "properties": {

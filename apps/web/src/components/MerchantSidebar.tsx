@@ -9,7 +9,13 @@ import {
   getStaffToken,
   type OperatorMerchant,
 } from "@/lib/auth";
-import { installAuthHandler, AUTH_LOGOUT_EVENT, getNavFlags, getApiBase } from "@/lib/api";
+import {
+  installAuthHandler,
+  AUTH_LOGOUT_EVENT,
+  getNavFlags,
+  getMyPermissions,
+  getApiBase,
+} from "@/lib/api";
 
 type ActiveKey =
   | "crm"
@@ -25,6 +31,33 @@ type ActiveKey =
   | "tasks"
   | null;
 
+// Declarative nav manifest — the single source of truth for the merchant sidebar.
+// `perm` = permission the page's API requires (server still enforces; this only prunes the menu).
+// `flag` = a merchant feature toggle that must be on. `sensitive` = owner-only; stays hidden
+// until permissions load (don't flash a link a downline staffer can't use). Add a tab here = one line.
+type NavItem = {
+  key: Exclude<ActiveKey, null>;
+  label: string;
+  href: string;
+  perm?: string;
+  flag?: "pipeline_enabled";
+  sensitive?: boolean;
+};
+
+const NAV: NavItem[] = [
+  { key: "crm", label: "CRM & Analytics", href: "/merchant/crm", perm: "crm.view" },
+  { key: "orders", label: "Orders", href: "/merchant/orders", perm: "order.view" },
+  { key: "insights", label: "✨ AI Insights", href: "/merchant/insights", perm: "report.view" },
+  { key: "pipeline", label: "Pipeline", href: "/merchant/pipeline", perm: "crm.view", flag: "pipeline_enabled" },
+  { key: "campaigns", label: "Campaigns", href: "/merchant/campaigns", perm: "campaign.manage" },
+  { key: "rfm", label: "RFM Analytics", href: "/merchant/rfm", perm: "report.view" },
+  { key: "org", label: "Brands & Outlets", href: "/merchant/org", perm: "outlet.manage" },
+  { key: "menu", label: "Menu Editor", href: "/merchant/menu", perm: "menu.manage" },
+  { key: "team", label: "Team", href: "/merchant/team", perm: "user.manage", sensitive: true },
+  { key: "tasks", label: "My Tasks", href: "/merchant/tasks", perm: "crm.view" },
+  { key: "settings", label: "Settings", href: "/merchant/settings", perm: "merchant.manage", sensitive: true },
+];
+
 export default function MerchantSidebar({
   active = null,
   children,
@@ -34,17 +67,17 @@ export default function MerchantSidebar({
 }) {
   const router = useRouter();
   const [operator, setOperator] = useState<OperatorMerchant | null>(null);
-  // Default to showing Pipeline until settings load (avoids a flicker-hide).
+  // Capabilities (null = not loaded yet) + feature flags drive which nav items render.
+  const [perms, setPerms] = useState<Set<string> | null>(null);
+  const [isSuper, setIsSuper] = useState(false);
   const [pipelineEnabled, setPipelineEnabled] = useState(true);
-  // Owner-only nav (Settings / Team) stays hidden until we confirm the caller can manage
-  // the merchant — the safe default for a permission-gated link (don't flash what they can't use).
-  const [canManage, setCanManage] = useState(false);
 
   useEffect(() => {
     setOperator(getOperatorMerchant());
   }, []);
 
-  // Fetch merchant settings to decide whether the Pipeline nav link shows.
+  // Fetch the caller's permissions + feature flags to render the nav (the server still
+  // enforces every route — this only hides links the user couldn't use anyway).
   useEffect(() => {
     const tok = getStaffToken();
     if (!tok) return;
@@ -52,14 +85,16 @@ export default function MerchantSidebar({
     function refresh() {
       const t = getStaffToken();
       if (!t) return;
-      getNavFlags(getApiBase(), t, getOperatorMerchant()?.id)
-        .then((s) => {
+      const mid = getOperatorMerchant()?.id;
+      Promise.all([getMyPermissions(getApiBase(), t, mid), getNavFlags(getApiBase(), t, mid)])
+        .then(([caps, flags]) => {
           if (cancelled) return;
-          setPipelineEnabled(s.pipeline_enabled);
-          setCanManage(s.can_manage_merchant);
+          setPerms(new Set(caps.permissions));
+          setIsSuper(caps.is_super_admin);
+          setPipelineEnabled(flags.pipeline_enabled);
         })
         .catch(() => {
-          /* keep defaults (pipeline shown, owner-only nav hidden) on error */
+          /* keep defaults on error: perms unknown (sensitive nav stays hidden), pipeline shown */
         });
     }
     refresh();
@@ -69,6 +104,16 @@ export default function MerchantSidebar({
       window.removeEventListener("fbgroup:settings-changed", refresh);
     };
   }, []);
+
+  function navVisible(item: NavItem): boolean {
+    if (item.flag === "pipeline_enabled" && !pipelineEnabled) return false;
+    if (!item.perm) return true;
+    if (isSuper) return true;
+    // Pre-load (perms unknown): show the broad tabs optimistically, but keep owner-only
+    // (sensitive) tabs hidden so a downline staffer never sees a link they'd 403 on.
+    if (perms === null) return !item.sensitive;
+    return perms.has(item.perm);
+  }
 
   function logout() {
     clearOperatorMerchant();
@@ -105,69 +150,15 @@ export default function MerchantSidebar({
               ← Operator Console
             </button>
           )}
-          <a className={`sidebar-link ${active === "crm" ? "active" : ""}`} href="/merchant/crm">
-            CRM &amp; Analytics
-          </a>
-          <a className={`sidebar-link ${active === "orders" ? "active" : ""}`} href="/merchant/orders">
-            Orders
-          </a>
-          <a className={`sidebar-link ${active === "insights" ? "active" : ""}`} href="/merchant/insights">
-            ✨ AI Insights
-          </a>
-          {pipelineEnabled && (
+          {NAV.filter(navVisible).map((item) => (
             <a
-              className={`sidebar-link ${active === "pipeline" ? "active" : ""}`}
-              href="/merchant/pipeline"
+              key={item.key}
+              className={`sidebar-link ${active === item.key ? "active" : ""}`}
+              href={item.href}
             >
-              Pipeline
+              {item.label}
             </a>
-          )}
-          <a
-            className={`sidebar-link ${active === "campaigns" ? "active" : ""}`}
-            href="/merchant/campaigns"
-          >
-            Campaigns
-          </a>
-          <a
-            className={`sidebar-link ${active === "rfm" ? "active" : ""}`}
-            href="/merchant/rfm"
-          >
-            RFM Analytics
-          </a>
-          <a
-            className={`sidebar-link ${active === "org" ? "active" : ""}`}
-            href="/merchant/org"
-          >
-            Brands &amp; Outlets
-          </a>
-          <a
-            className={`sidebar-link ${active === "menu" ? "active" : ""}`}
-            href="/merchant/menu"
-          >
-            Menu Editor
-          </a>
-          {canManage && (
-            <a
-              className={`sidebar-link ${active === "team" ? "active" : ""}`}
-              href="/merchant/team"
-            >
-              Team
-            </a>
-          )}
-          <a
-            className={`sidebar-link ${active === "tasks" ? "active" : ""}`}
-            href="/merchant/tasks"
-          >
-            My Tasks
-          </a>
-          {canManage && (
-            <a
-              className={`sidebar-link ${active === "settings" ? "active" : ""}`}
-              href="/merchant/settings"
-            >
-              Settings
-            </a>
-          )}
+          ))}
           {!operator && (
             <a className="sidebar-link" href="/">
               ← Customer Demo

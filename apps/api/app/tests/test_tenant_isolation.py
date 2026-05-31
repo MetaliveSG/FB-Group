@@ -104,6 +104,37 @@ def test_downline_manager_isolated_from_merchant_settings(client, db):
                       headers=H(mgrtok)).status_code == 403
 
 
+def test_capabilities_endpoint_reflects_role(client, db):
+    """GET /org/permissions returns the caller's effective permissions — the contract the
+    client uses to render nav. Owner gets the broad set; a plain staffer gets only order.*;
+    the operator gets everything + is_super_admin."""
+    a = make_world(db, name="AlphaCo", token_suffix="A")
+    super_admin(db)
+
+    owner = client.get("/api/v1/org/permissions", headers=H(staff_token(client, a.owner_email))).json()
+    assert owner["is_super_admin"] is False
+    assert {"crm.view", "merchant.manage", "user.manage", "report.view"} <= set(owner["permissions"])
+
+    # Plain staff: only order/payment perms — NOT crm.view / merchant.manage (so CRM/Settings hide).
+    staff = client.get("/api/v1/org/permissions", headers=H(staff_token(client, a.staff_email))).json()
+    assert set(staff["permissions"]) == {"order.view", "order.manage", "payment.process"}
+    assert "crm.view" not in staff["permissions"] and "merchant.manage" not in staff["permissions"]
+
+    # Operator: wildcard expands to the full set + is_super_admin true.
+    op = client.get("/api/v1/org/permissions", headers=H(staff_token(client, "root@platform.sg"))).json()
+    assert op["is_super_admin"] is True
+    assert "merchant.manage" in op["permissions"] and "*" not in op["permissions"]
+
+
+def test_capabilities_endpoint_is_tenant_scoped(client, db):
+    """A merchant's caps for a FOREIGN merchant → 403 (can't probe another tenant's perms)."""
+    a = make_world(db, name="AlphaCo", token_suffix="A")
+    b = make_world(db, name="BravoCo", token_suffix="B")
+    atok = staff_token(client, a.owner_email)
+    assert client.get(f"/api/v1/org/permissions?merchant_id={b.merchant_id}",
+                      headers=H(atok)).status_code == 403
+
+
 def test_owner_still_reads_full_settings_and_nav_flags(client, db):
     """The split must not lock out the owner: owner reads both full settings and nav-flags,
     and the nav capability flag is True (so the client shows owner-only nav)."""
