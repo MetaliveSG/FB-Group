@@ -6363,6 +6363,71 @@
         }
       }
     },
+    "/api/v1/org/nav-flags": {
+      "get": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Get Nav Flags",
+        "operationId": "get_nav_flags_api_v1_org_nav_flags_get",
+        "parameters": [
+          {
+            "name": "merchant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Merchant Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NavFlagsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/org/settings": {
       "get": {
         "tags": [
@@ -9900,6 +9965,35 @@
           "created_at"
         ],
         "title": "MyVoucherOut"
+      },
+      "NavFlagsOut": {
+        "properties": {
+          "pipeline_enabled": {
+            "type": "boolean",
+            "title": "Pipeline Enabled"
+          },
+          "rewards_enabled": {
+            "type": "boolean",
+            "title": "Rewards Enabled",
+            "default": true
+          },
+          "qr_ordering_enabled": {
+            "type": "boolean",
+            "title": "Qr Ordering Enabled",
+            "default": true
+          },
+          "pos_enabled": {
+            "type": "boolean",
+            "title": "Pos Enabled",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "pipeline_enabled"
+        ],
+        "title": "NavFlagsOut",
+        "description": "Minimal, non-sensitive UI toggles any staff member may read to render nav \u2014\ndeliberately omits economic config (spin costs, earn rates). Full settings stay\nowner-only (`merchant.manage`); these \"which features the venue runs\" booleans are\nalready public (the anonymous QR context exposes rewards/ordering to diners)."
       },
       "NoteCreate": {
         "properties": {

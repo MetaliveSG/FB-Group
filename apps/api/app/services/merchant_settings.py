@@ -25,6 +25,10 @@ DEFAULTS = {
 }
 
 
+# The non-sensitive subset any staff member may read to render nav (no spin costs).
+NAV_FLAG_KEYS = ("pipeline_enabled", "rewards_enabled", "qr_ordering_enabled", "pos_enabled")
+
+
 def get_settings(db: Session, *, merchant_id: str) -> dict:
     m = db.get(Merchant, merchant_id)
     if not m:
@@ -32,6 +36,13 @@ def get_settings(db: Session, *, merchant_id: str) -> dict:
     merged = dict(DEFAULTS)
     merged.update(m.settings or {})
     return merged
+
+
+def get_nav_flags(db: Session, *, merchant_id: str) -> dict:
+    """Only the nav-relevant booleans — a projection of the full settings, so a downline
+    staffer can render navigation without reading owner-only economic config."""
+    full = get_settings(db, merchant_id=merchant_id)
+    return {k: full[k] for k in NAV_FLAG_KEYS}
 
 
 def update_settings(db: Session, *, merchant_id: str, changes: dict) -> dict:

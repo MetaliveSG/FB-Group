@@ -570,6 +570,15 @@ export interface MerchantSettings {
   pos_enabled: boolean;
 }
 
+/** Non-sensitive nav booleans any staff member may read (no spin costs / earn rates).
+ *  Use this for navigation gating; full MerchantSettings is owner-only (`merchant.manage`). */
+export interface NavFlags {
+  pipeline_enabled: boolean;
+  rewards_enabled: boolean;
+  qr_ordering_enabled: boolean;
+  pos_enabled: boolean;
+}
+
 export interface LoyaltyProgram {
   points_per_dollar: number;
   welcome_bonus: number;
@@ -1683,6 +1692,15 @@ export function getSettings(
   return request(baseUrl, `/org/settings${mq(merchantId)}`, {}, token);
 }
 
+/** Nav-only flags — readable by any staff member (owner-only `getSettings` 403s for downline). */
+export function getNavFlags(
+  baseUrl: string,
+  token: string,
+  merchantId?: string
+): Promise<NavFlags> {
+  return request(baseUrl, `/org/nav-flags${mq(merchantId)}`, {}, token);
+}
+
 export function updateSettings(
   baseUrl: string,
   token: string,
@@ -2267,6 +2285,7 @@ export class FbGroupApiClient {
   // Round 10 — win-back launcher + merchant settings
   launchWinback(data: WinbackLaunch, merchantId?: string) { return launchWinback(this.baseUrl, this.token!, data, merchantId); }
   getSettings(merchantId?: string) { return getSettings(this.baseUrl, this.token!, merchantId); }
+  getNavFlags(merchantId?: string) { return getNavFlags(this.baseUrl, this.token!, merchantId); }
   updateSettings(data: Partial<MerchantSettings>, merchantId?: string) { return updateSettings(this.baseUrl, this.token!, data, merchantId); }
   getLoyaltyProgram(merchantId?: string) { return getLoyaltyProgram(this.baseUrl, this.token!, merchantId); }
   updateLoyaltyProgram(data: LoyaltyProgram, merchantId?: string) { return updateLoyaltyProgram(this.baseUrl, this.token!, data, merchantId); }

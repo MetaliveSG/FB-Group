@@ -12,6 +12,7 @@ from app.schemas.org import (
     BrandUpdateIn,
     LoyaltyProgramOut,
     LoyaltyProgramUpdateIn,
+    NavFlagsOut,
     OutletCreateIn,
     OutletOut,
     OutletUpdateIn,
@@ -33,9 +34,19 @@ def _mid(scope, merchant_id, perm):
 
 
 # --- Merchant settings (feature toggles) ---
+# Nav flags: the non-sensitive boolean subset (no spin costs / earn rates) every staff
+# member may read to render navigation. `order.view` is the universal floor (staff, outlet
+# manager, brand manager, owner all hold it). Full /settings + /loyalty are owner-only below,
+# so a downline manager cannot read merchant-level economic config — only what nav needs.
+@router.get("/nav-flags", response_model=NavFlagsOut)
+def get_nav_flags(merchant_id: str | None = Query(None), scope=Depends(get_scope), db: Session = Depends(get_db)):
+    mid = _mid(scope, merchant_id, "order.view")
+    return merchant_settings.get_nav_flags(db, merchant_id=mid)
+
+
 @router.get("/settings", response_model=SettingsOut)
 def get_settings(merchant_id: str | None = Query(None), scope=Depends(get_scope), db: Session = Depends(get_db)):
-    mid = _mid(scope, merchant_id, "outlet.manage")
+    mid = _mid(scope, merchant_id, "merchant.manage")  # owner-only — hard upline isolation
     return merchant_settings.get_settings(db, merchant_id=mid)
 
 
@@ -54,7 +65,7 @@ def update_settings(body: SettingsUpdateIn, merchant_id: str | None = Query(None
 @router.get("/loyalty", response_model=LoyaltyProgramOut)
 def get_loyalty_program(merchant_id: str | None = Query(None), scope=Depends(get_scope),
                         db: Session = Depends(get_db)):
-    mid = _mid(scope, merchant_id, "report.view")
+    mid = _mid(scope, merchant_id, "merchant.manage")  # owner-only — earn rates are upline config
     return loyalty_admin.get_program(db, merchant_id=mid)
 
 

@@ -77,16 +77,34 @@ def test_merchant_cannot_reach_platform_upline(client, db):
                        headers=H(atok)).status_code == 403
 
 
-def test_downline_manager_cannot_write_merchant_settings(client, db):
-    """An outlet manager (downline) cannot change merchant-level (upline) settings,
-    which require `merchant.manage` (owner-only)."""
+def test_downline_manager_isolated_from_merchant_settings(client, db):
+    """Hard upline isolation: an outlet manager (downline) can read ONLY the nav-flags
+    projection — never the full merchant-level (upline) settings or loyalty program (both
+    `merchant.manage`, owner-only) — and can write none of them."""
     a = make_world(db, name="AlphaCo", token_suffix="A")
     mgrtok = staff_token(client, a.outlet_mgr_email)
-    # Can READ within its own tenant (sidebar needs pipeline_enabled)...
-    assert client.get("/api/v1/org/settings", headers=H(mgrtok)).status_code == 200
-    # ...but cannot WRITE merchant-level settings or the loyalty program.
+
+    # Nav flags: allowed (the only thing the sidebar needs) — and it carries no economic config.
+    nav = client.get("/api/v1/org/nav-flags", headers=H(mgrtok))
+    assert nav.status_code == 200
+    assert set(nav.json()) == {"pipeline_enabled", "rewards_enabled", "qr_ordering_enabled", "pos_enabled"}
+    assert "wheel_spin_cost" not in nav.json()  # spin costs never exposed to downline
+
+    # Full settings + loyalty program: READ blocked (this is the hardened boundary).
+    assert client.get("/api/v1/org/settings", headers=H(mgrtok)).status_code == 403
+    assert client.get("/api/v1/org/loyalty", headers=H(mgrtok)).status_code == 403
+    # Writes blocked too (unchanged).
     assert client.patch("/api/v1/org/settings",
                         json={"pos_enabled": True}, headers=H(mgrtok)).status_code == 403
     assert client.put("/api/v1/org/loyalty",
                       json={"points_per_dollar": 5, "welcome_bonus": 0, "birthday_bonus": 0},
                       headers=H(mgrtok)).status_code == 403
+
+
+def test_owner_still_reads_full_settings_and_nav_flags(client, db):
+    """The split must not lock out the owner: owner reads both full settings and nav-flags."""
+    a = make_world(db, name="AlphaCo", token_suffix="A")
+    otok = staff_token(client, a.owner_email)
+    assert client.get("/api/v1/org/settings", headers=H(otok)).status_code == 200
+    assert client.get("/api/v1/org/loyalty", headers=H(otok)).status_code == 200
+    assert client.get("/api/v1/org/nav-flags", headers=H(otok)).status_code == 200

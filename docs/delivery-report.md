@@ -11,7 +11,7 @@ Modular-monolith FastAPI backend (one API for all clients), Next.js frontend,
 PostgreSQL, fully Dockerised and AWS-ready by design.
 
 ## 2. What was built
-- **Backend** (`apps/api`): FastAPI + SQLAlchemy 2.0, **41 tables**, **107 API endpoints**, 13 Alembic migrations.
+- **Backend** (`apps/api`): FastAPI + SQLAlchemy 2.0, **41 tables**, **108 API endpoints**, 13 Alembic migrations.
 - **Frontend** (`apps/web`): Next.js 14 App Router, **22 routes** (+ a `/showcase` UI-kit gallery), typed API client in `packages/api-client`. Customer app redesigned mobile-first on a shared **design system** (`packages/ui` tokens + component kit, Lucide icons).
 - **Infra** (`infra/`): docker-compose (Postgres + API + web), Dockerfiles, healthchecks, backup script.
 - **Docs** (`docs/`): architecture, api, security, testing, deployment, bc-dr, database, PRD, this report.
@@ -86,7 +86,7 @@ secure headers (HSTS/CSP/XFO/nosniff) · audit logs · env secrets / no hardcode
 server-side pricing · safe error responses. Full threat model + PoC limits: `docs/security.md`.
 
 ## 8. API documentation
-Swagger `/docs`, ReDoc `/redoc`, machine spec `artifacts/openapi.json` (107 endpoints),
+Swagger `/docs`, ReDoc `/redoc`, machine spec `artifacts/openapi.json` (108 endpoints),
 human reference `docs/api.md`.
 
 ## 9. Database schema (41 tables)
@@ -116,7 +116,7 @@ RPO ≤5m / RTO ≤30m per `docs/bc-dr.md`.
 
 ## 12. Lead Verifier confirmation
 All claims are backed by re-run tests + live HTTP verification against the Dockerised
-Postgres stack. **The app runs; 191 backend + 45 frontend tests pass; the QR→order→
+Postgres stack. **The app runs; 192 backend + 45 frontend tests pass; the QR→order→
 checkout→rewards→CRM capture loop works live; role/permission boundaries and
 cross-merchant isolation are enforced and test-proven (22 dedicated isolation tests +
 live adversarial proof — see §7); operator, pipeline (sales+win-back),

@@ -9,7 +9,7 @@ import {
   getStaffToken,
   type OperatorMerchant,
 } from "@/lib/auth";
-import { installAuthHandler, AUTH_LOGOUT_EVENT, getSettings, getApiBase } from "@/lib/api";
+import { installAuthHandler, AUTH_LOGOUT_EVENT, getNavFlags, getApiBase } from "@/lib/api";
 
 type ActiveKey =
   | "crm"
@@ -49,7 +49,7 @@ export default function MerchantSidebar({
     function refresh() {
       const t = getStaffToken();
       if (!t) return;
-      getSettings(getApiBase(), t, getOperatorMerchant()?.id)
+      getNavFlags(getApiBase(), t, getOperatorMerchant()?.id)
         .then((s) => {
           if (!cancelled) setPipelineEnabled(s.pipeline_enabled);
         })

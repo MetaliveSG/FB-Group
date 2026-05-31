@@ -175,6 +175,7 @@ Configurable modes: **sales** (prospecting→qualified→proposal→negotiation�
 | GET/POST/PATCH | `/api/v1/org/outlets[/{id}]` | outlet CRUD (`outlet.manage`); create auto-provisions an empty menu |
 | GET/POST | `/api/v1/org/outlets/{id}/tables` | list/add tables (auto-generates a stable QR token) |
 | DELETE | `/api/v1/org/tables/{id}` | remove a table + its QR |
-| GET/PATCH | `/api/v1/org/settings` | merchant settings: `{pipeline_enabled, wheel_spin_cost, jackpot_spin_cost, rewards_enabled, qr_ordering_enabled, pos_enabled}` — spin costs + module flags, per-merchant (PATCH needs `merchant.manage`) |
-| GET/PUT | `/api/v1/org/loyalty` | loyalty program (standing earn rules): `{points_per_dollar, welcome_bonus, birthday_bonus}` — 0 disables a rule (GET `report.view`, PUT `merchant.manage`, audited) |
+| GET | `/api/v1/org/nav-flags` | nav-only booleans `{pipeline_enabled, rewards_enabled, qr_ordering_enabled, pos_enabled}` for sidebar/nav gating — readable by **any staff member** (`order.view` floor); carries **no** spin costs / earn rates |
+| GET/PATCH | `/api/v1/org/settings` | full merchant settings: `{pipeline_enabled, wheel_spin_cost, jackpot_spin_cost, rewards_enabled, qr_ordering_enabled, pos_enabled}` — **owner-only** (GET **and** PATCH need `merchant.manage`; downline managers 403 — hard upline isolation, use `/org/nav-flags` for nav) |
+| GET/PUT | `/api/v1/org/loyalty` | loyalty program (standing earn rules): `{points_per_dollar, welcome_bonus, birthday_bonus}` — 0 disables a rule; **owner-only** (GET **and** PUT need `merchant.manage`, audited) |
 | GET/POST/DELETE | `/api/v1/promotions[/{id}]` | point-multiplier promos (time-bound `CAMPAIGN_MULTIPLIER`): `{label, multiplier, starts_on, ends_on, is_active}` — engine applies an active in-window multiplier to every earn (`campaign.manage`, audited) |
