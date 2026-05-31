@@ -43,3 +43,7 @@ class QrContextOut(BaseModel):
     is_foodcourt: bool = False
     stalls: list[StallRef] = []
     menu: MenuOut | None = None
+    # Module flags (Phase 2) — let the customer app render the right mode: ordering_enabled
+    # off (but rewards on) → a rewards-only landing instead of menu+cart.
+    ordering_enabled: bool = True
+    rewards_enabled: bool = True

@@ -8,6 +8,7 @@ from app.db.session import get_db
 from app.models.tenancy import Brand, DiningTable, Merchant, Outlet
 from app.schemas.catalog import MenuOut
 from app.schemas.qr import QrContextOut, StallRef
+from app.services import boundaries
 from app.services import catalog as catalog_service
 from app.services import qr as qr_service
 
@@ -38,8 +39,9 @@ def resolve_qr(token: str, db: Session = Depends(get_db)):
         )
         for m in menus
     ]
+    flags = boundaries.module_flags(db, merchant_id=qr.merchant_id)
     inline_menu = None
-    if not is_foodcourt and menus:
+    if flags["qr_ordering_enabled"] and not is_foodcourt and menus:
         inline_menu = MenuOut.model_validate(catalog_service.get_outlet_menu(db, qr.outlet_id, menus[0].id))
 
     return QrContextOut(
@@ -51,6 +53,8 @@ def resolve_qr(token: str, db: Session = Depends(get_db)):
         is_foodcourt=is_foodcourt,
         stalls=stalls,
         menu=inline_menu,
+        ordering_enabled=flags["qr_ordering_enabled"],
+        rewards_enabled=flags["rewards_enabled"],
     )
 
 

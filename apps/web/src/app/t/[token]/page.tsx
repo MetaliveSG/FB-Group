@@ -587,6 +587,7 @@ export default function TablePage() {
   const filteredItems = filterMenuItems(allMenuItems, search);
   const inDirectory = !!qrData?.is_foodcourt && !selectedStall;   // foodcourt landing
   const loadingStall = !!selectedStall && !stallMenu;             // stall menu fetching
+  const orderingDisabled = qrData?.ordering_enabled === false;    // rewards-only merchant (Phase 2)
 
   return (
     <Shell>
@@ -613,8 +614,8 @@ export default function TablePage() {
         </button>
       )}
 
-      {/* Category bar + search only in a menu view (not the stall directory) */}
-      {!inDirectory && !loadingStall && (
+      {/* Category bar + search only in a menu view (not the stall directory / rewards-only) */}
+      {!inDirectory && !loadingStall && !orderingDisabled && (
         <MenuCategoryNav
           categories={categories.map((c) => ({ id: c.id, name: c.name }))}
           activeCat={activeCat}
@@ -633,7 +634,25 @@ export default function TablePage() {
         )}
         {error && <div style={{ color: "var(--color-danger)", fontSize: "var(--text-sm)", marginBottom: "var(--space-3)" }}>{error}</div>}
 
-        {inDirectory ? (
+        {orderingDisabled ? (
+          <Card flush>
+            <EmptyState icon={Icons.Gift} title="You're earning rewards here">
+              Online ordering isn’t available at this venue — but every visit still earns you coins.
+              {qrData?.rewards_enabled && (
+                <div style={{ marginTop: "var(--space-4)" }}>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    leftIcon={Icons.Gift}
+                    onClick={() => router.push(`/t/${encodeURIComponent(token)}/rewards`)}
+                  >
+                    View my rewards
+                  </Button>
+                </div>
+              )}
+            </EmptyState>
+          </Card>
+        ) : inDirectory ? (
           <>
             <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginBottom: "var(--space-3)" }}>
               Order from any stall — your coins work across the whole food hall.

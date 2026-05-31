@@ -75,6 +75,9 @@ export interface QrResolution {
   is_foodcourt: boolean;
   stalls: StallRef[];
   menu: Menu | null;
+  // Module flags (Phase 2): ordering_enabled off (rewards on) → rewards-only landing.
+  ordering_enabled: boolean;
+  rewards_enabled: boolean;
 }
 
 export interface TokenResponse {

@@ -68,6 +68,10 @@ def create_order(
         raise ConflictError("Order must contain at least one item", code="empty_order")
 
     outlet = _load_outlet(db, outlet_id)
+    # QR ordering is gated by the merchant's `qr_ordering_enabled` module flag (Phase 2):
+    # a rewards-only merchant accepts no customer QR orders. Staff/POS channels are unaffected.
+    if channel == OrderChannel.QR and not boundaries.module_flags(db, merchant_id=outlet.merchant_id)["qr_ordering_enabled"]:
+        raise ConflictError("Online ordering is not enabled here", code="ordering_disabled")
     order = Order(
         merchant_id=outlet.merchant_id,
         brand_id=outlet.brand_id,
@@ -188,7 +192,10 @@ def checkout(
     db.flush()
 
     points = 0
-    if order.customer_id:
+    # Loyalty accrual is gated by the merchant's `rewards_enabled` module flag (Phase 2):
+    # a merchant running ordering/POS without the loyalty programme earns no coins.
+    rewards_on = boundaries.module_flags(db, merchant_id=order.merchant_id)["rewards_enabled"]
+    if order.customer_id and rewards_on:
         customer = db.get(Customer, order.customer_id)
         if customer:
             points = accrue_on_transaction(
