@@ -187,7 +187,7 @@ class WinbackResult(BaseModel):
     campaign_delivered: int = 0
 
 
-class _CustomerCore(ORMModel):
+class CustomerCore(ORMModel):
     id: str
     full_name: str
     email: str | None = None
@@ -241,7 +241,7 @@ class NoteOut(ORMModel):
 
 
 class CustomerProfileOut(BaseModel):
-    customer: _CustomerCore
+    customer: CustomerCore
     metrics: CustomerMetricsOut
     orders: list[OrderHistoryItem] = []
     transactions: list[TransactionHistoryItem] = []

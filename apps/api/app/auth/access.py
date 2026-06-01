@@ -74,7 +74,9 @@ class Scope:
 
     def outlet_limit(self, merchant_id: str):
         """Returns ALL_OUTLETS or a set of outlet ids the user is restricted to."""
-        if self.is_super_admin:
+        # Owner (wildcard) and platform operators drilling into a merchant are above the
+        # outlet hierarchy — they see all outlets, not a per-outlet slice.
+        if self.is_super_admin or self.platform_drilldown:
             return ALL_OUTLETS
         return self.merchant_outlets.get(merchant_id, set())
 
