@@ -29,6 +29,7 @@ P = {
     "order.manage": "Create/update orders + status",
     "payment.process": "Process checkout/payments",
     "crm.view": "View CRM customers + analytics",
+    "crm.pii.view": "View unmasked customer PII (phone/email/birthday)",
     "crm.manage": "Manage tags, notes, segments",
     "campaign.manage": "Create/run campaigns",
     "report.view": "View sales reports + forecasts",
@@ -61,6 +62,8 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
     RoleName.MERCHANT_OWNER.value: [
         "merchant.manage", "brand.manage", "outlet.manage", "menu.manage",
         "order.view", "order.manage", "payment.process", "crm.view", "crm.manage",
+        # crm.pii.view = sees raw phone/email/birthday; brand/outlet managers get masked.
+        "crm.pii.view",
         "campaign.manage", "report.view", "user.manage", "audit.view",
     ],
     RoleName.BRAND_MANAGER.value: [

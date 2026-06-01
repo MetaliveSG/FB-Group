@@ -14,6 +14,7 @@ from app.schemas.crm import (
     BulkResult,
     BulkTagIn,
     BulkTaskIn,
+    CustomerCore,
     CustomerMetricsOut,
     CustomerProfileOut,
     CustomerSummaryOut,
@@ -34,6 +35,7 @@ from app.schemas.crm import (
 )
 from app.services import activities as activities_service
 from app.services import crm as crm_service
+from app.services import pii
 from app.services import opportunities as opp_service
 from app.services import tasks as tasks_service
 from app.services import winback as winback_service
@@ -56,10 +58,12 @@ def list_customers(
     items = crm_service.list_customers(
         db, merchant_id=mid, scope=scope, segment=segment, search=search, outlet_id=outlet_id
     )
+    reveal = scope.can("crm.pii.view", mid)  # owner/operator see raw PII; others masked
     return [
         CustomerSummaryOut(
             id=it.customer.id, full_name=it.customer.full_name,
-            email=it.customer.email, phone=it.customer.phone,
+            email=it.customer.email if reveal else pii.mask_email(it.customer.email),
+            phone=it.customer.phone if reveal else pii.mask_phone(it.customer.phone),
             tier=it.metrics.tier, lifecycle_stage=it.metrics.lifecycle_stage,
             total_spend=it.metrics.total_spend, avg_spend=it.metrics.avg_spend,
             visit_count=it.metrics.visit_count, points_balance=it.metrics.points_balance,
@@ -94,8 +98,16 @@ def customer_profile(
     mid = resolve_merchant(scope, merchant_id)
     require(scope, "crm.view", mid)
     data = crm_service.get_profile(db, merchant_id=mid, customer_id=customer_id, scope=scope)
+    cust = data["customer"]
+    reveal = scope.can("crm.pii.view", mid)  # owner/operator see raw PII; others masked
+    customer_core = CustomerCore(
+        id=cust.id, full_name=cust.full_name,
+        email=cust.email if reveal else pii.mask_email(cust.email),
+        phone=cust.phone if reveal else pii.mask_phone(cust.phone),
+        birthday=cust.birthday if reveal else pii.mask_birthday(cust.birthday),
+    )
     return CustomerProfileOut(
-        customer=data["customer"],
+        customer=customer_core,
         metrics=CustomerMetricsOut.model_validate(data["metrics"]),
         orders=data["orders"],
         transactions=data["transactions"],

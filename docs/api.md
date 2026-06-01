@@ -49,9 +49,9 @@ Order lifecycle: `pending → accepted → preparing → ready → completed` (`
 ## CRM (Module 7) — staff, tenant-isolated
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| GET | `/api/v1/crm/customers` | `crm.view` | `?segment=&search=&outlet_id=&merchant_id=` |
+| GET | `/api/v1/crm/customers` | `crm.view` | `?segment=&search=&outlet_id=&merchant_id=`. **PII (phone/email) masked** unless caller holds `crm.pii.view` (owner/operator) |
 | GET | `/api/v1/crm/segments` | `crm.view` | segment counts |
-| GET | `/api/v1/crm/customers/{id}` | `crm.view` | profile + visit/txn/reward history + tags/notes |
+| GET | `/api/v1/crm/customers/{id}` | `crm.view` | profile + visit/txn/reward history + tags/notes. **PII (phone/email/birthday) masked** unless `crm.pii.view` |
 | POST | `/api/v1/crm/customers/{id}/tags` | `crm.manage` | `{tag}` |
 | POST | `/api/v1/crm/customers/{id}/notes` | `crm.manage` | `{body}` |
 
