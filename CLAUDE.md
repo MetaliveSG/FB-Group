@@ -49,6 +49,19 @@ Baseline: **205 backend + 45 frontend tests pass** · 110 endpoints · 41 tables
 - **Provider mocks** (OTP / WhatsApp / AI insights): mock by default; real provider only when a flag +
   key are set (e.g. `AI_ENABLED=1` + `ANTHROPIC_API_KEY`). Tests/demo use the deterministic mock path.
 
+## Compliance & security posture (develop accordingly)
+This platform handles Singapore customer **PII (PDPA)** and is being built **compliance-by-design,
+targeting ISO 27001 certification**. Every change must uphold the ISMS controls already in place
+and not regress them: **least-privilege RBAC** + **tenant isolation** (server-enforced, test-proven),
+**audit logging** of privileged actions, **PII minimisation** (field-level masking — see below),
+**secrets hygiene** (env/Secrets Manager, never committed), and **change control** (PR + green CI +
+branch protection on `main`; no direct commits). When adding a feature, ask "what's the access-control,
+audit, and data-minimisation story?" — and write the test that proves it.
+- **PII masking — DONE (P1):** raw customer phone/email/birthday shown only to `crm.pii.view`
+  (merchant Owner + full-access operators); brand/outlet managers + read-only operators see masked
+  values (`app/services/pii.py`, applied in `routes/crm.py`). **Next governance steps (KIV):** P2 PII
+  read-audit + `GET /audit`, P3 bulk-export caps, Postgres RLS — see memory `rbac-pii-governance-kiv`.
+
 ## Where things are
 - `apps/api/app/models/*.py` — schema (source of truth) · `app/services/` — business logic (ORM only, no raw SQL)
 - `app/analytics/` — read-heavy paths (`reports.py`, `rfm.py`, `crm.py`) · `app/loyalty/engine.py` — hot accrual path
