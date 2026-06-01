@@ -110,6 +110,25 @@ def sellable_under(db: Session, node: OrgNode, *, active_only: bool = True) -> l
     return list(db.scalars(stmt.order_by(OrgNode.path)).all())
 
 
+def grants_for_node(db: Session, node: OrgNode) -> list[tuple[str, set[str] | None]]:
+    """RBAC cascade for a role assigned at ANY node: returns (merchant_id, outlets) grants over
+    the node's subtree. `outlets=None` means ALL_OUTLETS (the whole merchant).
+    - Node at/above Merchant level (subtree contains MERCHANT nodes) → each Merchant beneath,
+      whole. An Enterprise node thus spans every Merchant in the group.
+    - Node within a Merchant (Brand/Outlet/Stall) → that Merchant (`loyalty_domain_id`), limited
+      to the outlets in the node's subtree (a Stall scopes to its parent Outlet).
+    Cross-tenant-safe by construction (path-prefix); any depth, no recursion.
+    """
+    merchant_nodes = [n for n in subtree(db, node, active_only=False) if n.role == ROLE_MERCHANT]
+    if merchant_nodes:
+        return [(m.id, None) for m in merchant_nodes]
+    if node.role == ROLE_STALL:
+        outlets = {node.parent_id} if node.parent_id else set()
+    else:
+        outlets = outlet_ids_under(db, node)
+    return [(node.loyalty_domain_id, outlets)]
+
+
 def outlet_ids_under(db: Session, node: OrgNode) -> set[str]:
     """Active OUTLET-role node ids in a node's subtree — the RBAC cascade primitive: a role
     scoped to a merchant/brand (or any ancestor) reaches exactly the outlets beneath it, via

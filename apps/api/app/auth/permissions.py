@@ -58,6 +58,18 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
     RoleName.PLATFORM_SUPPORT.value: [
         "platform.overview.view", "platform.merchants.view", "platform.merchant.access",
     ],
+    # Enterprise (group) tier — bundles assigned at an Enterprise node, cascading over the group.
+    RoleName.GROUP_CEO.value: [
+        "merchant.manage", "brand.manage", "outlet.manage", "menu.manage",
+        "order.view", "order.manage", "payment.process", "crm.view", "crm.manage",
+        "campaign.manage", "report.view", "user.manage", "audit.view",
+    ],
+    RoleName.GROUP_COO.value: [
+        "brand.manage", "outlet.manage", "menu.manage", "order.view", "order.manage",
+        "payment.process", "crm.view", "crm.manage", "campaign.manage", "report.view",
+    ],
+    RoleName.GROUP_CFO.value: ["report.view", "audit.view", "crm.view"],   # finance (read)
+    RoleName.GROUP_ACCOUNTANT.value: ["report.view", "audit.view"],        # finance (read-only)
     RoleName.MERCHANT_OWNER.value: [
         "merchant.manage", "brand.manage", "outlet.manage", "menu.manage",
         "order.view", "order.manage", "payment.process", "crm.view", "crm.manage",
@@ -67,9 +79,15 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         "brand.manage", "outlet.manage", "menu.manage", "order.view", "order.manage",
         "crm.view", "report.view",
     ],
+    RoleName.AREA_MANAGER.value: [
+        "outlet.manage", "menu.manage", "order.view", "order.manage", "crm.view", "report.view",
+    ],
     RoleName.OUTLET_MANAGER.value: [
         "outlet.manage", "menu.manage", "order.view", "order.manage", "payment.process",
         "crm.view", "report.view",
+    ],
+    RoleName.STALL_OPERATOR.value: [
+        "order.view", "order.manage", "payment.process", "menu.manage",
     ],
     RoleName.STAFF.value: ["order.view", "order.manage", "payment.process"],
     RoleName.CUSTOMER.value: [],

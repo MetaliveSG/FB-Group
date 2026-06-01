@@ -1,0 +1,31 @@
+=== BreadTalk member-tree: 19 nodes, depth 0..4, 2 merchants, 11 accounts ===
+
+BreadTalk Group  <ENTERPRISE>
+   BreadTalk (F&B) Pte Ltd  <MERCHANT> [Loyalty+Settlement boundary]
+      BreadTalk (bakery)  <BRAND>
+         BreadTalk @ ION  <OUTLET>
+            BreadTalk counter (ION)  <STALL> [Storefront]
+         BreadTalk @ VivoCity  <OUTLET>
+            BreadTalk counter (VivoCity)  <STALL> [Storefront]
+      Food Republic  <BRAND>
+         Food Republic @ VivoCity  <OUTLET>
+            Chicken Rice (Food Republic)  <STALL> [Storefront]
+            Laksa (Food Republic)  <STALL> [Storefront]
+            Western (Food Republic)  <STALL> [Storefront]
+      Toast Box  <BRAND>
+         Toast Box @ Tampines  <OUTLET>
+            Toast Box counter (Tampines)  <STALL> [Storefront]
+   Din Tai Fung SG Pte Ltd  <MERCHANT> [Loyalty+Settlement boundary]
+      Din Tai Fung  <BRAND>
+         Din Tai Fung @ Paragon  <OUTLET>
+            Din Tai Fung kitchen (Paragon)  <STALL> [Storefront]
+
+=== Each account's effective reach (authority cascades DOWN its node's subtree) ===
+  ceo@breadtalk.sg                 BreadTalk (F&B) Pte Ltd → ALL outlets | Din Tai Fung SG Pte Ltd → ALL outlets
+  coo@breadtalk.sg                 BreadTalk (F&B) Pte Ltd → ALL outlets | Din Tai Fung SG Pte Ltd → ALL outlets
+  cfo@breadtalk.sg                 BreadTalk (F&B) Pte Ltd → ALL outlets | Din Tai Fung SG Pte Ltd → ALL outlets
+  bm.toastbox@breadtalk.sg         BreadTalk (F&B) Pte Ltd → Toast Box @ Tampines
+  am.foodrepublic@breadtalk.sg     BreadTalk (F&B) Pte Ltd → Food Republic @ VivoCity
+  om.ion@breadtalk.sg              BreadTalk (F&B) Pte Ltd → BreadTalk @ ION
+  stall.chicken@breadtalk.sg       BreadTalk (F&B) Pte Ltd → Food Republic @ VivoCity
+  bm.dtf@breadtalk.sg              Din Tai Fung SG Pte Ltd → Din Tai Fung @ Paragon
