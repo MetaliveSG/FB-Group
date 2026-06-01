@@ -8,15 +8,24 @@ class RoleName(str, Enum):
     PLATFORM_ADMIN = "platform_admin"          # merchants + coalitions + drill-in, NOT operators
     PLATFORM_ONBOARDER = "platform_onboarder"  # onboard/edit merchants only (no suspend/coalitions/drill-in)
     PLATFORM_SUPPORT = "platform_support"      # read-only (overview + merchants + read-only drill-in)
+    # Enterprise (group/holding-co) tier — assigned at an Enterprise org-node, cascades over
+    # every Merchant beneath it. Roles = permission bundles; the node decides reach.
+    GROUP_CEO = "group_ceo"            # full authority over the whole enterprise downline
+    GROUP_COO = "group_coo"            # operations across the enterprise (no finance/admin)
+    GROUP_CFO = "group_cfo"            # finance: reports + audit + crm read across the enterprise
+    GROUP_ACCOUNTANT = "group_accountant"  # read-only finance (reports + audit)
     MERCHANT_OWNER = "merchant_owner"
     BRAND_MANAGER = "brand_manager"
+    AREA_MANAGER = "area_manager"      # manage the outlets beneath a node (brand/region)
     OUTLET_MANAGER = "outlet_manager"
+    STALL_OPERATOR = "stall_operator"  # one storefront (foodcourt stall)
     STAFF = "staff"
     CUSTOMER = "customer"
 
 
 class ScopeType(str, Enum):
     PLATFORM = "platform"
+    NODE = "node"          # assigned at any org-node → authority cascades down its subtree
     MERCHANT = "merchant"
     BRAND = "brand"
     OUTLET = "outlet"

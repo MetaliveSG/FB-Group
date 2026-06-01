@@ -85,6 +85,16 @@ class Scope:
         return limit is ALL_OUTLETS or outlet_id in limit
 
 
+def _add_merchant_grant(scope: Scope, merchant_id: str, perms: set[str], outlets: object) -> None:
+    """Merge a (merchant, perms, outlets) grant into the scope — ALL_OUTLETS wins over a set."""
+    scope.merchant_perms.setdefault(merchant_id, set()).update(perms)
+    existing = scope.merchant_outlets.get(merchant_id)
+    if existing is ALL_OUTLETS or outlets is ALL_OUTLETS:
+        scope.merchant_outlets[merchant_id] = ALL_OUTLETS
+    else:
+        scope.merchant_outlets[merchant_id] = (existing or set()) | set(outlets)  # type: ignore[arg-type]
+
+
 def resolve_scope(db: Session, user: User) -> Scope:
     scope = Scope(user_id=user.id)
     for a in user.role_assignments:
@@ -99,6 +109,18 @@ def resolve_scope(db: Session, user: User) -> Scope:
             # merchant access; an access-only operator (e.g. Support) gets read-only. "full" wins.
             if "platform.merchant.access" in perms and scope.platform_drilldown != "full":
                 scope.platform_drilldown = "full" if (perms & PLATFORM_WRITE_PERMS) else "read"
+            continue
+
+        if a.scope_type == ScopeType.NODE.value:
+            # Generic node scope: a role at ANY org-node cascades over its whole subtree (the
+            # member-tree, any depth). Enterprise node → every Merchant beneath it (full); a node
+            # within a Merchant → that Merchant, limited to the outlets in the node's subtree.
+            from app.services import org_tree
+            node = org_tree.node_for(db, a.scope_id) if a.scope_id else None
+            if node is None:
+                continue
+            for mid, node_outlets in org_tree.grants_for_node(db, node):
+                _add_merchant_grant(scope, mid, perms, ALL_OUTLETS if node_outlets is None else node_outlets)
             continue
 
         merchant_id: str | None = None

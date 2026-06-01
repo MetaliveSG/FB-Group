@@ -116,7 +116,7 @@ RPO ≤5m / RTO ≤30m per `docs/bc-dr.md`.
 
 ## 12. Lead Verifier confirmation
 All claims are backed by re-run tests + live HTTP verification against the Dockerised
-Postgres stack. **The app runs; 201 backend + 45 frontend tests pass; the QR→order→
+Postgres stack. **The app runs; 208 backend + 45 frontend tests pass; the QR→order→
 checkout→rewards→CRM capture loop works live; role/permission boundaries and
 cross-merchant isolation are enforced and test-proven (22 dedicated isolation tests +
 live adversarial proof — see §7); operator, pipeline (sales+win-back),
