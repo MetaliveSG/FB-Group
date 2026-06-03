@@ -21,7 +21,7 @@ Migration chain: **13 revisions** (initial schema → rewards catalog/wheel/task
 redemption voucher_code → opportunities/activities → pipeline_type + merchant settings →
 jackpot_prizes → customers.gender → menu_items.image_url → menus stall columns →
 ledger domain+idempotency → orders external ref → org_nodes spine → idempotency-key domain scope),
-single head, verified to upgrade (41 tables) and downgrade cleanly.
+single head, verified to upgrade from empty (42 tables); migrations are roll-forward (CI checks upgrade + model-drift, no downgrade-to-base).
 On container start,
 `alembic upgrade head` runs, then the seed runs **idempotently** (only if the DB is empty,
 so restarts don't wipe data / invalidate tokens).

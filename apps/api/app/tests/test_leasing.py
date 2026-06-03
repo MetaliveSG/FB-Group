@@ -202,15 +202,21 @@ def test_bt_coffeeshop_is_scannable_with_four_stalls(client, db):
     assert db.get(OrgNode, "o_lim").settlement_account_id == "t_lim"
 
 
-def test_chain_qr_group_browse_lists_leaf_stalls(client, db):
-    """A Chain's QR opens a node-scoped 'group browse' of its orderable leaf stalls (own + leased
-    into venues within it). For BreadTalk Group that's the 2 house coffeeshop stalls + 3 leased."""
+def test_chain_qr_group_browse_lists_direct_stalls(client, db):
+    """A node's QR Menu lists its DIRECT sellable children + stalls leased DIRECTLY into it — never
+    storefronts nested under a sub-chain (uniform rule, every node). The top group (only sub-chains
+    beneath it) has none; the coffeeshop venue lists its 2 house stalls + 2 leased-in independents."""
     build_breadtalk(db)
-    r = client.get("/api/v1/qr/node/btg")
-    assert r.status_code == 200 and r.json()["is_group"] is True
-    assert {s["stall_name"] for s in r.json()["stalls"]} == {
-        "Kopi & Drinks", "Toast Box Toast", "Lim's Chicken Rice", "Ah Huat Wok Hei", "Mr Bean Soya"}
+    # Top group: every child is a sub-chain/venue → NO direct storefronts (nested ones don't show).
+    rg = client.get("/api/v1/qr/node/btg")
+    assert rg.status_code == 200 and rg.json()["is_group"] is True
+    assert rg.json()["stalls"] == []
+    # Coffeeshop venue: direct house stalls + stalls leased into THIS venue (not nested elsewhere).
+    rv = client.get("/api/v1/qr/node/bt_cs_amk")
+    assert rv.status_code == 200
+    assert {s["stall_name"] for s in rv.json()["stalls"]} == {
+        "Kopi & Drinks", "Toast Box Toast", "Lim's Chicken Rice", "Ah Huat Wok Hei"}
     # A stall's menu is reachable via the node browse; an out-of-scope id is blocked.
-    lim = next(s for s in r.json()["stalls"] if s["stall_name"] == "Lim's Chicken Rice")
-    assert client.get(f"/api/v1/qr/node/btg/menu/{lim['menu_id']}").status_code == 200
-    assert client.get("/api/v1/qr/node/btg/menu/o_bt_ion").status_code == 404   # has no menu → blocked
+    lim = next(s for s in rv.json()["stalls"] if s["stall_name"] == "Lim's Chicken Rice")
+    assert client.get(f"/api/v1/qr/node/bt_cs_amk/menu/{lim['menu_id']}").status_code == 200
+    assert client.get("/api/v1/qr/node/bt_cs_amk/menu/o_bt_ion").status_code == 404   # not at venue → blocked

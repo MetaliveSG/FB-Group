@@ -14,11 +14,15 @@ export interface StaffUser {
   full_name: string;
 }
 
-/** A merchant an operator (super admin) has drilled into. When `outletId` is set the console is in
- *  STOREFRONT mode (scoped to that one outlet — Menu + Tables & QR); absent = group/tenant mode. */
+/** A node an operator (super admin) has drilled into. `id`/`name` = the tenant merchant (for the
+ *  merchant-scoped pages: CRM, settings…). `nodeId`/`nodeName` = the entered member-tree node — when
+ *  set, the outlet-based surfaces (Menu, Tables & QR) scope to that node's subtree. `outletId` is set
+ *  only for a single Storefront (locks those surfaces to its one outlet). */
 export interface OperatorMerchant {
   id: string;
   name: string;
+  nodeId?: string;
+  nodeName?: string;
   outletId?: string;
   outletName?: string;
 }

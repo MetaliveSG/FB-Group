@@ -635,7 +635,12 @@ point the consumer surface at *any* node, and it branches on kind:
 |---|---|
 | a **Storefront** | the menu → order |
 | a **venue** (a specific foodcourt/kopitiam/restaurant) | the stalls at *that location* |
-| a **brand/group Chain** — "Food Republic (All Locations)", "Toast Box (All Locations)", "BreadTalk Group" | a **location/brand browse** across the subtree → pick location → stalls → menu |
+| a **brand/group Chain** — "Food Republic (All Locations)", "Toast Box (All Locations)", "BreadTalk Group" | a **location/brand browse** → pick location → stalls → menu |
+
+> **As-built (§12.2):** today the `/t/node/{id}` browse lists a node's **direct** sellable children +
+> stalls leased directly into it (the location model) — *not* the whole subtree. The full-subtree
+> "group app" browse is a deferred `?mode=` on the same resolver. A storefront in the browse links
+> straight to its own `/t/{token}` ordering page.
 
 - A **QR** is just a node-link that **also carries a table + dine-in mode** (so the order is seated
   here, now). An **app deep-link** is the same node-link **without** a table → browse / takeaway /
@@ -677,3 +682,65 @@ table; takeaway/delivery don't). One resolver, one tree — QR, brand app, and g
   pattern + products + module flags + integration + custom fields ⇒ inventory, GL, procurement,
   payroll, KDS, delivery all slot in as **additive modules, no overhaul.** Build the backbone;
   ship modules only when pulled.
+- **As-built grounding (§12):** how the shipped code realises the above — storefront provisioning
+  (`menu.id == node.id`), the three QR-resolution functions, Tables & QR, and the Enter/console scope.
+
+---
+
+## 12. As-built (2026-06) — provisioning, QR/console resolution, the Enter button
+
+Grounds the **shipped** behaviour against the design (§1–§10). Where the design left a choice open,
+this is what the code does today. Two display kinds exist on the spine — **Chain** (`sells=false`,
+structural) and **Storefront** (`sells=true`, the leaf) — but the engine keys off `sells`, not the
+`role` label (§1). Onboard/manage from the **Platform Console** (`/platform`); rows are
+`badge · name · ⋯`, the **⋯ opens the `NodeDetailDrawer`**.
+
+### 12.1 Storefront provisioning — the spine↔typed seam (`app/services/storefronts.py`)
+A Storefront created through the console (`POST /org/nodes`, or a `member_kind=storefront` tenant via
+onboarding) starts as a spine node only. On create we **auto-provision its typed backing** so it is
+immediately scannable + sellable: an `Outlet` (under the tenant's brand) + a **`Menu` with
+`id == node.id`** + a `DiningTable` + a stable `QRCode` token (`slug(name)-<nodeid[:8]>`).
+- **The invariant the whole resolver stack keys off: `menu.id == node.id`** for a Storefront leaf
+  (also how `sync_org_tree` maps a Menu → its Storefront node). The Outlet keeps its own id — it is the
+  location/venue and anchors `Order.outlet_id` + the QR token (§2: "outlet = a location, menu = the seller").
+- Idempotent (`provision_storefront` no-ops if the Menu exists); `provision_missing(db)` backfills.
+- **Do NOT run `sync_org_tree` on operator-built trees** — it would mirror the new Outlet into a second
+  (Chain) spine node and re-parent the Storefront. Convergence = the one-tree collapse (deferred).
+
+### 12.2 QR resolution — three functions, three radii (realises §4)
+| Surface | Resolver | Radius |
+|---|---|---|
+| Directory **"QR Menu"** link (`org.py::_qr_paths_for`) | node-keyed | Storefront → `/t/{its OWN outlet token}`; Chain → `/t/node/{id}` *iff* it has direct storefronts |
+| **Group browse** `/t/node/{id}` (`qr.py::resolve_node`) | `catalog.direct_storefronts` | **DIRECT** sellable children + stalls leased **directly** into the node — *not* storefronts nested under a sub-chain (matches §4 "QR = the venue's direct sellable children"). Tap a stall → its own `/t/{token}` (`StallRef.order_path`); a foodcourt leased stall with no own token opens an in-place menu sheet. |
+| **Venue table scan** `/t/{token}` (`qr.py::resolve_qr` → `catalog.list_outlet_stalls`) | `leasing.storefronts_at_venue` | the venue's house stalls ∪ stalls leased in (the shared-QR foodcourt/coffeeshop set) |
+| menu-reachability check `/qr/node/{id}/menu/{mid}` | `catalog.node_scope_stalls` | whole subtree ∪ leased (looser than the display set, on purpose) |
+
+`_qr_paths_for` is **node-keyed**: each Storefront resolves to ITS OWN outlet's token (not the
+tenant's first), so a chain of N storefronts yields N distinct QR links. **Deferred:** a full-subtree
+"group app" browse (§4 app path / §10 group app) — today `/t/node` is direct-only (the location model);
+when built it's a `?mode=` flag on the same resolver, not new plumbing.
+
+### 12.3 Tables & QR (`/merchant/tables`)
+Per-storefront table management: add/remove tables, each minted with a unique QR token
+(`org_admin.create_table` → `_gen_token`). The QR **image** is rendered client-side (`qrcode.react`,
+encoding `{origin}/t/{token}`) with per-table **Print** + **Print-all** printable cards. The add-table
+input is a fixed **`T` prefix + a number stepper** (auto-next free number, zero-padded → `T01`, `T02`…).
+Locked to the entered storefront's outlet, or an outlet picker in chain/group mode.
+
+### 12.4 The Enter button — scope by the node you enter (realises §4 POS path)
+The drill-in context (`OperatorMerchant`: `{ id = tenant merchant, nodeId = entered node,
+outletId? = a single storefront }`) decides scope. **Full nav shows in every mode** — entering a node
+only *scopes the outlet-keyed surfaces*; it never hides the group tools.
+
+| Enter on… | Context | Menu Editor / Tables & QR | CRM / Orders / Settings |
+|---|---|---|---|
+| **Storefront** | `outletId` set | locked to its one outlet | tenant-wide |
+| **Sub-chain** (e.g. Toast Box) | `nodeId` = the chain | its **subtree** outlets (`menu-admin/outlets?node_id=`) | tenant-wide |
+| **Tenant** (settlement boundary) | `nodeId` = tenant | all the merchant's outlets | tenant-wide |
+
+- Any chain is enterable (**"Enter console →"**); a Storefront → **"Enter storefront →"**; **"Open N
+  inside →"** drills the directory. `← Back to group` clears the node/outlet scope.
+- **Why CRM/Orders stay tenant-wide:** customers + the loyalty ring belong to the tenant
+  (§5 `loyalty_domain_id`), not a sub-chain; only outlet-keyed data (menu, tables, sales) sub-scopes.
+- **Brands & Outlets are no longer a managed UI surface** — they remain typed FK anchors (§2) only,
+  named/created implicitly by provisioning.

@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from app.core.passwords import validate_password_strength
 
 
 class BrandOut(BaseModel):
@@ -174,6 +176,8 @@ class NodeAccountCreateIn(BaseModel):
     password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(default="", max_length=160)
     role: str = Field(pattern="^(manager|cashier|staff|finance)$")
+
+    _pw = field_validator("password")(validate_password_strength)
 
 
 # --- Leases (venue↔stall tenancy edge — foodcourt GTO vs coffeeshop FIXED) ----

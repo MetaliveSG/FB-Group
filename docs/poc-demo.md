@@ -37,7 +37,7 @@ Open on a **phone-width** viewport. Two merchants are seeded; use **Kampong Eats
 
 ## 4. Platform credibility (1 min)
 - **Multi-tenant** by `merchant_id` on every query; RBAC (operator/owner/manager/staff/customer), tenant-isolation **test-proven**.
-- FastAPI + SQLAlchemy 2.0 + **PostgreSQL** (41 tables, 16 migrations, 116 endpoints), Next.js 14, fully Dockerised, AWS-target (ECS Fargate + RDS).
+- FastAPI + SQLAlchemy 2.0 + **PostgreSQL** (42 tables, 17 migrations, ~120 endpoints), Next.js 14, fully Dockerised, AWS-target (ECS Fargate + RDS).
 - Money as `Decimal`; coins are a pure engagement currency (not cash-redeemable).
 - Design system in `packages/ui` (tokens + Lucide) → **web now, React-Native/Expo later** with ~60–70% reuse.
 
@@ -57,6 +57,6 @@ Open on a **phone-width** viewport. Two merchants are seeded; use **Kampong Eats
 |---|---|---|
 | Diner | `/t/kampong-bedok-01` | OTP `+6581000000` (auto-fills) |
 | Merchant owner | `/merchant/login` | `owner@kampongeats.sg` / `Password123!` |
-| Operator | `/operator/login` | `superadmin@platform.sg` / `Password123!` |
+| Operator | `/platform/login` | `superadmin@platform.sg` / `Password123!` |
 
 **Regenerate the live proof anytime:** `cd apps/api && .venv/bin/python scripts/rewards_proof.py` → writes `artifacts/rewards_proof_<date>.txt`.

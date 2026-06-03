@@ -5652,6 +5652,7 @@
           "menu-admin"
         ],
         "summary": "List Outlets",
+        "description": "Outlets (+ their active menu id) for the merchant. When `node_id` is given the list is scoped\nto that member-tree node's subtree \u2014 its sellable storefronts only (menu.id == node id) \u2014 so\n'Enter'-ing any chain shows just its own outlets. Always intersected with the caller's RBAC.",
         "operationId": "list_outlets_api_v1_menu_admin_outlets_get",
         "parameters": [
           {
@@ -5668,6 +5669,22 @@
                 }
               ],
               "title": "Merchant Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Node Id"
             }
           },
           {

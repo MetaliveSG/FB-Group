@@ -69,7 +69,7 @@ def resolve_node(node_id: str, db: Session = Depends(get_db)):
     node = org_tree.node_for(db, node_id)
     if node is None:
         raise NotFoundError("Location not found", code="node_not_found")
-    menus = catalog_service.node_scope_stalls(db, node)
+    menus = catalog_service.direct_storefronts(db, node)   # direct children only (not nested SF)
     order_paths = _stall_order_paths(db, menus)
     stalls = [
         StallRef(menu_id=m.id, stall_name=m.stall_name or m.name, cuisine=m.cuisine, logo=m.logo,

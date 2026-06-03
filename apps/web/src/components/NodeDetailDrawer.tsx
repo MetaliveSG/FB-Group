@@ -38,7 +38,7 @@ export default function NodeDetailDrawer({
   canManage: boolean;
   onClose: () => void;
   onChanged: () => void;
-  onEnter: (args: { merchantId: string; outletId?: string | null; storefrontName?: string; tenantName: string }) => void;
+  onEnter: (args: { merchantId: string; tenantName: string; nodeId: string; nodeName: string; outletId?: string | null; storefrontName?: string }) => void;
   onOpen: () => void;
 }) {
   const base = getApiBase();
@@ -192,7 +192,7 @@ export default function NodeDetailDrawer({
 
           {/* Primary action */}
           {node.sells ? (
-            <button className="btn btn-primary" onClick={() => { const t = tenantOf(node); if (t) onEnter({ merchantId: t.id, outletId: node.outlet_id, storefrontName: node.name || "", tenantName: t.name || "" }); }}>
+            <button className="btn btn-primary" onClick={() => { const t = tenantOf(node); if (t) onEnter({ merchantId: t.id, tenantName: t.name || "", nodeId: node.id, nodeName: node.name || "", outletId: node.outlet_id, storefrontName: node.name || "" }); }}>
               Enter storefront → <span style={{ opacity: 0.8, fontWeight: 400 }}>menu · tables &amp; QR</span>
             </button>
           ) : (
@@ -200,11 +200,10 @@ export default function NodeDetailDrawer({
               {childCount > 0 && (
                 <button className="btn btn-secondary" style={{ flex: 1 }} onClick={onOpen}>Open {childCount} inside →</button>
               )}
-              {node.is_settlement_boundary && (
-                <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => onEnter({ merchantId: node.id, tenantName: node.name || "" })}>
-                  Enter group console →
-                </button>
-              )}
+              {/* Any chain is enterable — console scoped to its subtree (the tenant = the whole business). */}
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => { const t = tenantOf(node); if (t) onEnter({ merchantId: t.id, tenantName: t.name || "", nodeId: node.id, nodeName: node.name || "" }); }}>
+                {node.is_settlement_boundary ? "Enter group console →" : "Enter console →"}
+              </button>
             </div>
           )}
 

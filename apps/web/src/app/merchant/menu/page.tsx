@@ -24,9 +24,11 @@ export default function MenuEditorPage() {
   const router = useRouter();
   const base = getApiBase();
   const mid = () => getOperatorMerchant()?.id;
-  // Storefront mode: the console was entered on a single Storefront → lock the editor to its outlet.
+  // Entered a Storefront → lock to its one outlet. Entered a chain → scope to its subtree outlets
+  // (the backend filters by node_id); the bare tenant → all outlets.
   const scopedOutletId = () => getOperatorMerchant()?.outletId;
-  const scopedName = () => getOperatorMerchant()?.outletName;
+  const scopedNode = () => getOperatorMerchant()?.nodeId;
+  const scopedName = () => getOperatorMerchant()?.outletName ?? getOperatorMerchant()?.nodeName;
 
   const [outlets, setOutlets] = useState<MenuAdminOutlet[]>([]);
   const [selectedOutlet, setSelectedOutlet] = useState<MenuAdminOutlet | null>(null);
@@ -54,9 +56,9 @@ export default function MenuEditorPage() {
       router.push("/merchant/login");
       return;
     }
-    menuOutlets(base, tok, mid())
+    menuOutlets(base, tok, mid(), scopedNode())   // backend scopes to the entered node's subtree
       .then(async (all) => {
-        // In storefront mode, restrict to the one entered outlet (hide the selector).
+        // A single Storefront → restrict to its one outlet (hide the selector); a chain → its subtree.
         const scoped = scopedOutletId();
         const ots = scoped ? all.filter((o) => o.outlet_id === scoped) : all;
         setOutlets(ots);

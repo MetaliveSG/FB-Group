@@ -1,7 +1,9 @@
 """User-management (admin) schemas."""
 from __future__ import annotations
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from app.core.passwords import validate_password_strength
 
 
 class RoleAssignmentOut(BaseModel):
@@ -26,6 +28,8 @@ class InviteUserIn(BaseModel):
     role: str = Field(pattern="^(merchant_owner|brand_manager|outlet_manager|staff)$")
     scope_type: str = Field(pattern="^(merchant|brand|outlet)$")
     scope_id: str | None = None
+
+    _pw = field_validator("password")(validate_password_strength)
 
 
 class InviteUserOut(BaseModel):

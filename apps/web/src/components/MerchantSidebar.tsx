@@ -110,7 +110,10 @@ export default function MerchantSidebar({
     };
   }, []);
 
-  const storefrontMode = !!operator?.outletId;
+  // "Scoped" = drilled into a specific node (a storefront, or a sub-chain narrower than the tenant).
+  // Entering the bare tenant (nodeId == merchant id, no outlet) is NOT scoped — that's the group home.
+  const storefrontMode = !!operator && (!!operator.outletId || (!!operator.nodeId && operator.nodeId !== operator.id));
+  const scopeLabel = operator?.outletName || operator?.nodeName || "";
 
   function navVisible(item: NavItem): boolean {
     // Full console nav in BOTH modes — entering a storefront only SCOPES Menu/Tables to that outlet
@@ -135,7 +138,7 @@ export default function MerchantSidebar({
     router.push("/platform");
   }
 
-  // Leave storefront mode → the tenant/group console (keep the same merchant, drop the outlet scope).
+  // Leave the scoped view → the tenant/group console (same merchant, drop the node/outlet scope).
   function backToGroup() {
     const op = getOperatorMerchant();
     if (op) {
@@ -224,7 +227,7 @@ export default function MerchantSidebar({
             <span>
               🛰️ <strong>Operator view</strong> —{" "}
               {storefrontMode ? (
-                <>storefront <strong>{operator.outletName}</strong> · {operator.name}</>
+                <>{operator.outletId ? "storefront" : "chain"} <strong>{scopeLabel}</strong> · {operator.name}</>
               ) : (
                 <>viewing merchant <strong>{operator.name}</strong></>
               )}

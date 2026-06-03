@@ -127,8 +127,8 @@ def _qr_paths_for(db, nodes) -> dict[str, str]:
             merchant_token.get(n.settlement_account_id) if n.sells else None)
         if n.sells and own_token:
             paths[n.id] = f"/t/{own_token}"                 # this storefront's own table QR → full scan
-        elif catalog_service.node_scope_stalls(db, n):
-            paths[n.id] = f"/t/node/{n.id}"                 # browse its own stalls (group/brand app)
+        elif catalog_service.direct_storefronts(db, n):
+            paths[n.id] = f"/t/node/{n.id}"                 # browse its DIRECT stalls (group/brand app)
     return paths
 
 
