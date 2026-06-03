@@ -24,6 +24,9 @@ export default function MenuEditorPage() {
   const router = useRouter();
   const base = getApiBase();
   const mid = () => getOperatorMerchant()?.id;
+  // Storefront mode: the console was entered on a single Storefront → lock the editor to its outlet.
+  const scopedOutletId = () => getOperatorMerchant()?.outletId;
+  const scopedName = () => getOperatorMerchant()?.outletName;
 
   const [outlets, setOutlets] = useState<MenuAdminOutlet[]>([]);
   const [selectedOutlet, setSelectedOutlet] = useState<MenuAdminOutlet | null>(null);
@@ -52,7 +55,10 @@ export default function MenuEditorPage() {
       return;
     }
     menuOutlets(base, tok, mid())
-      .then(async (ots) => {
+      .then(async (all) => {
+        // In storefront mode, restrict to the one entered outlet (hide the selector).
+        const scoped = scopedOutletId();
+        const ots = scoped ? all.filter((o) => o.outlet_id === scoped) : all;
         setOutlets(ots);
         if (ots.length > 0) {
           setSelectedOutlet(ots[0]);
@@ -189,30 +195,37 @@ export default function MenuEditorPage() {
     <MerchantSidebar active="menu">
       <div className="page-header">
         <h1 className="page-title">Menu Editor</h1>
-        <p className="page-subtitle">Manage categories, items &amp; modifiers per outlet</p>
+        <p className="page-subtitle">
+          {scopedOutletId()
+            ? `${scopedName() ?? selectedOutlet?.name ?? "Storefront"} — categories, items & modifiers`
+            : "Manage categories, items & modifiers per outlet"}
+        </p>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      <div className="card" style={{ marginBottom: 20 }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <label style={{ fontWeight: 600, fontSize: 14 }}>Outlet</label>
-          <select
-            value={selectedOutlet?.outlet_id ?? ""}
-            onChange={(e) => onSelectOutlet(e.target.value)}
-            style={{ minWidth: 220 }}
-            disabled={loading || outlets.length === 0}
-          >
-            {outlets.length === 0 && <option value="">No outlets</option>}
-            {outlets.map((o) => (
-              <option key={o.outlet_id} value={o.outlet_id}>
-                {o.name}
-              </option>
-            ))}
-          </select>
-          {busy && <span className="spinner" />}
+      {/* Outlet selector — only when NOT scoped to a single storefront. */}
+      {!scopedOutletId() && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <label style={{ fontWeight: 600, fontSize: 14 }}>Outlet</label>
+            <select
+              value={selectedOutlet?.outlet_id ?? ""}
+              onChange={(e) => onSelectOutlet(e.target.value)}
+              style={{ minWidth: 220 }}
+              disabled={loading || outlets.length === 0}
+            >
+              {outlets.length === 0 && <option value="">No outlets</option>}
+              {outlets.map((o) => (
+                <option key={o.outlet_id} value={o.outlet_id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+            {busy && <span className="spinner" />}
+          </div>
         </div>
-      </div>
+      )}
 
       {loading ? (
         <div className="page-loading">

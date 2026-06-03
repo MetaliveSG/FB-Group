@@ -254,7 +254,7 @@ def seed_foodhall(db: Session) -> Outlet:
     if merchant:
         outlet = db.scalar(select(Outlet).where(Outlet.merchant_id == merchant.id))
     else:
-        merchant = Merchant(name=FOODHALL_NAME)
+        merchant = Merchant(name=FOODHALL_NAME, settings={"member_kind": "storefront"})
         db.add(merchant)
         db.flush()
         brand = Brand(merchant_id=merchant.id, name=FOODHALL_NAME)
@@ -312,7 +312,7 @@ def build_demo(db: Session) -> dict:
     month = now.month
 
     # --- Merchant 1: Makan Express (fast food chain) ---
-    m1 = Merchant(name="Makan Express", legal_name="Makan Express Pte Ltd")
+    m1 = Merchant(name="Makan Express", legal_name="Makan Express Pte Ltd", settings={"member_kind": "storefront"})
     db.add(m1)
     db.flush()
     b1 = Brand(merchant_id=m1.id, name="Makan Express", cuisine_type="Fast Food")
@@ -331,7 +331,7 @@ def build_demo(db: Session) -> dict:
     items_tampines = _menu(db, o_tampines, fastfood_menu)
 
     # --- Merchant 2: Kopi Culture (café) ---
-    m2 = Merchant(name="Kopi Culture", legal_name="Kopi Culture LLP")
+    m2 = Merchant(name="Kopi Culture", legal_name="Kopi Culture LLP", settings={"member_kind": "storefront"})
     db.add(m2)
     db.flush()
     b2 = Brand(merchant_id=m2.id, name="Kopi Culture", cuisine_type="Cafe")
@@ -346,7 +346,7 @@ def build_demo(db: Session) -> dict:
     items_holland = _menu(db, o_holland, cafe_menu)
 
     # --- Merchant 3: Hawker Hub (food court) ---
-    m3 = Merchant(name="Hawker Hub", legal_name="Hawker Hub Pte Ltd")
+    m3 = Merchant(name="Hawker Hub", legal_name="Hawker Hub Pte Ltd", settings={"member_kind": "storefront"})
     db.add(m3)
     db.flush()
     b3 = Brand(merchant_id=m3.id, name="Hawker Hub", cuisine_type="Food Court")
@@ -748,7 +748,7 @@ def seed_kampong(db: Session, *, coalition_id: str | None = None,
     roles = seed_rbac(db)  # idempotent
     now = utcnow()
 
-    m = Merchant(name="Kampong Eats", legal_name="Kampong Eats Pte Ltd")
+    m = Merchant(name="Kampong Eats", legal_name="Kampong Eats Pte Ltd", settings={"member_kind": "storefront"})
     db.add(m)
     db.flush()
     brand = Brand(merchant_id=m.id, name="Kampong Eats", cuisine_type="Singapore Local")

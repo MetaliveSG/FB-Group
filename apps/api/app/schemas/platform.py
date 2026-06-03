@@ -1,6 +1,8 @@
 """Operator (platform super admin) schemas."""
 from __future__ import annotations
 
+from decimal import Decimal
+
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
@@ -105,6 +107,10 @@ class MerchantCreateIn(BaseModel):
     owner_email: EmailStr
     owner_password: str = Field(min_length=8, max_length=128)
     owner_name: str = Field(default="", max_length=160)
+    # Member-tree kind for the new top-level tenant: "chain" (drillable structure) or
+    # "storefront" (a single operating unit). Plus its per-node SaaS subscription fee.
+    kind: str = Field(default="chain")
+    subscription_fee: Decimal | None = Field(default=None, ge=0)
 
 
 class MerchantCreateOut(BaseModel):

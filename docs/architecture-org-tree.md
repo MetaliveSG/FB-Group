@@ -550,7 +550,109 @@ backbone above:
 
 ---
 
-## 10. Summary
+## 10. Venues & leasing — foodcourt vs coffeeshop (physical ≠ ownership)
+
+> **STATUS (2026-06-02):** **BUILT** — one associative `leases` table (`app/models/leases.py`,
+> migration `s6t7venuelease`), **no columns on `org_nodes`**; `rent_type` (FIXED|GTO) on the edge gates
+> visibility (`app/services/leasing.py::gto_turnover_grants` → read-only turnover for GTO, nothing for
+> FIXED) and the `storefronts_at_venue` shared-QR resolver. **Managed from the Platform Console** — the
+> venue node's NodeDetailDrawer has a **Tenancies** section (`GET/POST/PATCH/DELETE /org/nodes/{venue}/leases`)
+> where `rent_type` is a FIXED/GTO dropdown. Proven by `app/tests/test_leasing.py` + the BreadTalk seed
+> (BT Coffeeshop @ AMK on FIXED, Mr Bean on GTO), live on Docker. **Deferred:** per-sale GTO settlement
+> split, rent invoicing (B2B + GST-on-rent), wiring the customer QR route to the resolver.
+
+The tree models **ownership** (whose money, whose loyalty, who manages). But *where a stall
+physically sits* is a **different axis** — and Singapore F&B proves it with two look-alike layouts
+that are opposites underneath:
+
+| | **Foodcourt (GTO rent)** | **Coffeeshop / kopitiam (fixed rent)** |
+|---|---|---|
+| Rent | % of the stall's gross turnover | fixed $/month |
+| Landlord sees the stall's sales? | **Yes** — needs it to bill the % | **No** — sales are private to the tenant |
+| Tenant in landlord's value-rollup? | Yes (read-only turnover) | **None** |
+| Shared table / one QR? | Yes | Yes |
+
+Same shared seating, same single table QR — **opposite** on the only axis that matters: *does the
+landlord see the sales?* That tell-tale means **physical co-location and ownership/visibility are
+independent**, so we model them independently.
+
+### Three orthogonal things (not two)
+
+1. **Ownership / settlement** — the Chain/Storefront tree (`parent_id` + the §5 boundaries). *Who
+   gets the money.* A coffeeshop tenant is its **own** branch — NOT under the coffeeshop.
+2. **Physical venue** — a `venue_id` on a Storefront (nullable; null = "I am my own venue"). The
+   shared-tables / shared-QR grouping. *Where you sit / what you can order at this table.*
+3. **Lease** — a landlord↔tenant edge `{tenant, landlord(venue), rent_type: FIXED | GTO, rate}`.
+   The `rent_type` is the single switch that decides **visibility *and* settlement**.
+
+### The one rule that makes privacy + GTO both work
+> **Money & visibility follow the ownership tree (+ explicit GTO lease grants). Tables & QR follow
+> the venue. They only coincide when the venue operator also owns the stalls (a house foodcourt).**
+
+This gives the §4 read-paths a third row: a **GTO** lease grants the landlord a **read-only
+turnover** path into the leased stall (for billing) — never menu/staff/control; a **FIXED** lease
+grants **nothing** (the coffeeshop owner has no code path to a tenant's sales). The rent-model
+choice *is* the privacy setting — operators never touch "permissions."
+
+### Three actor types, two primitives
+- **Branded chain** (Mr Coconut, BreadTalk) — runs its own outlets → its **own Chain branch**.
+  Anything big enough to stand alone *does*, so it won't lease a foodcourt stall.
+- **Independent operator** (solo hawker / SME) — a **single Storefront**: standalone, or leased
+  into a foodcourt/coffeeshop (own settlement boundary; GTO or fixed).
+- **Venue operator** (Food Republic / kopitiam towkay) — a **Chain flagged `is_venue`** holding
+  *house* stalls (its children) and/or *leased* stalls (independent branches with `venue_id` here).
+
+### Runtime
+QR → venue → list storefronts at that venue (house `sellable_under` ∪ leased `venue_id==venue`);
+1 → inline menu, many → chooser. **Multi-vendor cart:** one checkout across stalls → split into
+per-storefront orders → each settles to its own tenant (GTO cut to landlord if leased GTO),
+**each tenant sees only its own slice.** Settlement split reuses the §6 value-rollup primitive
+(a per-node rate, direction = config) — GTO is just royalty pointing *up* to the landlord.
+
+### Wiring to today's model (the cheap part)
+We already have the venue and the stall — they're hiding in the typed tables:
+- **`Outlet` IS the venue** — a physical place with tables + QR + multiple menus; the QR already
+  resolves `outlet → its menus (stalls)` (`qr.py`). That *is* the shared-QR foodcourt, today.
+- **`Menu` IS the Storefront/stall** — the sellable leaf, already 1:1 with a spine node.
+- **House foodcourt already works** — Bedok Food Hall / Hawker Hub = one outlet, many menus, one
+  owner. No new code.
+
+So the **only** genuinely new work is leasing:
+1. **Let a stall belong to a different tenant than the venue's owner.** Today every `Menu` under an
+   `Outlet` shares the outlet's `merchant_id`; a leased stall's money goes to a *different* tenant.
+   → the stall's Storefront node carries its own settlement boundary, decoupled from the venue.
+2. **Add the `Lease` record** (venue ↔ stall, `rent_type`, rate).
+3. **The rent-type visibility rule** (GTO → read-only turnover grant; FIXED → nothing) + later the
+   **split settlement** (§6 engine). Additive, IDs stable (see §8) — nothing existing breaks.
+
+### Consumer entry — **every node is addressable** (QR = dine-in, app = browse)
+
+The QR and the web/app are the **same resolver pointed at a node**. Every node has a stable public
+token (today's QR slugs are exactly this — stable per outlet+table; generalise to one-per-node). You
+point the consumer surface at *any* node, and it branches on kind:
+
+| Pointed at | Diner sees |
+|---|---|
+| a **Storefront** | the menu → order |
+| a **venue** (a specific foodcourt/kopitiam/restaurant) | the stalls at *that location* |
+| a **brand/group Chain** — "Food Republic (All Locations)", "Toast Box (All Locations)", "BreadTalk Group" | a **location/brand browse** across the subtree → pick location → stalls → menu |
+
+- A **QR** is just a node-link that **also carries a table + dine-in mode** (so the order is seated
+  here, now). An **app deep-link** is the same node-link **without** a table → browse / takeaway /
+  delivery / pick-a-location.
+- The node you wire an app to also sets its **loyalty ring** (that node's loyalty domain, §5) and
+  its **branding scope** — so a white-label *"Food Republic app"* = the Food Republic node, and
+  coins work across **all** its locations automatically; a *"BreadTalk Group app"* spans the whole
+  group's domain. The member tree *is* the consumer navigation **and** the white-label boundary.
+
+**Wiring to today:** the customer route is already `/t/{token}` resolving a token → dining context
+(`qr.py`). Generalise the token to point at **any node** + a **fulfilment mode** (dine-in carries a
+table; takeaway/delivery don't). One resolver, one tree — QR, brand app, and group app are all just
+"which node, which mode."
+
+---
+
+## 11. Summary
 
 - **One node type + capability flags, not fixed levels / not two account types.** `sells`
   marks an orderable Storefront; `role` is just a display label. Stall = a node that sells.

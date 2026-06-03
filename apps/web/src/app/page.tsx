@@ -71,7 +71,7 @@ export default function HomePage() {
       </div>
 
       <div className="home-demo-box">
-        <h2>Operator Console</h2>
+        <h2>Platform Console</h2>
         <p style={{ color: "var(--color-text-muted)", fontSize: 14, marginBottom: 16 }}>
           Platform super-admin — ecosystem-wide view across all merchants, onboarding,
           coalitions, and drill-down into any merchant.
@@ -85,8 +85,8 @@ export default function HomePage() {
           Password: <code>Password123!</code>
         </div>
 
-        <a href="/operator/login" className="btn btn-secondary btn-block" style={{ display: "flex" }}>
-          Go to Operator Console
+        <a href="/platform/login" className="btn btn-secondary btn-block" style={{ display: "flex" }}>
+          Go to Platform Console
         </a>
       </div>
 

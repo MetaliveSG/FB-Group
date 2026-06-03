@@ -17,7 +17,9 @@ See `docs/architecture-org-tree.md`. Kept in sync with the typed tables by
 """
 from __future__ import annotations
 
-from sqlalchemy import Boolean, ForeignKey, Index, Integer, String
+from decimal import Decimal
+
+from sqlalchemy import Boolean, ForeignKey, Index, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, PKMixin, TimestampMixin
@@ -37,7 +39,19 @@ class OrgNode(PKMixin, TimestampMixin, Base):
     parent_id: Mapped[str | None] = mapped_column(
         ForeignKey("org_nodes.id", ondelete="CASCADE"), index=True
     )
-    role: Mapped[str] = mapped_column(String(16), nullable=False)  # display label
+    role: Mapped[str] = mapped_column(String(16), nullable=False)  # display label: CHAIN | STOREFRONT
+    # Stop-chain: a Chain node whose children may ONLY be Storefronts (no more sub-Chains) — lets
+    # a parent cap the structure. Meaningless on a Storefront (it has no children). See §1 model.
+    chain_stopped: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Per-node SaaS subscription fee — set independently, may be MORE or LESS than the parent
+    # (explicit override; NULL = inherit the parent's). The billing engine (rollup/invoicing) is
+    # a later phase; this just carries the figure. Money = Numeric(12,2) as Decimal.
+    subscription_fee: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    # Human display name. The typed profile (Merchant/Brand/Outlet/Menu) is the source of truth
+    # for synced nodes; mirrored here so the spine renders standalone (and so pure-spine nodes —
+    # e.g. an Enterprise above the typed tables — carry a name with no profile row). Nullable so
+    # the additive migration needs no backfill.
+    name: Mapped[str | None] = mapped_column(String(120))
     depth: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     path: Mapped[str] = mapped_column(String(512), nullable=False)
 

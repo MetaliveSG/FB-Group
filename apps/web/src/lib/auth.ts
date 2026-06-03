@@ -14,10 +14,13 @@ export interface StaffUser {
   full_name: string;
 }
 
-/** A merchant an operator (super admin) has drilled into. */
+/** A merchant an operator (super admin) has drilled into. When `outletId` is set the console is in
+ *  STOREFRONT mode (scoped to that one outlet — Menu + Tables & QR); absent = group/tenant mode. */
 export interface OperatorMerchant {
   id: string;
   name: string;
+  outletId?: string;
+  outletName?: string;
 }
 
 function isBrowser() {

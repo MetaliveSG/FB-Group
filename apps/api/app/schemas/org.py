@@ -1,7 +1,9 @@
 """Org-structure (brands/outlets/tables) schemas."""
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from decimal import Decimal
+
+from pydantic import BaseModel, EmailStr, Field
 
 
 class BrandOut(BaseModel):
@@ -114,3 +116,87 @@ class LoyaltyProgramUpdateIn(BaseModel):
 class TableCreateIn(BaseModel):
     label: str = Field(min_length=1, max_length=40)
     seats: int = Field(default=4, ge=1, le=50)
+
+
+# --- Member tree: Chain / Storefront (any depth) -----------------------
+class OrgNodeOut(BaseModel):
+    """One node of the member-tree, flat (the client assembles the tree via `parent_id`).
+    `role` is CHAIN or STOREFRONT; `sells` is the engine truth. `can_manage` = whether THIS
+    caller may create/rename beneath it (downline-only)."""
+    id: str
+    parent_id: str | None = None
+    role: str                       # CHAIN | STOREFRONT
+    name: str | None = None
+    depth: int
+    sells: bool
+    chain_stopped: bool = False     # a Chain whose children may only be Storefronts
+    is_settlement_boundary: bool = False  # this Chain is a tenant ("merchant")
+    subscription_fee: Decimal | None = None  # per-node SaaS fee (NULL = inherit parent)
+    is_active: bool
+    can_manage: bool = False
+    qr_path: str | None = None      # customer-scan path: a Storefront → /t/{token}; a Chain → /t/node/{id}; None if unscannable
+    outlet_id: str | None = None    # a Storefront's typed Outlet (menu.id==node.id → outlet) — lets the console scope to it; None for a Chain
+
+
+class OrgTreeOut(BaseModel):
+    """The caller's visible slice of the member-tree + whether they can grow it at all."""
+    nodes: list[OrgNodeOut]
+    can_manage: bool = False
+
+
+class OrgNodeCreateIn(BaseModel):
+    parent_id: str
+    role: str = Field(description="CHAIN (structural) | STOREFRONT (sells, leaf)")
+    name: str = Field(min_length=1, max_length=120)
+    chain_stopped: bool = False     # only meaningful for a CHAIN
+    subscription_fee: Decimal | None = Field(default=None, ge=0)
+
+
+class OrgNodeUpdateIn(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    is_active: bool | None = None
+    chain_stopped: bool | None = None
+    subscription_fee: Decimal | None = Field(default=None, ge=0)
+
+
+# --- Node logins (staff assigned at a member-tree node) ----------------
+class NodeAccountOut(BaseModel):
+    assignment_id: str
+    user_id: str
+    email: EmailStr
+    full_name: str
+    is_active: bool
+    role: str                       # manager | cashier | staff | finance
+
+
+class NodeAccountCreateIn(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+    full_name: str = Field(default="", max_length=160)
+    role: str = Field(pattern="^(manager|cashier|staff|finance)$")
+
+
+# --- Leases (venue↔stall tenancy edge — foodcourt GTO vs coffeeshop FIXED) ----
+class LeaseOut(BaseModel):
+    """One tenancy at a venue. `rent_type` is the foodcourt/coffeeshop switch: FIXED = flat $/mo
+    (landlord blind); GTO = % of turnover (landlord reads turnover). `rate` is $/mo for FIXED, a
+    percentage for GTO."""
+    id: str
+    venue_id: str
+    tenant_node_id: str
+    tenant_name: str | None = None
+    rent_type: str                  # FIXED | GTO
+    rate: Decimal
+    is_active: bool
+
+
+class LeaseCreateIn(BaseModel):
+    tenant_node_id: str
+    rent_type: str = Field(pattern="^(FIXED|GTO)$")
+    rate: Decimal = Field(ge=0)
+
+
+class LeaseUpdateIn(BaseModel):
+    rent_type: str | None = Field(default=None, pattern="^(FIXED|GTO)$")
+    rate: Decimal | None = Field(default=None, ge=0)
+    is_active: bool | None = None
