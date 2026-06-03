@@ -8,8 +8,9 @@ CRM + analytics that turns walk-in diners into known, retained customers.
 Fast-food chains, cafés, food courts (multi-brand, multi-outlet).
 
 ## Personas / admin structure
-Platform Super Admin · Merchant Owner · Brand Manager · Outlet Manager ·
-Staff/Cashier · Customer.
+Platform Operator (Super Admin / Admin / Onboarding / Support) · Merchant Owner (tenant) ·
+**node-assignable roles** — Manager · Cashier · Staff · Finance (attached at any member-tree node;
+authority cascades down its subtree) · Customer.
 
 ## Phase-1 product (hybrid model)
 QR ordering **and** cashier/manual checkout; loyalty works across both. Loyalty is
@@ -37,12 +38,12 @@ Scan QR → register/login (OTP/email/SSO) → browse menu → order → checkou
 | 12 | Reliability / BC-DR | ✅ implemented-where-simple + documented |
 
 ### Extensions built on top (all ✅ built + tested)
-- **Operator Console** — platform super-admin ecosystem dashboard, merchant directory + onboarding, coalitions, drill-down.
+- **Platform Console** — platform super-admin ecosystem dashboard, **member-tree** directory + onboarding, coalitions, drill-down; **Enter** any node for a console scoped to its subtree.
 - **Salesforce-style CRM** — Pipeline/Opportunities (sales **and** win-back modes), Activity logging, Activity timeline, Record owner, Bulk actions.
 - **Customer rewards** — redeemable catalog + **spin-the-wheel** game.
 - **RFM segmentation** (Champions/Loyal/At-Risk/Hibernating…).
 - **Win-back launcher** — RFM → win-back opportunities → WhatsApp campaign (retention loop).
-- **Self-service admin** — Menu management (CRUD), User management (invite/assign/revoke), Org structure (brands/outlets/tables/QR), per-merchant feature toggles.
+- **Self-service admin** — Menu management (CRUD, outlet/subtree-scoped), User management (invite/assign/revoke), **member-tree node management + Tables & QR** (per-table QR + print), per-merchant feature toggles.
 
 ## Out of scope (this round) / next steps
 - Real Google/Apple SSO token verification; real OTP/WhatsApp/payment providers (Stripe/NETS/PayNow), refunds.

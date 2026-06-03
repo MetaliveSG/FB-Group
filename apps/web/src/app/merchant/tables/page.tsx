@@ -20,6 +20,7 @@ export default function TablesQrPage() {
   const base = getApiBase();
   const mid = () => getOperatorMerchant()?.id;
   const ctxOutlet = () => getOperatorMerchant()?.outletId;          // set → storefront mode (locked)
+  const ctxNode = () => getOperatorMerchant()?.nodeId;             // entered chain → scope to its subtree
   const ctxOutletName = () => getOperatorMerchant()?.outletName;
 
   const [outlets, setOutlets] = useState<MenuAdminOutlet[]>([]);
@@ -49,7 +50,7 @@ export default function TablesQrPage() {
   useEffect(() => {
     const tok = getStaffToken();
     if (!tok) { router.push("/merchant/login"); return; }
-    menuOutlets(base, tok, mid())
+    menuOutlets(base, tok, mid(), ctxNode())   // backend scopes to the entered node's subtree
       .then((all) => {
         setOutlets(all);
         const ctx = ctxOutlet();

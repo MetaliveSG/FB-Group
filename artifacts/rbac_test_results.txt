@@ -1,0 +1,90 @@
+FB Group — RBAC / Permissions test results
+============================================================
+Generated: 2026-06-03  ·  Stack: pytest (SQLite, in-memory)
+Command: pytest -v test_operator_roles.py test_permissions.py test_platform.py test_rbac_node_cascade.py test_tenant_isolation.py test_tenant_isolation_adversarial.py test_breadtalk_member_tree.py
+
+RESULT: 56 passed, 0 failed  (re-run: cd apps/api && .venv/bin/python -m pytest <files>)
+
+Covers: platform-operator roles + separation-of-duties, role→permission matrix,
+member-tree node-scoped cascade, multi-tenant isolation (incl. adversarial), and the
+back-office password policy. See docs/security.md for the operator permission matrix.
+
+── app/tests/test_operator_roles.py  (8 tests)
+   Granular platform operators (Owner/Admin/Onboarding/Support): least-privilege, separation-of-duties, read-vs-full drill-in, last-owner/self-revoke guards, back-office password policy.
+   PASSED  test_admin_manages_merchants_but_not_operators
+   PASSED  test_onboarder_can_onboard_not_suspend_or_coalitions
+   PASSED  test_support_is_read_only_with_read_drilldown
+   PASSED  test_admin_full_drilldown
+   PASSED  test_invite_with_role_and_list_shows_role
+   PASSED  test_operator_password_policy
+   PASSED  test_cannot_remove_last_owner
+   PASSED  test_platform_capabilities_endpoint
+
+── app/tests/test_permissions.py  (5 tests)
+   Role→permission matrix: super-admin all, merchant can't see another, outlet manager scoped, staff lacks CRM, audit log.
+   PASSED  test_super_admin_sees_all_merchants
+   PASSED  test_merchant_owner_cannot_access_other_merchant
+   PASSED  test_outlet_manager_limited_to_assigned_outlet
+   PASSED  test_staff_lacks_crm_permission
+   PASSED  test_audit_log_created_for_status_change
+
+── app/tests/test_platform.py  (14 tests)
+   Platform console + cross-tenant isolation (operator positive control, foreign merchant_id 403/404).
+   PASSED  test_overview_aggregates_ecosystem
+   PASSED  test_merchant_directory_with_kpis
+   PASSED  test_non_operator_blocked
+   PASSED  test_onboard_merchant_creates_working_owner
+   PASSED  test_suspend_merchant
+   PASSED  test_coalitions_listing
+   PASSED  test_update_merchant_name_and_flags
+   PASSED  test_update_merchant_rejects_unknown_flag
+   PASSED  test_update_merchant_requires_operator
+   PASSED  test_list_invite_operators
+   PASSED  test_revoke_operator_guards
+   PASSED  test_operators_require_operator
+   PASSED  test_coalition_crud_and_membership
+   PASSED  test_coalition_management_requires_operator
+
+── app/tests/test_rbac_node_cascade.py  (3 tests)
+   Member-tree node-scoped RBAC cascade (a role at a node reaches its subtree; cross-tenant isolation).
+   PASSED  test_outlet_ids_under_brand_is_only_that_brands_outlets
+   PASSED  test_outlet_ids_under_merchant_excludes_other_merchant
+   PASSED  test_brand_manager_limited_to_brand_outlets
+
+── app/tests/test_tenant_isolation.py  (7 tests)
+   Tenant data isolation — server-derived scope, resolve_merchant chokepoint, IDOR re-checks.
+   PASSED  test_foreign_merchant_id_is_rejected
+   PASSED  test_foreign_entity_id_is_not_found
+   PASSED  test_merchant_cannot_reach_platform_upline
+   PASSED  test_downline_manager_isolated_from_merchant_settings
+   PASSED  test_capabilities_endpoint_reflects_role
+   PASSED  test_capabilities_endpoint_is_tenant_scoped
+   PASSED  test_owner_still_reads_full_settings_and_nav_flags
+
+── app/tests/test_tenant_isolation_adversarial.py  (4 tests)
+   Adversarial isolation — cross-tenant attack attempts, JWT replay, B→A symmetry, zero residue.
+   PASSED  test_operator_can_cross_merchants_positive_control
+   PASSED  test_customer_jwt_rejected_on_staff_and_operator_surfaces
+   PASSED  test_isolation_is_symmetric
+   PASSED  test_operator_mutators_guard_foreign_and_garbage_ids
+
+── app/tests/test_breadtalk_member_tree.py  (15 tests)
+   Unlimited Chain/Storefront member-tree + node-RBAC (depth 0–4; authority cascades down subtree; sibling/upline/cross-tenant isolation).
+   PASSED  test_tree_is_deep_and_complete
+   PASSED  test_manager_at_top_commands_whole_group
+   PASSED  test_finance_is_read_only_group_wide
+   PASSED  test_chain_manager_isolated_to_its_branch
+   PASSED  test_storefront_and_foodcourt_scoping
+   PASSED  test_cross_tenant_isolation
+   PASSED  test_every_tier_account_can_log_in
+   PASSED  test_tree_endpoint_scopes_to_downline
+   PASSED  test_create_rules_chain_and_storefront
+   PASSED  test_stop_chain_forces_storefronts_only
+   PASSED  test_per_node_subscription_fee
+   PASSED  test_finance_cannot_build_tree
+   PASSED  test_rename_node_and_status_mirrors_tenant
+   PASSED  test_node_accounts_crud_and_scoping
+   PASSED  test_node_accounts_require_manage_rights
+
+============================================================
+56 tests · ALL PASSED

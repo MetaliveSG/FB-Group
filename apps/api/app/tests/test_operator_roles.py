@@ -104,6 +104,24 @@ def test_invite_with_role_and_list_shows_role(client, db):
                        headers=H(rtok)).status_code == 422
 
 
+def test_operator_password_policy(client, db):
+    """Back-office password policy on operator creation: ≥8 chars with ≥1 uppercase, ≥1 number,
+    ≥1 special char. Each weak password is rejected (422); a compliant one is accepted."""
+    super_admin(db)
+    rtok = staff_token(client, "root@platform.sg")
+
+    def make(pw):
+        return client.post("/api/v1/platform/operators",
+                           json={"email": "pwtest@platform.sg", "password": pw, "role": "platform_admin"},
+                           headers=H(rtok)).status_code
+
+    assert make("short1!") == 422          # < 8 chars
+    assert make("password1!") == 422       # no uppercase
+    assert make("Password!!") == 422       # no number
+    assert make("Password123") == 422      # no special char
+    assert make("Password123!") == 201     # compliant → created
+
+
 def test_cannot_remove_last_owner(client, db):
     """Revoking the only Owner is blocked even though other (non-owner) operators exist."""
     owner = super_admin(db)

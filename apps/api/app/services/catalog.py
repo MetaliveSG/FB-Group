@@ -62,10 +62,38 @@ def list_outlet_stalls(db: Session, outlet_id: str) -> list[Menu]:
     return ordered or list_outlet_menus(db, outlet_id)
 
 
+def direct_storefronts(db: Session, node) -> list[Menu]:
+    """The stalls a node's QR Menu lists: its DIRECT sellable children (immediate, not nested under a
+    sub-chain) PLUS any stall leased DIRECTLY into it (a venue's tenants). A Storefront → itself.
+    Uniform for every node — to reach storefronts deeper down you open the sub-chain (same rule one
+    level down). Only stalls that actually have a Menu (id == node id) are returned."""
+    from app.models.leases import Lease
+    from app.models.org import OrgNode
+
+    if node.sells:
+        ids = {node.id}
+    else:
+        ids = set(db.scalars(
+            select(OrgNode.id).where(OrgNode.parent_id == node.id, OrgNode.sells.is_(True),
+                                     OrgNode.is_active.is_(True))
+        ).all())
+        for tid in db.scalars(
+            select(Lease.tenant_node_id).where(Lease.venue_id == node.id, Lease.is_active.is_(True))
+        ).all():
+            ids.add(tid)
+    if not ids:
+        return []
+    return list(db.scalars(
+        select(Menu).where(Menu.id.in_(ids), Menu.is_active.is_(True))
+        .order_by(Menu.sort_order, Menu.stall_name)
+    ).all())
+
+
 def node_scope_stalls(db: Session, node) -> list[Menu]:
     """Menu-backed leaf stalls in a node's scope — its OWN sellable leaves (subtree) PLUS any stall
-    leased into a venue within it. The 'brand / group app' content for a chain; a single stall for a
-    Storefront. Only stalls that actually have a menu (id == node id) are returned."""
+    leased into a venue within it. The whole-subtree set (used for menu-reachability validation +
+    the venue QR resolver); the QR-Menu *display* uses `direct_storefronts` (direct children only).
+    Only stalls that actually have a menu (id == node id) are returned."""
     from app.models.leases import Lease
     from app.models.org import OrgNode
     from app.services import org_tree

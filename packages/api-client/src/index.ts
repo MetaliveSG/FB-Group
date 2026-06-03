@@ -1968,9 +1968,14 @@ export function recordRedemption(
 export function menuOutlets(
   baseUrl: string,
   token: string,
-  merchantId?: string
+  merchantId?: string,
+  nodeId?: string
 ): Promise<MenuAdminOutlet[]> {
-  return request(baseUrl, `/menu-admin/outlets${mq(merchantId)}`, {}, token);
+  const qs = new URLSearchParams();
+  if (merchantId) qs.set("merchant_id", merchantId);
+  if (nodeId) qs.set("node_id", nodeId);
+  const q = qs.toString();
+  return request(baseUrl, `/menu-admin/outlets${q ? `?${q}` : ""}`, {}, token);
 }
 
 export function outletMenu(

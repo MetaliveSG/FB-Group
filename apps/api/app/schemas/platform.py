@@ -5,6 +5,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.core.passwords import validate_password_strength
+
 
 class OverviewOut(BaseModel):
     gmv: float
@@ -88,6 +90,8 @@ class OperatorCreateIn(BaseModel):
             raise ValueError(f"role must be one of {OPERATOR_ROLES}")
         return v
 
+    _pw = field_validator("password")(validate_password_strength)
+
 
 class OperatorCreateOut(BaseModel):
     id: str
@@ -111,6 +115,8 @@ class MerchantCreateIn(BaseModel):
     # "storefront" (a single operating unit). Plus its per-node SaaS subscription fee.
     kind: str = Field(default="chain")
     subscription_fee: Decimal | None = Field(default=None, ge=0)
+
+    _pw = field_validator("owner_password")(validate_password_strength)
 
 
 class MerchantCreateOut(BaseModel):

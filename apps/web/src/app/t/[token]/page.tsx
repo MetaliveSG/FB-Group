@@ -83,9 +83,10 @@ function Banner({ qr, right }: { qr: QrResolution | null; right?: React.ReactNod
     <header style={{ padding: "var(--space-4)", background: "linear-gradient(180deg, var(--brand-600), var(--brand-700))", color: "#fff" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: "var(--text-lg)", fontWeight: 900, lineHeight: 1.15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{qr?.merchant.name ?? "Menu"}</div>
+          {/* The storefront the diner is AT (the outlet/venue), not the parent group/tenant. */}
+          <div style={{ fontSize: "var(--text-lg)", fontWeight: 900, lineHeight: 1.15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{qr?.outlet.name ?? "Menu"}</div>
           <div style={{ fontSize: "var(--text-xs)", opacity: 0.85, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {qr ? `${qr.outlet.name} · Table ${qr.table.label}` : ""}
+            {qr ? `Table ${qr.table.label}` : ""}
           </div>
         </div>
         {right && <div style={{ flexShrink: 0 }}>{right}</div>}

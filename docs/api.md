@@ -84,7 +84,7 @@ Customer list/profile also return `owner_user_id`, `owner_name`, `open_tasks` (l
 Campaign types: `whatsapp_promo`, `birthday`, `winback`, `weekday_boost`, `new_customer_return`, `vip_reward`.
 WhatsApp send goes through a provider abstraction (`app/services/whatsapp.py`); the mock logs structured delivery + retries transient failures.
 
-## Operator Console — platform-tier roles (top of the hierarchy)
+## Platform Console — platform-tier roles (top of the hierarchy)
 Gated by **operator role**, not a single super-admin flag. Roles: **Owner** (`super_admin`, full + manages operators), **Admin** (`platform_admin`, merchants+coalitions+drill-in), **Onboarding** (`platform_onboarder`, onboard/edit only), **Support** (`platform_support`, read-only + read-only drill-in). Each route below lists the permission it requires; a caller lacking it gets 403.
 | Method | Path | Perm required | Notes |
 |---|---|---|---|

@@ -36,9 +36,19 @@ def _check_outlet(db, scope, mid, outlet_id):
 
 
 @router.get("/outlets")
-def list_outlets(merchant_id: str | None = Query(None), scope=Depends(get_scope), db: Session = Depends(get_db)):
+def list_outlets(merchant_id: str | None = Query(None), node_id: str | None = Query(None),
+                 scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """Outlets (+ their active menu id) for the merchant. When `node_id` is given the list is scoped
+    to that member-tree node's subtree — its sellable storefronts only (menu.id == node id) — so
+    'Enter'-ing any chain shows just its own outlets. Always intersected with the caller's RBAC."""
     mid = _ctx(scope, merchant_id)
     rows = catalog_service.list_outlets_with_menu(db, merchant_id=mid)
+    if node_id:
+        from app.services import org_tree
+        node = org_tree.node_for(db, node_id)
+        if node is not None:
+            menu_ids = {n.id for n in org_tree.sellable_under(db, node, active_only=False)}
+            rows = [r for r in rows if r.get("menu_id") in menu_ids]
     return [r for r in rows if scope.can_view_outlet(mid, r["outlet_id"])]
 
 

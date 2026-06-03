@@ -11,7 +11,9 @@ capture-loop diagram live in `README.md`. This file is operating guidance for Cl
 - **Shared** `packages/` — `api-client` (typed client, alias `@fbgroup/api-client`), `ui`, `types`, `config`.
 - **DB** — Postgres 16 in Docker for prod-like; **SQLite for pytest** (in-memory, StaticPool,
   `Base.metadata.create_all` — tests do NOT run through Alembic). Same ORM code both ways.
-- **Infra** `infra/docker-compose.yml`; **not a git repo** — "save progress" = files on disk + memory, never commits.
+- **Infra** `infra/docker-compose.yml`. **Git repo** (origin `github.com/MetaliveSG/FB-Group`); branch +
+  PR flow per `CONTRIBUTING.md` (no direct commits to `main`, conventional commits, add a migration for
+  schema changes). "Save progress" = commit on a feature branch (+ memory for context not in code).
 
 ## Run & test
 ```bash
@@ -26,7 +28,7 @@ docker-compose -f infra/docker-compose.yml up --build
 cd apps/web && npm install && npm run dev      # dev
 cd apps/web && npm run test                    # Vitest
 ```
-Baseline: **216 backend + 45 frontend tests pass** · 116 endpoints · 41 tables · 16 migrations.
+Baseline: **230 backend + 45 frontend tests pass** · ~120 endpoints · 42 tables · 17 migrations.
 
 ## Member tree (org spine) — Chain / Storefront
 The org tree has **two node kinds** (engine keys off the `sells` flag; `role` is a display label):
@@ -38,6 +40,22 @@ from the **Platform Console** (`/platform`) directory drill-down: rows are clean
 ⋯`); the **⋯ opens a NodeDetailDrawer** (rename · status · subscription fee · stop-chain · add
 child · node logins · enter). Endpoints: `GET /org/tree`, `POST/PATCH /org/nodes`,
 `GET/POST/DELETE /org/nodes/{id}/accounts`. Proof: `artifacts/breadtalk-member-tree/`.
+**As-built grounding — see `docs/architecture-org-tree.md §12`** (the authoritative as-built spec):
+- **Provisioning** (`app/services/storefronts.py`): creating a Storefront (`POST /org/nodes` or a
+  `member_kind=storefront` tenant) auto-mints its typed `Outlet` + **`Menu` with `id == node.id`** +
+  `DiningTable` + stable `QRCode`. **`menu.id == node.id` is the invariant the resolvers key off.**
+  Idempotent; `provision_missing()` backfills. Never run `sync_org_tree` on UI-built trees (re-parents).
+- **QR resolution = 3 functions, 3 radii:** directory **"QR Menu"** link (`org.py::_qr_paths_for`,
+  node-keyed — Storefront→`/t/{own outlet token}`, Chain→`/t/node/{id}` iff it has direct storefronts) ·
+  **group browse** `/t/node/{id}` = `catalog.direct_storefronts` (**DIRECT** children + directly-leased,
+  NOT nested-under-sub-chain) · **venue scan** `/t/{token}` = `catalog.list_outlet_stalls` (house ∪
+  leased). `node_scope_stalls` (whole subtree) is for menu-reachability validation only.
+- **Tables & QR** (`/merchant/tables`): per-table QR via `qrcode.react` (encodes `{origin}/t/{token}`) +
+  Print/Print-all; add-table = fixed `T` prefix + number stepper (auto-next, padded `T01`…).
+- **Enter scopes by the node** (`OperatorMerchant {id=tenant, nodeId, outletId?}`): Storefront → locked
+  to 1 outlet; **any sub-chain → its subtree** (`menu-admin/outlets?node_id=`); tenant → all. Menu +
+  Tables & QR sub-scope; **CRM/Orders/Settings stay tenant-wide** (loyalty ring = the tenant). Full nav
+  shows in every mode; **Brands & Outlets are no longer a managed UI** (typed FK anchors only).
 
 ## Roadmap & next phases (priority) — see memory `roadmap-mvp-foundation`
 **MVP (2 weeks) — mostly built.** The MVP merchant is **fully on our stack**: every sale goes through
@@ -102,7 +120,7 @@ GST/CDC/MAS) → **M4** (the barrier to entry). GTM keep-your-POS → `gtm-pos-a
 - `.vscode/` — SQLTools connection to the Docker Postgres + recommended extensions
 
 ## Demo credentials
-- Operator: `http://localhost:3001/operator/login` → `superadmin@platform.sg` / `Password123!`
+- Operator: `http://localhost:3001/platform/login` → `superadmin@platform.sg` / `Password123!`
 - Merchant owner: `http://localhost:3001/merchant/login` → `owner@makan.sg` (or `owner@kampongeats.sg`) / `Password123!`
 - Customer QR: `http://localhost:3001/t/orchard-01` (or `kampong-bedok-01`); OTP phone `+6580000000` (DEBUG returns the code)
 - QR tokens are **stable slugs** (per outlet+table) that survive reseeds.

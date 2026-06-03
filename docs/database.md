@@ -1,6 +1,6 @@
 # Database Schema
 
-SQLAlchemy 2.0 models (`apps/api/app/models/`), Alembic-managed (**16 migrations**, single
+SQLAlchemy 2.0 models (`apps/api/app/models/`), Alembic-managed (**17 migrations**, single
 head). **41 application tables** (+ `alembic_version`). String UUID PKs (`uuid4().hex`),
 naive-UTC timestamps, money as `Numeric(12,2)`. Full DDL: run `alembic upgrade head` or
 see `artifacts/schema_tables.txt`.

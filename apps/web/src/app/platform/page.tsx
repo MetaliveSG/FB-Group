@@ -194,16 +194,19 @@ export default function OperatorConsolePage() {
     return () => window.removeEventListener(AUTH_LOGOUT_EVENT, onLogout);
   }, [loadAll, router]);
 
-  function enterMerchant(id: string, name: string) {
-    setOperatorMerchant({ id, name });
-    router.push("/merchant/crm");
-  }
-
-  // Enter a single Storefront: scope the console to its outlet (Menu + Tables & QR) rather than the
-  // whole tenant. `name` stays the tenant name (for "back to group"); outletName is the storefront.
-  function enterStorefront(merchantId: string, outletId: string, storefrontName: string, tenantName: string) {
-    setOperatorMerchant({ id: merchantId, name: tenantName, outletId, outletName: storefrontName });
-    router.push("/merchant/menu");
+  // Enter any member-tree node's console. `merchantId`/`tenantName` = the tenant (merchant-scoped
+  // pages: CRM, settings…). `nodeId` = the entered node → the outlet surfaces (Menu, Tables & QR)
+  // scope to its subtree. `outletId` (Storefront only) locks those surfaces to its one outlet.
+  function enterNode(a: { merchantId: string; tenantName: string; nodeId: string; nodeName: string;
+                          outletId?: string | null; storefrontName?: string }) {
+    setOperatorMerchant({
+      id: a.merchantId, name: a.tenantName,
+      nodeId: a.nodeId, nodeName: a.nodeName,
+      outletId: a.outletId ?? undefined, outletName: a.outletId ? a.storefrontName : undefined,
+    });
+    // A scoped node (sub-chain or storefront) lands on the Menu so the scoping is visible; the bare
+    // tenant lands on the CRM home.
+    router.push(a.nodeId && a.nodeId !== a.merchantId ? "/merchant/menu" : "/merchant/crm");
   }
 
   // --- Member-tree management (add Chain/Storefront, edit fee, stop-chain) inline in the directory ---
@@ -757,20 +760,20 @@ export default function OperatorConsolePage() {
                             QR Menu
                           </button>
                         )}
-                        {n.sells && (
-                          <button
-                            className="btn btn-primary btn-sm"
-                            style={{ padding: "4px 14px", fontWeight: 700 }}
-                            onClick={() => {
-                              const t = tenantOf(n);
-                              if (t && n.outlet_id) enterStorefront(t.id, n.outlet_id, n.name || "", t.name || "");
-                              else if (t) enterMerchant(t.id, n.name || t.name || "");
-                            }}
-                            title="Enter this storefront's console (menu · tables & QR)"
-                          >
-                            Enter
-                          </button>
-                        )}
+                        <button
+                          className="btn btn-primary btn-sm"
+                          style={{ padding: "4px 14px", fontWeight: 700 }}
+                          onClick={() => {
+                            const t = tenantOf(n);
+                            if (t) enterNode({ merchantId: t.id, tenantName: t.name || "", nodeId: n.id,
+                                               nodeName: n.name || "",
+                                               outletId: n.sells ? n.outlet_id : undefined,
+                                               storefrontName: n.sells ? (n.name || "") : undefined });
+                          }}
+                          title={n.sells ? "Enter this storefront (menu · tables & QR)" : "Enter this chain's console (scoped to its subtree)"}
+                        >
+                          Enter
+                        </button>
                         {n.is_settlement_boundary && kpi && (
                           <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{formatSGD(kpi.revenue)}</span>
                         )}
@@ -859,10 +862,7 @@ export default function OperatorConsolePage() {
             canManage={node.can_manage}
             onClose={() => setDetailId(null)}
             onChanged={reloadTree}
-            onEnter={({ merchantId, outletId, storefrontName, tenantName }) =>
-              outletId
-                ? enterStorefront(merchantId, outletId, storefrontName ?? "", tenantName)
-                : enterMerchant(merchantId, tenantName)}
+            onEnter={enterNode}
             onOpen={() => { setDrill([...drill, node.id]); setDetailId(null); }}
           />
         );
