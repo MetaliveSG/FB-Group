@@ -37,7 +37,7 @@ Open on a **phone-width** viewport. Two merchants are seeded; use **Kampong Eats
 
 ## 4. Platform credibility (1 min)
 - **Multi-tenant** by `merchant_id` on every query; RBAC (operator/owner/manager/staff/customer), tenant-isolation **test-proven**.
-- FastAPI + SQLAlchemy 2.0 + **PostgreSQL** (41 tables, 14 migrations, 110 endpoints), Next.js 14, fully Dockerised, AWS-target (ECS Fargate + RDS).
+- FastAPI + SQLAlchemy 2.0 + **PostgreSQL** (41 tables, 16 migrations, 116 endpoints), Next.js 14, fully Dockerised, AWS-target (ECS Fargate + RDS).
 - Money as `Decimal`; coins are a pure engagement currency (not cash-redeemable).
 - Design system in `packages/ui` (tokens + Lucide) → **web now, React-Native/Expo later** with ~60–70% reuse.
 

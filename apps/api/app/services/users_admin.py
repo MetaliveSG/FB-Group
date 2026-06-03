@@ -15,6 +15,11 @@ GRANTABLE_ROLES = {
     RoleName.MERCHANT_OWNER.value, RoleName.BRAND_MANAGER.value,
     RoleName.OUTLET_MANAGER.value, RoleName.STAFF.value,
 }
+# The member-tree role palette — granted at a NODE (the caller's downline is enforced by the route
+# via org_tree.can_manage_node, so no merchant scope-id validation is needed here).
+NODE_GRANTABLE_ROLES = {
+    RoleName.MANAGER.value, RoleName.CASHIER.value, RoleName.STAFF.value, RoleName.FINANCE.value,
+}
 
 
 def _merchant_scope_ids(db: Session, merchant_id: str) -> set[str]:
@@ -88,5 +93,50 @@ def revoke_assignment(db: Session, *, merchant_id: str, assignment_id: str) -> N
         raise NotFoundError("Assignment not found", code="assignment_not_found")
     if a.scope_id not in _merchant_scope_ids(db, merchant_id):
         raise ForbiddenError("Assignment outside your merchant", code="forbidden")
+    db.delete(a)
+    db.flush()
+
+
+# --- Member-tree (NODE-scoped) logins — the caller's authority over `node_id` is enforced by the
+# route (org_tree.get_managed_node), so these just CRUD the assignment at the node. -------------
+def _account_row(db: Session, a: UserRoleAssignment, u: User) -> dict:
+    role = db.get(Role, a.role_id)
+    return {"assignment_id": a.id, "user_id": u.id, "email": u.email, "full_name": u.full_name,
+            "is_active": u.is_active, "role": role.name if role else "?"}
+
+
+def list_node_accounts(db: Session, *, node_id: str) -> list[dict]:
+    asgs = db.scalars(select(UserRoleAssignment).where(
+        UserRoleAssignment.scope_type == ScopeType.NODE.value,
+        UserRoleAssignment.scope_id == node_id,
+    )).all()
+    rows = [_account_row(db, a, u) for a in asgs if (u := db.get(User, a.user_id))]
+    rows.sort(key=lambda x: x["email"])
+    return rows
+
+
+def create_node_account(db: Session, *, node_id: str, email: str, password: str,
+                        full_name: str, role: str) -> dict:
+    if role not in NODE_GRANTABLE_ROLES:
+        raise ForbiddenError("Role cannot be granted", code="role_not_allowed")
+    if db.scalar(select(User).where(User.email == email)):
+        raise ConflictError("A user with this email already exists", code="email_taken")
+    role_obj = db.scalar(select(Role).where(Role.name == role))
+    if not role_obj:
+        raise NotFoundError("Role not found", code="role_missing")
+    user = User(email=email, full_name=full_name or email, password_hash=hash_password(password))
+    db.add(user)
+    db.flush()
+    a = UserRoleAssignment(user_id=user.id, role_id=role_obj.id,
+                           scope_type=ScopeType.NODE.value, scope_id=node_id)
+    db.add(a)
+    db.flush()
+    return _account_row(db, a, user)
+
+
+def revoke_node_account(db: Session, *, node_id: str, assignment_id: str) -> None:
+    a = db.get(UserRoleAssignment, assignment_id)
+    if not a or a.scope_type != ScopeType.NODE.value or a.scope_id != node_id:
+        raise NotFoundError("Assignment not found", code="assignment_not_found")
     db.delete(a)
     db.flush()

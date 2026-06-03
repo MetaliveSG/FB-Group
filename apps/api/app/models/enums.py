@@ -19,6 +19,13 @@ class RoleName(str, Enum):
     AREA_MANAGER = "area_manager"      # manage the outlets beneath a node (brand/region)
     OUTLET_MANAGER = "outlet_manager"
     STALL_OPERATOR = "stall_operator"  # one storefront (foodcourt stall)
+    # Member-tree role PALETTE (Chain/Storefront model) — assign at ANY node; the node sets the
+    # scope (cascades over its subtree), the role sets the verbs. A Manager high on a Chain IS the
+    # area-manager/director; at a Storefront, the storefront manager. Supersedes the GROUP_*/
+    # AREA_MANAGER/STALL_OPERATOR bundles (those stay only for the legacy demo seed).
+    MANAGER = "manager"                # run everything in the subtree (structure/menu/staff/orders/reports)
+    CASHIER = "cashier"                # till / payments at the storefront(s) in scope
+    FINANCE = "finance"                # read-only: reports + audit across the subtree (CFO/accountant)
     STAFF = "staff"
     CUSTOMER = "customer"
 

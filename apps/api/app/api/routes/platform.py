@@ -63,10 +63,11 @@ def create_merchant(body: MerchantCreateIn,
                     db: Session = Depends(get_db)):
     result = platform_service.create_merchant(
         db, name=body.name, owner_email=body.owner_email,
-        owner_password=body.owner_password, owner_name=body.owner_name)
+        owner_password=body.owner_password, owner_name=body.owner_name,
+        kind=body.kind, subscription_fee=body.subscription_fee)
     audit_record(db, action="platform.merchant_create", actor_id=scope.user_id,
                  merchant_id=result["merchant_id"], entity_type="merchant",
-                 entity_id=result["merchant_id"], meta={"owner": body.owner_email})
+                 entity_id=result["merchant_id"], meta={"owner": body.owner_email, "kind": body.kind})
     db.commit()
     return result
 

@@ -29,6 +29,20 @@ class StallRef(BaseModel):
     logo: str | None = None
     is_open: bool = True
     item_count: int = 0
+    # The stall's own full-ordering page, when it's a dedicated storefront venue (its outlet hosts
+    # one menu + has its own table QR) — the group browse navigates here on tap. Null for a stall
+    # in a shared foodcourt outlet (no per-stall token): the browse opens its read-only sheet instead.
+    order_path: str | None = None
+
+
+class NodeBrowseOut(BaseModel):
+    """A node-scoped customer browse (the 'brand / group app' view): point at any member-tree node
+    and see the orderable leaf stalls in its scope (its own sellable leaves + any stalls leased into
+    a venue within it). `is_group` = it's a chain (many stalls) vs a single storefront."""
+    node_id: str
+    name: str
+    is_group: bool = True
+    stalls: list[StallRef] = []
 
 
 class QrContextOut(BaseModel):

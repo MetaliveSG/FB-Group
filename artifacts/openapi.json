@@ -354,13 +354,108 @@
         }
       }
     },
+    "/api/v1/qr/node/{node_id}": {
+      "get": {
+        "tags": [
+          "qr"
+        ],
+        "summary": "Resolve Node",
+        "description": "The orderable leaf stalls in a node's scope \u2014 a chain shows its whole group's stalls, a\nstorefront shows itself. Powers the 'QR Menu' for a Chain row (a group/brand browse).",
+        "operationId": "resolve_node_api_v1_qr_node__node_id__get",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeBrowseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/qr/node/{node_id}/menu/{menu_id}": {
+      "get": {
+        "tags": [
+          "qr"
+        ],
+        "summary": "Resolve Node Menu",
+        "description": "Full menu for a stall reachable in the node's scope \u2014 validated so a node link can only\nreach stalls actually within that node (its leaves or stalls leased into it).",
+        "operationId": "resolve_node_menu_api_v1_qr_node__node_id__menu__menu_id__get",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "menu_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Menu Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MenuOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/qr/{token}/menu/{menu_id}": {
       "get": {
         "tags": [
           "qr"
         ],
         "summary": "Resolve Stall Menu",
-        "description": "Full menu for one stall \u2014 validated to belong to the token's own outlet, so a QR\ncode can never reach a menu at a different outlet.",
+        "description": "Full menu for one stall reachable at the token's venue \u2014 the venue's own stalls OR stalls\nleased in from another owner. A menu that is neither at the venue nor leased in is rejected,\nso a QR code can never reach an arbitrary outlet's menu.",
         "operationId": "resolve_stall_menu_api_v1_qr__token__menu__menu_id__get",
         "parameters": [
           {
@@ -6479,6 +6574,636 @@
         }
       }
     },
+    "/api/v1/org/tree": {
+      "get": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Get Org Tree",
+        "description": "The caller's visible slice of the member-tree (flat; client assembles via parent_id).\nEach node carries `can_manage` (may grow the tree here) + `qr_path` (a customer-scan link).",
+        "operationId": "get_org_tree_api_v1_org_tree_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgTreeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/org/nodes": {
+      "post": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Create Org Node",
+        "description": "Create a child node under a parent the caller manages \u2014 any depth (enterprise\u2192stall).",
+        "operationId": "create_org_node_api_v1_org_nodes_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrgNodeCreateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgNodeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/org/nodes/{node_id}": {
+      "patch": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Update Org Node",
+        "description": "Rename / (de)activate a node the caller manages.",
+        "operationId": "update_org_node_api_v1_org_nodes__node_id__patch",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrgNodeUpdateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgNodeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/org/nodes/{node_id}/accounts": {
+      "get": {
+        "tags": [
+          "org"
+        ],
+        "summary": "List Node Accounts",
+        "operationId": "list_node_accounts_api_v1_org_nodes__node_id__accounts_get",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NodeAccountOut"
+                  },
+                  "title": "Response List Node Accounts Api V1 Org Nodes  Node Id  Accounts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Create Node Account",
+        "operationId": "create_node_account_api_v1_org_nodes__node_id__accounts_post",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NodeAccountCreateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeAccountOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/org/nodes/{node_id}/accounts/{assignment_id}": {
+      "delete": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Revoke Node Account",
+        "operationId": "revoke_node_account_api_v1_org_nodes__node_id__accounts__assignment_id__delete",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "assignment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Assignment Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/org/nodes/{node_id}/leases": {
+      "get": {
+        "tags": [
+          "org"
+        ],
+        "summary": "List Venue Leases",
+        "operationId": "list_venue_leases_api_v1_org_nodes__node_id__leases_get",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LeaseOut"
+                  },
+                  "title": "Response List Venue Leases Api V1 Org Nodes  Node Id  Leases Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Create Venue Lease",
+        "operationId": "create_venue_lease_api_v1_org_nodes__node_id__leases_post",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeaseCreateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/org/nodes/{node_id}/leases/{lease_id}": {
+      "patch": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Update Venue Lease",
+        "operationId": "update_venue_lease_api_v1_org_nodes__node_id__leases__lease_id__patch",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "lease_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Lease Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeaseUpdateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Delete Venue Lease",
+        "operationId": "delete_venue_lease_api_v1_org_nodes__node_id__leases__lease_id__delete",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "lease_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Lease Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/org/nav-flags": {
       "get": {
         "tags": [
@@ -9315,6 +10040,132 @@
         ],
         "title": "JackpotWinOut"
       },
+      "LeaseCreateIn": {
+        "properties": {
+          "tenant_node_id": {
+            "type": "string",
+            "title": "Tenant Node Id"
+          },
+          "rent_type": {
+            "type": "string",
+            "pattern": "^(FIXED|GTO)$",
+            "title": "Rent Type"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Rate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tenant_node_id",
+          "rent_type",
+          "rate"
+        ],
+        "title": "LeaseCreateIn"
+      },
+      "LeaseOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "venue_id": {
+            "type": "string",
+            "title": "Venue Id"
+          },
+          "tenant_node_id": {
+            "type": "string",
+            "title": "Tenant Node Id"
+          },
+          "tenant_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenant Name"
+          },
+          "rent_type": {
+            "type": "string",
+            "title": "Rent Type"
+          },
+          "rate": {
+            "type": "string",
+            "title": "Rate"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "venue_id",
+          "tenant_node_id",
+          "rent_type",
+          "rate",
+          "is_active"
+        ],
+        "title": "LeaseOut",
+        "description": "One tenancy at a venue. `rent_type` is the foodcourt/coffeeshop switch: FIXED = flat $/mo\n(landlord blind); GTO = % of turnover (landlord reads turnover). `rate` is $/mo for FIXED, a\npercentage for GTO."
+      },
+      "LeaseUpdateIn": {
+        "properties": {
+          "rent_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(FIXED|GTO)$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rent Type"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "LeaseUpdateIn"
+      },
       "LoyaltyProgramOut": {
         "properties": {
           "points_per_dollar": {
@@ -9613,6 +10464,26 @@
             "maxLength": 160,
             "title": "Owner Name",
             "default": ""
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "default": "chain"
+          },
+          "subscription_fee": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Fee"
           }
         },
         "type": "object",
@@ -10137,6 +11008,110 @@
         ],
         "title": "NavFlagsOut",
         "description": "Minimal, non-sensitive UI toggles any staff member may read to render nav \u2014\ndeliberately omits economic config (spin costs, earn rates). Full settings stay\nowner-only (`merchant.manage`); these \"which features the venue runs\" booleans are\nalready public (the anonymous QR context exposes rewards/ordering to diners).\n\n`can_manage_merchant` is the caller's capability (holds `merchant.manage` \u2192 owner or\noperator), so the client can hide owner-only nav (Settings / Team) without a second call."
+      },
+      "NodeAccountCreateIn": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password"
+          },
+          "full_name": {
+            "type": "string",
+            "maxLength": 160,
+            "title": "Full Name",
+            "default": ""
+          },
+          "role": {
+            "type": "string",
+            "pattern": "^(manager|cashier|staff|finance)$",
+            "title": "Role"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "role"
+        ],
+        "title": "NodeAccountCreateIn"
+      },
+      "NodeAccountOut": {
+        "properties": {
+          "assignment_id": {
+            "type": "string",
+            "title": "Assignment Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assignment_id",
+          "user_id",
+          "email",
+          "full_name",
+          "is_active",
+          "role"
+        ],
+        "title": "NodeAccountOut"
+      },
+      "NodeBrowseOut": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "is_group": {
+            "type": "boolean",
+            "title": "Is Group",
+            "default": true
+          },
+          "stalls": {
+            "items": {
+              "$ref": "#/components/schemas/StallRef"
+            },
+            "type": "array",
+            "title": "Stalls",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "node_id",
+          "name"
+        ],
+        "title": "NodeBrowseOut",
+        "description": "A node-scoped customer browse (the 'brand / group app' view): point at any member-tree node\nand see the orderable leaf stalls in its scope (its own sellable leaves + any stalls leased into\na venue within it). `is_group` = it's a chain (many stalls) vs a single storefront."
       },
       "NoteCreate": {
         "properties": {
@@ -10671,6 +11646,234 @@
           "manual"
         ],
         "title": "OrderType"
+      },
+      "OrgNodeCreateIn": {
+        "properties": {
+          "parent_id": {
+            "type": "string",
+            "title": "Parent Id"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "description": "CHAIN (structural) | STOREFRONT (sells, leaf)"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "chain_stopped": {
+            "type": "boolean",
+            "title": "Chain Stopped",
+            "default": false
+          },
+          "subscription_fee": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Fee"
+          }
+        },
+        "type": "object",
+        "required": [
+          "parent_id",
+          "role",
+          "name"
+        ],
+        "title": "OrgNodeCreateIn"
+      },
+      "OrgNodeOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "depth": {
+            "type": "integer",
+            "title": "Depth"
+          },
+          "sells": {
+            "type": "boolean",
+            "title": "Sells"
+          },
+          "chain_stopped": {
+            "type": "boolean",
+            "title": "Chain Stopped",
+            "default": false
+          },
+          "is_settlement_boundary": {
+            "type": "boolean",
+            "title": "Is Settlement Boundary",
+            "default": false
+          },
+          "subscription_fee": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Fee"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "can_manage": {
+            "type": "boolean",
+            "title": "Can Manage",
+            "default": false
+          },
+          "qr_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qr Path"
+          },
+          "outlet_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outlet Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "role",
+          "depth",
+          "sells",
+          "is_active"
+        ],
+        "title": "OrgNodeOut",
+        "description": "One node of the member-tree, flat (the client assembles the tree via `parent_id`).\n`role` is CHAIN or STOREFRONT; `sells` is the engine truth. `can_manage` = whether THIS\ncaller may create/rename beneath it (downline-only)."
+      },
+      "OrgNodeUpdateIn": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "chain_stopped": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chain Stopped"
+          },
+          "subscription_fee": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Fee"
+          }
+        },
+        "type": "object",
+        "title": "OrgNodeUpdateIn"
+      },
+      "OrgTreeOut": {
+        "properties": {
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/OrgNodeOut"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "can_manage": {
+            "type": "boolean",
+            "title": "Can Manage",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "nodes"
+        ],
+        "title": "OrgTreeOut",
+        "description": "The caller's visible slice of the member-tree + whether they can grow it at all."
       },
       "OtpRequest": {
         "properties": {
@@ -11893,6 +13096,17 @@
             "type": "integer",
             "title": "Item Count",
             "default": 0
+          },
+          "order_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Path"
           }
         },
         "type": "object",

@@ -37,27 +37,80 @@ def list_outlet_menus(db: Session, outlet_id: str) -> list[Menu]:
 
 
 def list_outlet_stalls(db: Session, outlet_id: str) -> list[Menu]:
-    """Sellable stalls at an outlet, resolved via the org spine (member-tree-map): the set of
-    sellable nodes in the outlet's subtree, mapped back to their Menu profiles. The structural
-    set comes from the spine; the live `is_active` filter and ordering come from the profile.
+    """Sellable stalls a diner can order from at this venue, resolved via the org spine — the SINGLE
+    resolver used for every venue (single shop, foodcourt, coffeeshop): house stalls (the venue's
+    own sellable subtree) PLUS stalls leased in from another owner (`leasing.storefronts_at_venue`).
+    The structural set comes from the spine; `is_active` + display come from the Menu profile.
 
-    Falls back to the direct menu query when the outlet has no spine node yet (e.g. a freshly
-    created outlet whose auto-menu pre-dates a sync), so a stall is never hidden by sync timing.
-    The explicit `outlet_id` predicate is a defense-in-depth tenant guard.
+    Mapping is by node id (node.id == menu.id), so a leased-in stall — whose Menu lives under a
+    DIFFERENT outlet/merchant — still resolves. Falls back to the direct menu query when the venue
+    has no spine subtree (a collapsed single-storefront merchant, or pre-sync timing), so a stall is
+    never hidden; lease support kicks in for venues that have a real spine subtree.
     """
-    from app.services import org_tree  # local import: avoids any import-order coupling
+    from app.services import leasing, org_tree  # local import: avoids any import-order coupling
 
     node = org_tree.node_for(db, outlet_id)
     if node is None:
         return list_outlet_menus(db, outlet_id)
-    sellable_ids = {n.id for n in org_tree.sellable_under(db, node, active_only=False)}
-    if not sellable_ids:
+    stall_ids = [n.id for n in leasing.storefronts_at_venue(db, node, active_only=False)]
+    if not stall_ids:
         return list_outlet_menus(db, outlet_id)
+    by_id = {m.id: m for m in db.scalars(
+        select(Menu).where(Menu.id.in_(stall_ids), Menu.is_active.is_(True))
+    ).all()}
+    ordered = [by_id[i] for i in stall_ids if i in by_id]   # house-then-leased (storefronts_at_venue order)
+    return ordered or list_outlet_menus(db, outlet_id)
+
+
+def node_scope_stalls(db: Session, node) -> list[Menu]:
+    """Menu-backed leaf stalls in a node's scope — its OWN sellable leaves (subtree) PLUS any stall
+    leased into a venue within it. The 'brand / group app' content for a chain; a single stall for a
+    Storefront. Only stalls that actually have a menu (id == node id) are returned."""
+    from app.models.leases import Lease
+    from app.models.org import OrgNode
+    from app.services import org_tree
+
+    ids = {n.id for n in org_tree.sellable_under(db, node, active_only=False)}
+    sub = select(OrgNode.id).where(org_tree._subtree_filter(node.path))
+    for tid in db.scalars(
+        select(Lease.tenant_node_id).where(Lease.venue_id.in_(sub), Lease.is_active.is_(True))
+    ).all():
+        ids.add(tid)
+    if not ids:
+        return []
     return list(db.scalars(
-        select(Menu)
-        .where(Menu.outlet_id == outlet_id, Menu.is_active.is_(True), Menu.id.in_(sellable_ids))
-        .order_by(Menu.sort_order, Menu.id)
+        select(Menu).where(Menu.id.in_(ids), Menu.is_active.is_(True))
+        .order_by(Menu.sort_order, Menu.stall_name)
     ).all())
+
+
+def get_menu_full(db: Session, menu_id: str) -> Menu:
+    """Full menu (categories+items+modifiers) by id — caller has already authorised scope."""
+    menu = db.scalar(
+        select(Menu).where(Menu.id == menu_id, Menu.is_active.is_(True)).options(_MENU_LOAD)
+    )
+    if not menu:
+        raise NotFoundError("Stall menu not found", code="menu_not_found")
+    return menu
+
+
+def get_venue_stall_menu(db: Session, outlet_id: str, menu_id: str) -> Menu:
+    """Full menu for a stall reachable AT this venue — its own stalls OR stalls leased in. The
+    venue membership check (via the spine) replaces the strict same-outlet check so a leased-in
+    menu (a different outlet/merchant) is reachable, while a foreign menu is still blocked. Falls
+    back to the strict outlet-scoped check for collapsed/typed-only venues with no spine subtree."""
+    from app.services import leasing, org_tree
+
+    node = org_tree.node_for(db, outlet_id)
+    if node is not None:
+        stall_ids = {n.id for n in leasing.storefronts_at_venue(db, node, active_only=False)}
+        if menu_id in stall_ids:
+            menu = db.scalar(
+                select(Menu).where(Menu.id == menu_id, Menu.is_active.is_(True)).options(_MENU_LOAD)
+            )
+            if menu:
+                return menu
+    return get_outlet_menu(db, outlet_id, menu_id)   # strict same-outlet fallback (also 404s foreign)
 
 
 def menu_item_count(db: Session, menu_id: str) -> int:

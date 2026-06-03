@@ -17,6 +17,10 @@ import {
   platformAddCoalitionMember,
   platformRemoveCoalitionMember,
   platformMyPermissions,
+  orgTree,
+  createOrgNode,
+  updateOrgNode,
+  listVenueLeases,
   getApiBase,
   installAuthHandler,
   AUTH_LOGOUT_EVENT,
@@ -27,6 +31,7 @@ import {
   setOperatorMerchant,
 } from "@/lib/auth";
 import { formatSGD } from "@/lib/format";
+import NodeDetailDrawer from "@/components/NodeDetailDrawer";
 import { Toggle, Icons } from "@/components/ui";
 import {
   OPERATOR_ROLE_LABELS,
@@ -36,6 +41,8 @@ import {
   type Operator,
   type OperatorRole,
   type PlatformCapabilities,
+  type OrgTreeNode,
+  type Lease,
 } from "@fbgroup/api-client";
 
 const OPERATOR_ROLE_OPTIONS: { value: OperatorRole; label: string; hint: string }[] = [
@@ -52,6 +59,17 @@ const MODULE_FLAGS: { key: string; label: string }[] = [
   { key: "pos_enabled", label: "POS" },
 ];
 
+// Member-tree node display: colour per role + a coarse rank so a level lists Brands before
+// Outlets before Stalls. Mirrors the merchant Org-Tree page.
+const ROLE_STYLE: Record<string, { bg: string; fg: string }> = {
+  CHAIN: { bg: "#dbeafe", fg: "#1e40af" },
+  STOREFRONT: { bg: "#fef3c7", fg: "#92400e" },
+};
+const ROLE_RANK: Record<string, number> = { CHAIN: 0, STOREFRONT: 1 };
+// Canonical Title-Case kind labels (consistent with the Manager/Cashier role chips).
+// NOT exported — a Next.js page file rejects arbitrary named exports.
+const KIND_LABEL: Record<string, string> = { CHAIN: "Chain", STOREFRONT: "Storefront" };
+
 function errStatus(err: unknown): number | undefined {
   return err && typeof err === "object" && "status" in err
     ? (err as { status?: number }).status
@@ -67,6 +85,18 @@ export default function OperatorConsolePage() {
 
   const [overview, setOverview] = useState<PlatformOverview | null>(null);
   const [merchants, setMerchants] = useState<MerchantKpi[]>([]);
+  const [tree, setTree] = useState<OrgTreeNode[]>([]);
+  const [drill, setDrill] = useState<string[]>([]);  // member-tree path: node ids root→current
+  const [detailId, setDetailId] = useState<string | null>(null);  // node whose detail drawer is open
+  const [venueLeases, setVenueLeases] = useState<Lease[]>([]);     // stalls leased INTO the current node
+  // Member-tree management (manage the tree right here in the directory; no separate Org-Tree page):
+  const [manageId, setManageId] = useState<string | null>(null);   // node whose manage panel is open
+  const [nodeBusy, setNodeBusy] = useState(false);
+  const [nodeErr, setNodeErr] = useState<string | null>(null);
+  const [feeVal, setFeeVal] = useState("");                        // subscription-fee input
+  const [addKind, setAddKind] = useState("CHAIN");                 // add-child kind
+  const [addName, setAddName] = useState("");
+  const [addFee, setAddFee] = useState("");
   const [coalitions, setCoalitions] = useState<Coalition[]>([]);
   const [operators, setOperators] = useState<Operator[]>([]);
   const [caps, setCaps] = useState<PlatformCapabilities | null>(null);
@@ -80,6 +110,8 @@ export default function OperatorConsolePage() {
   const [mEmail, setMEmail] = useState("");
   const [mPassword, setMPassword] = useState("");
   const [mOwnerName, setMOwnerName] = useState("");
+  const [mKind, setMKind] = useState<"chain" | "storefront">("storefront");
+  const [mFee, setMFee] = useState("");
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
@@ -115,14 +147,16 @@ export default function OperatorConsolePage() {
       const c = await platformMyPermissions(base, tok);
       setCaps(c);
       const has = (p: string) => c.is_owner || c.permissions.includes(p);
-      const [ov, ms, cs] = await Promise.all([
+      const [ov, ms, cs, tr] = await Promise.all([
         platformOverview(base, tok),
         platformMerchants(base, tok),
         platformCoalitions(base, tok),
+        orgTree(base, tok).catch(() => ({ nodes: [], can_manage: false })),
       ]);
       setOverview(ov);
       setMerchants(ms);
       setCoalitions(cs);
+      setTree(tr.nodes);
       // Operators list is Owner-only — only fetch it when allowed (else it 403s).
       setOperators(has("platform.operators.manage") ? await platformOperators(base, tok) : []);
     },
@@ -134,13 +168,13 @@ export default function OperatorConsolePage() {
     function onLogout(e: Event) {
       const detail = (e as CustomEvent).detail as { actor?: string } | undefined;
       if (detail?.actor && detail.actor !== "staff") return;
-      router.push("/operator/login");
+      router.push("/platform/login");
     }
     window.addEventListener(AUTH_LOGOUT_EVENT, onLogout);
 
     const tok = getStaffToken();
     if (!tok) {
-      router.push("/operator/login");
+      router.push("/platform/login");
       return () => window.removeEventListener(AUTH_LOGOUT_EVENT, onLogout);
     }
     loadAll(tok)
@@ -150,7 +184,7 @@ export default function OperatorConsolePage() {
         if (errStatus(err) === 403 || msg.includes("403")) {
           // Not an operator — bounce to operator login (it explains why).
           clearStaffToken();
-          router.push("/operator/login");
+          router.push("/platform/login");
         } else {
           setError(msg || "Failed to load operator console");
           setLoading(false);
@@ -160,9 +194,74 @@ export default function OperatorConsolePage() {
     return () => window.removeEventListener(AUTH_LOGOUT_EVENT, onLogout);
   }, [loadAll, router]);
 
-  function enterMerchant(m: MerchantKpi) {
-    setOperatorMerchant({ id: m.id, name: m.name });
+  function enterMerchant(id: string, name: string) {
+    setOperatorMerchant({ id, name });
     router.push("/merchant/crm");
+  }
+
+  // Enter a single Storefront: scope the console to its outlet (Menu + Tables & QR) rather than the
+  // whole tenant. `name` stays the tenant name (for "back to group"); outletName is the storefront.
+  function enterStorefront(merchantId: string, outletId: string, storefrontName: string, tenantName: string) {
+    setOperatorMerchant({ id: merchantId, name: tenantName, outletId, outletName: storefrontName });
+    router.push("/merchant/menu");
+  }
+
+  // --- Member-tree management (add Chain/Storefront, edit fee, stop-chain) inline in the directory ---
+  // Leased-in stalls under the node we're currently viewing (venue). Reloads on navigation and
+  // when the detail drawer closes (the drawer is where leases are added/edited). Empty at root or
+  // for a node with no tenancies; never throws (a non-venue / no-access node just returns []).
+  useEffect(() => {
+    const tok = getStaffToken();
+    const currentId = drill.length ? drill[drill.length - 1] : null;
+    if (!tok || !currentId) { setVenueLeases([]); return; }
+    listVenueLeases(base, tok, currentId).then(setVenueLeases).catch(() => setVenueLeases([]));
+  }, [drill, detailId, base]);
+
+  async function reloadTree() {
+    const tok = getStaffToken();
+    if (tok) setTree((await orgTree(base, tok)).nodes);
+  }
+  function openManage(node: OrgTreeNode) {
+    setManageId(manageId === node.id ? null : node.id);
+    setFeeVal(node.subscription_fee ?? "");
+    setAddKind(node.chain_stopped ? "STOREFRONT" : "CHAIN");
+    setAddName("");
+    setAddFee("");
+    setNodeErr(null);
+  }
+  async function runNode(fn: () => Promise<unknown>) {
+    setNodeBusy(true);
+    setNodeErr(null);
+    try {
+      await fn();
+      await reloadTree();
+    } catch (err: unknown) {
+      setNodeErr(errMsg(err, "Action failed"));
+    } finally {
+      setNodeBusy(false);
+    }
+  }
+  async function saveFee(node: OrgTreeNode) {
+    const tok = getStaffToken();
+    if (!tok) return;
+    await runNode(() => updateOrgNode(base, tok, node.id, { subscription_fee: feeVal.trim() || "0" }));
+  }
+  async function toggleStop(node: OrgTreeNode) {
+    const tok = getStaffToken();
+    if (!tok) return;
+    await runNode(() => updateOrgNode(base, tok, node.id, { chain_stopped: !node.chain_stopped }));
+  }
+  async function addChild(parentId: string) {
+    const tok = getStaffToken();
+    if (!tok || !addName.trim()) return;
+    await runNode(async () => {
+      await createOrgNode(base, tok, {
+        parent_id: parentId, role: addKind, name: addName.trim(),
+        subscription_fee: addFee.trim() || undefined,
+      });
+      setAddName("");
+      setAddFee("");
+    });
   }
 
   async function toggleActive(m: MerchantKpi) {
@@ -217,12 +316,15 @@ export default function OperatorConsolePage() {
         owner_email: mEmail.trim(),
         owner_password: mPassword,
         owner_name: mOwnerName.trim() || undefined,
+        kind: mKind,
+        subscription_fee: mFee.trim() || undefined,
       });
-      setFormSuccess(`Created "${res.name}" with owner ${res.owner_email}.`);
+      setFormSuccess(`Created ${mKind} "${res.name}" with owner ${res.owner_email}.`);
       setMName("");
       setMEmail("");
       setMPassword("");
       setMOwnerName("");
+      setMFee("");
       await loadAll(tok);
     } catch (err: unknown) {
       const msg = errMsg(err, "Failed to create merchant");
@@ -353,7 +455,7 @@ export default function OperatorConsolePage() {
 
   function logout() {
     clearStaffToken();
-    router.push("/operator/login");
+    router.push("/platform/login");
   }
 
   if (loading) {
@@ -387,7 +489,7 @@ export default function OperatorConsolePage() {
         }}
       >
         <div>
-          <h1 className="page-title">Operator Console</h1>
+          <h1 className="page-title">Platform Console</h1>
           <p className="page-subtitle">Platform overview across all merchants</p>
         </div>
         <button onClick={logout} className="btn btn-secondary btn-sm">
@@ -514,157 +616,258 @@ export default function OperatorConsolePage() {
                   placeholder="min 8 characters"
                 />
               </div>
+              <div className="form-group">
+                <label htmlFor="m-kind">Type</label>
+                <select id="m-kind" value={mKind} onChange={(e) => setMKind(e.target.value as "chain" | "storefront")}>
+                  <option value="storefront">Storefront</option>
+                  <option value="chain">Chain</option>
+                </select>
+                <span style={{ fontSize: 12, color: "var(--color-text-muted)", marginTop: 4 }}>
+                  Chain nests other locations; Storefront is a single selling location.
+                </span>
+              </div>
+              <div className="form-group">
+                <label htmlFor="m-fee">Subscription Fee</label>
+                <input
+                  id="m-fee"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={mFee}
+                  onChange={(e) => setMFee(e.target.value)}
+                  placeholder="S$/mo (optional)"
+                />
+              </div>
             </div>
             <button type="submit" className="btn btn-primary" disabled={creating}>
-              {creating ? "Creating…" : "Create Merchant"}
+              {creating ? "Creating…" : `Create ${mKind === "storefront" ? "Storefront" : "Chain"}`}
             </button>
           </form>
         </div>
       )}
 
-      <div className="table-wrapper" style={{ marginBottom: 28 }}>
-        <table>
-          <thead>
-            <tr>
-              <th>Merchant</th>
-              <th>Status</th>
-              <th>Modules</th>
-              <th>Revenue</th>
-              <th>Orders</th>
-              <th>Customers</th>
-              <th>Owner</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {merchants.length === 0 ? (
-              <tr>
-                <td colSpan={8} style={{ textAlign: "center", color: "var(--color-text-muted)" }}>
-                  No merchants yet.
-                </td>
-              </tr>
+      {(() => {
+        // Member-tree drill-down: zoom from the roots (enterprises + standalone merchants) DOWN
+        // the org spine — Chain → … → Storefront. Tenant Chains (settlement boundaries) carry the
+        // live KPIs + suspend/edit; a Storefront gets the Enter button (the operating unit). Chains
+        // are structure you zoom into. Same member-tree the merchant Org-Tree page shows.
+        const present = new Set(tree.map((n) => n.id));
+        const byId = new Map(tree.map((n) => [n.id, n]));
+        const kpiById = new Map(merchants.map((m) => [m.id, m]));
+        const childrenOf = (pid: string | null) =>
+          tree
+            .filter((n) => (pid === null ? !n.parent_id || !present.has(n.parent_id) : n.parent_id === pid))
+            .sort(
+              (a, b) =>
+                (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9) ||
+                (a.name || "").localeCompare(b.name || "")
+            );
+        const currentId = drill.length ? drill[drill.length - 1] : null;
+        const level = childrenOf(currentId);
+        // The tenant ("merchant") a node belongs to = nearest ancestor settlement boundary. A
+        // Storefront is the operating unit you ENTER; entering drills into its tenant's console.
+        const tenantOf = (node: OrgTreeNode): OrgTreeNode | undefined => {
+          let cur: OrgTreeNode | undefined = node;
+          while (cur) {
+            if (cur.is_settlement_boundary) return cur;
+            cur = cur.parent_id ? byId.get(cur.parent_id) : undefined;
+          }
+          return undefined;
+        };
+        const crumb = (active: boolean) => ({
+          background: "none",
+          border: "none",
+          padding: 0,
+          font: "inherit",
+          cursor: "pointer",
+          color: active ? "var(--color-text, #111)" : "#ea580c",
+          fontWeight: active ? 700 : 500,
+          textDecoration: active ? "none" : "underline",
+        });
+        // A "link / bridge" glyph (Lucide Link2) — signals a stall that lives in ANOTHER tree and
+        // is merely leased in here (vs an owned child). Inline SVG so it tints to any token colour.
+        const linkIcon = (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+               style={{ flexShrink: 0 }}>
+            <path d="M9 17H7A5 5 0 0 1 7 7h2" /><path d="M15 7h2a5 5 0 1 1 0 10h-2" />
+            <line x1="8" x2="16" y1="12" y2="12" />
+          </svg>
+        );
+        return (
+          <div className="card" style={{ marginBottom: 28 }}>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 14, fontSize: 13 }}>
+              <button onClick={() => setDrill([])} style={crumb(drill.length === 0)}>
+                All merchants
+              </button>
+              {drill.map((id, i) => (
+                <Fragment key={id}>
+                  <span style={{ color: "var(--color-text-muted)" }}>›</span>
+                  <button onClick={() => setDrill(drill.slice(0, i + 1))} style={crumb(i === drill.length - 1)}>
+                    {byId.get(id)?.name || id}
+                  </button>
+                </Fragment>
+              ))}
+            </div>
+
+            {tree.length === 0 ? (
+              <p style={{ color: "var(--color-text-muted)" }}>No merchants yet.</p>
+            ) : level.length === 0 && venueLeases.length === 0 ? (
+              <p style={{ color: "var(--color-text-muted)" }}>Nothing under this node.</p>
             ) : (
-              merchants.map((m) => (
-                <Fragment key={m.id}>
-                  <tr>
-                    <td>
-                      <strong>{m.name}</strong>
-                      <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-                        {m.brands} brand{m.brands === 1 ? "" : "s"}
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                        {canSuspend && (
-                          <Toggle
-                            on={m.is_active}
-                            disabled={togglingId === m.id}
-                            onChange={() => toggleActive(m)}
-                            label={m.is_active ? "Suspend merchant" : "Activate merchant"}
-                          />
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {level.map((n) => {
+                  const kids = childrenOf(n.id);
+                  const kpi = kpiById.get(n.id);
+                  const rs = ROLE_STYLE[n.role] ?? { bg: "#f1f5f9", fg: "#334155" };
+                  return (
+                    <div
+                      key={n.id}
+                      style={{
+                        border: "1px solid var(--color-border, #e5e7eb)",
+                        borderRadius: 10,
+                        padding: "10px 12px",
+                        opacity: n.is_active ? 1 : 0.55,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <span className="badge" style={{ background: rs.bg, color: rs.fg, fontSize: 11, fontWeight: 700 }}>
+                        {KIND_LABEL[n.role] ?? n.role}
+                      </span>
+                      <button
+                        onClick={() => (kids.length ? setDrill([...drill, n.id]) : setDetailId(n.id))}
+                        style={{ background: "none", border: "none", padding: 0, font: "inherit", fontWeight: 600, cursor: "pointer", color: "inherit", textAlign: "left" }}
+                      >
+                        {n.name || "(unnamed)"}
+                        {kids.length > 0 && (
+                          <span style={{ color: "var(--color-text-muted)", fontWeight: 400, fontSize: 12 }}> · {kids.length} inside ›</span>
                         )}
-                        <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-                          {togglingId === m.id ? "…" : m.is_active ? "Active" : "Suspended"}
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                        {MODULE_FLAGS.filter((f) => m.module_flags?.[f.key]).map((f) => (
-                          <span
-                            key={f.key}
-                            className="badge"
-                            style={{ background: "#ecfdf5", color: "#047857", fontSize: 11 }}
-                          >
-                            {f.label}
-                          </span>
-                        ))}
-                        {MODULE_FLAGS.every((f) => !m.module_flags?.[f.key]) && (
-                          <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>—</span>
-                        )}
-                      </div>
-                    </td>
-                    <td>{formatSGD(m.revenue)}</td>
-                    <td>{m.orders.toLocaleString()}</td>
-                    <td>{m.customers.toLocaleString()}</td>
-                    <td>
-                      <div style={{ fontSize: 13 }}>{m.owner_name || "—"}</div>
-                      <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-                        {m.owner_email || ""}
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ display: "inline-flex", gap: 6 }}>
-                        {canOnboard && (
+                      </button>
+                      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        {n.qr_path && (
                           <button
                             className="btn btn-secondary btn-sm"
-                            style={{ padding: "4px 8px", display: "inline-flex", alignItems: "center" }}
-                            onClick={() =>
-                              editMerchantId === m.id ? setEditMerchantId(null) : startEditMerchant(m)
-                            }
-                            title="Edit merchant"
-                            aria-label="Edit merchant"
+                            style={{ padding: "4px 12px", fontWeight: 600 }}
+                            onClick={() => window.open(n.qr_path!, "_blank", "width=430,height=900,noopener,noreferrer")}
+                            title={n.sells ? "Open this stall's QR menu (new window)" : "Open this group's stalls (new window)"}
                           >
-                            <Icons.Pencil size={14} aria-hidden />
+                            QR Menu
                           </button>
                         )}
-                        {canDrillIn && (
-                          <button className="btn btn-secondary btn-sm" onClick={() => enterMerchant(m)}>
-                            Enter →
+                        {n.sells && (
+                          <button
+                            className="btn btn-primary btn-sm"
+                            style={{ padding: "4px 14px", fontWeight: 700 }}
+                            onClick={() => {
+                              const t = tenantOf(n);
+                              if (t && n.outlet_id) enterStorefront(t.id, n.outlet_id, n.name || "", t.name || "");
+                              else if (t) enterMerchant(t.id, n.name || t.name || "");
+                            }}
+                            title="Enter this storefront's console (menu · tables & QR)"
+                          >
+                            Enter
                           </button>
                         )}
+                        {n.is_settlement_boundary && kpi && (
+                          <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{formatSGD(kpi.revenue)}</span>
+                        )}
+                        {!n.is_active && (
+                          <span className="badge" style={{ background: "#fee2e2", color: "#991b1b", fontSize: 10 }}>Suspended</span>
+                        )}
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: "4px 10px", fontWeight: 700 }}
+                          onClick={() => setDetailId(n.id)}
+                          title="Details & manage"
+                          aria-label="Details"
+                        >
+                          ⋯
+                        </button>
                       </div>
-                    </td>
-                  </tr>
-                  {editMerchantId === m.id && (
-                    <tr>
-                      <td colSpan={8} style={{ background: "var(--color-surface-2, #f8fafc)" }}>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "flex-end", padding: "4px 0" }}>
-                          <div className="form-group" style={{ margin: 0, minWidth: 220 }}>
-                            <label htmlFor={`edit-name-${m.id}`}>Merchant Name</label>
-                            <input
-                              id={`edit-name-${m.id}`}
-                              type="text"
-                              value={editName}
-                              onChange={(e) => setEditName(e.target.value)}
-                            />
-                          </div>
-                          <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
-                            {MODULE_FLAGS.map((f) => (
-                              <div key={f.key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{f.label}</span>
-                                <Toggle
-                                  on={!!editFlags[f.key]}
-                                  onChange={() =>
-                                    setEditFlags((prev) => ({ ...prev, [f.key]: !prev[f.key] }))
-                                  }
-                                  label={`Toggle ${f.label}`}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <button
-                              className="btn btn-primary btn-sm"
-                              disabled={savingMerchant || !editName.trim()}
-                              onClick={() => saveMerchant(m.id)}
-                            >
-                              {savingMerchant ? "Saving…" : "Save"}
-                            </button>
-                            <button className="btn btn-secondary btn-sm" onClick={() => setEditMerchantId(null)}>
-                              Cancel
-                            </button>
+                    </div>
+                  );
+                })}
+
+                {/* Leased-in stalls: independent tenants (own businesses, another tree) renting
+                    space at THIS venue. Deliberately distinct from owned stalls above — dashed
+                    violet rail + "Tenant" badge + link glyph + rent terms — so an operator never
+                    confuses "I own this" with "this rents from me". */}
+                {venueLeases.length > 0 && (
+                  <>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7, margin: "10px 2px 2px",
+                                  fontSize: 11, fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", color: "#7c3aed" }}>
+                      <span style={{ display: "inline-flex" }}>{linkIcon}</span>
+                      Leased-in stalls ({venueLeases.length})
+                      <span style={{ fontWeight: 500, letterSpacing: 0, textTransform: "none", color: "var(--color-text-muted)" }}>
+                        · independent tenants renting space here
+                      </span>
+                    </div>
+                    {venueLeases.map((l) => {
+                      const isGto = l.rent_type === "GTO";
+                      return (
+                        <div
+                          key={l.id}
+                          style={{
+                            border: "1px solid #ede9fe",
+                            borderLeft: "3px dashed #a78bfa",
+                            background: "#faf5ff",
+                            borderRadius: 10,
+                            padding: "10px 12px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <span className="badge" style={{ background: "#ede9fe", color: "#6d28d9", fontSize: 11,
+                                  fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            {linkIcon} Tenant
+                          </span>
+                          <span style={{ fontWeight: 600 }}>{l.tenant_name || l.tenant_node_id}</span>
+                          <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>· leases space (own business)</span>
+                          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+                            <span className="badge" style={{ background: isGto ? "#fef3c7" : "#f1f5f9",
+                                    color: isGto ? "#92400e" : "#475569", fontSize: 11, fontWeight: 700 }}>
+                              {isGto ? `GTO · ${Number(l.rate)}%` : `FIXED · ${formatSGD(Number(l.rate))}/mo`}
+                            </span>
+                            <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
+                              {isGto ? "you see turnover" : "sales private"}
+                            </span>
                           </div>
                         </div>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              ))
+                      );
+                    })}
+                  </>
+                )}
+              </div>
             )}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        );
+      })()}
+
+      {detailId && (() => {
+        const node = tree.find((n) => n.id === detailId);
+        if (!node) return null;
+        return (
+          <NodeDetailDrawer
+            node={node}
+            nodes={tree}
+            kpi={merchants.find((m) => m.id === node.id)}
+            canManage={node.can_manage}
+            onClose={() => setDetailId(null)}
+            onChanged={reloadTree}
+            onEnter={({ merchantId, outletId, storefrontName, tenantName }) =>
+              outletId
+                ? enterStorefront(merchantId, outletId, storefrontName ?? "", tenantName)
+                : enterMerchant(merchantId, tenantName)}
+            onOpen={() => { setDrill([...drill, node.id]); setDetailId(null); }}
+          />
+        );
+      })()}
+
 
       {/* Platform operators — Owner-only (manage other operators' access + roles) */}
       {canOperators && (

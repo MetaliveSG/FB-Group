@@ -9,7 +9,7 @@ session and the FastAPI `TestClient`, with RBAC seeded and rate-limiter/OTP rese
 test (`app/tests/conftest.py`). Latest run: **208 passed** (see
 `artifacts/pytest_results.txt`). Frontend: **45 Vitest tests**.
 
-## Coverage by file (208 backend tests)
+## Coverage by file (216 backend tests)
 | File | Module(s) | What it proves |
 |---|---|---|
 | `test_health.py` | 12 | health endpoint + secure headers |

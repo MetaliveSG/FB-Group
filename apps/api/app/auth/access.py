@@ -30,6 +30,10 @@ class _All:
 
 ALL_OUTLETS = _All()
 
+# A GTO lease grants the landlord a READ-ONLY turnover view of the leased stall (to bill the %) —
+# never management. FIXED grants nothing. Kept narrow on purpose (the coffeeshop privacy guarantee).
+TURNOVER_READ_PERMS = {"report.view"}
+
 
 @dataclass
 class Scope:
@@ -41,6 +45,12 @@ class Scope:
     # Platform-operator drill-in capability into ANY merchant: None | "read" | "full".
     # "full" = a managing operator (acts like the merchant owner); "read" = view-only.
     platform_drilldown: str | None = None
+    # Org-tree (member-tree) reach, by org-node assignment — independent of the merchant grants
+    # above so the tree endpoints work without a merchant_id. `node_ids` = nodes the user is
+    # assigned at (read roots: each node's subtree is visible); `manage_node_ids` = the subset
+    # whose bundle carries `org.manage` (write roots: may create/rename within those subtrees).
+    node_ids: set[str] = field(default_factory=set)
+    manage_node_ids: set[str] = field(default_factory=set)
 
     def _perms_for(self, merchant_id: str | None) -> set[str]:
         perms = set(self.platform_perms)
@@ -119,8 +129,16 @@ def resolve_scope(db: Session, user: User) -> Scope:
             node = org_tree.node_for(db, a.scope_id) if a.scope_id else None
             if node is None:
                 continue
+            scope.node_ids.add(node.id)                       # read root for the org-tree view
+            if "org.manage" in perms:
+                scope.manage_node_ids.add(node.id)            # write root (build the tree here-down)
             for mid, node_outlets in org_tree.grants_for_node(db, node):
                 _add_merchant_grant(scope, mid, perms, ALL_OUTLETS if node_outlets is None else node_outlets)
+            # GTO leases: the landlord gets a read-only turnover view of stalls leased into a venue
+            # in this subtree. FIXED leases add nothing here — landlord stays blind (coffeeshop).
+            from app.services import leasing
+            for tenant_mid, sf_id in leasing.gto_turnover_grants(db, node):
+                _add_merchant_grant(scope, tenant_mid, TURNOVER_READ_PERMS, {sf_id})
             continue
 
         merchant_id: str | None = None

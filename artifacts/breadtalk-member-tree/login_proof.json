@@ -1,0 +1,371 @@
+{
+  "base": "http://localhost:8000",
+  "results": [
+    {
+      "email": "ceo@breadtalk.sg",
+      "tier": "Group Chain \u00b7 Manager (CEO)",
+      "role": "manager",
+      "login": true,
+      "tree_http": 200,
+      "can_manage_tree": true,
+      "visible": {
+        "total": 15,
+        "chains": [
+          "BreadTalk (F&B) Pte Ltd",
+          "BreadTalk Bakery",
+          "BreadTalk Group",
+          "Din Tai Fung",
+          "Din Tai Fung SG Pte Ltd",
+          "Food Republic",
+          "Food Republic @ VivoCity",
+          "Toast Box"
+        ],
+        "storefronts": [
+          "BreadTalk @ ION",
+          "BreadTalk @ VivoCity",
+          "Chicken Rice (Food Republic)",
+          "Din Tai Fung @ Paragon",
+          "Laksa (Food Republic)",
+          "Toast Box @ Tampines",
+          "Western (Food Republic)"
+        ],
+        "tenants": [
+          "BreadTalk (F&B) Pte Ltd",
+          "Din Tai Fung SG Pte Ltd"
+        ],
+        "manageable": 15
+      },
+      "permissions": [
+        "audit.view",
+        "brand.manage",
+        "campaign.manage",
+        "crm.manage",
+        "crm.view",
+        "menu.manage",
+        "merchant.manage",
+        "order.manage",
+        "order.view",
+        "org.manage",
+        "outlet.manage",
+        "payment.process",
+        "report.view",
+        "user.manage"
+      ],
+      "perm_count": 14
+    },
+    {
+      "email": "cfo@breadtalk.sg",
+      "tier": "Group Chain \u00b7 Finance (CFO, read-only)",
+      "role": "finance",
+      "login": true,
+      "tree_http": 200,
+      "can_manage_tree": false,
+      "visible": {
+        "total": 15,
+        "chains": [
+          "BreadTalk (F&B) Pte Ltd",
+          "BreadTalk Bakery",
+          "BreadTalk Group",
+          "Din Tai Fung",
+          "Din Tai Fung SG Pte Ltd",
+          "Food Republic",
+          "Food Republic @ VivoCity",
+          "Toast Box"
+        ],
+        "storefronts": [
+          "BreadTalk @ ION",
+          "BreadTalk @ VivoCity",
+          "Chicken Rice (Food Republic)",
+          "Din Tai Fung @ Paragon",
+          "Laksa (Food Republic)",
+          "Toast Box @ Tampines",
+          "Western (Food Republic)"
+        ],
+        "tenants": [
+          "BreadTalk (F&B) Pte Ltd",
+          "Din Tai Fung SG Pte Ltd"
+        ],
+        "manageable": 0
+      },
+      "permissions": [
+        "audit.view",
+        "crm.view",
+        "report.view"
+      ],
+      "perm_count": 3
+    },
+    {
+      "email": "owner.m1@breadtalk.sg",
+      "tier": "Tenant Chain \u00b7 BreadTalk (F&B) GM",
+      "role": "manager",
+      "login": true,
+      "tree_http": 200,
+      "can_manage_tree": true,
+      "visible": {
+        "total": 11,
+        "chains": [
+          "BreadTalk (F&B) Pte Ltd",
+          "BreadTalk Bakery",
+          "Food Republic",
+          "Food Republic @ VivoCity",
+          "Toast Box"
+        ],
+        "storefronts": [
+          "BreadTalk @ ION",
+          "BreadTalk @ VivoCity",
+          "Chicken Rice (Food Republic)",
+          "Laksa (Food Republic)",
+          "Toast Box @ Tampines",
+          "Western (Food Republic)"
+        ],
+        "tenants": [
+          "BreadTalk (F&B) Pte Ltd"
+        ],
+        "manageable": 11
+      },
+      "permissions": [
+        "audit.view",
+        "brand.manage",
+        "campaign.manage",
+        "crm.manage",
+        "crm.view",
+        "menu.manage",
+        "merchant.manage",
+        "order.manage",
+        "order.view",
+        "org.manage",
+        "outlet.manage",
+        "payment.process",
+        "report.view",
+        "user.manage"
+      ],
+      "perm_count": 14
+    },
+    {
+      "email": "mgr.toastbox@breadtalk.sg",
+      "tier": "Chain \u00b7 Toast Box Manager",
+      "role": "manager",
+      "login": true,
+      "tree_http": 200,
+      "can_manage_tree": true,
+      "visible": {
+        "total": 2,
+        "chains": [
+          "Toast Box"
+        ],
+        "storefronts": [
+          "Toast Box @ Tampines"
+        ],
+        "tenants": [],
+        "manageable": 2
+      },
+      "permissions": [
+        "audit.view",
+        "brand.manage",
+        "campaign.manage",
+        "crm.manage",
+        "crm.view",
+        "menu.manage",
+        "merchant.manage",
+        "order.manage",
+        "order.view",
+        "org.manage",
+        "outlet.manage",
+        "payment.process",
+        "report.view",
+        "user.manage"
+      ],
+      "perm_count": 14
+    },
+    {
+      "email": "mgr.foodrepublic@breadtalk.sg",
+      "tier": "Chain \u00b7 Food Republic Manager (foodcourt)",
+      "role": "manager",
+      "login": true,
+      "tree_http": 200,
+      "can_manage_tree": true,
+      "visible": {
+        "total": 5,
+        "chains": [
+          "Food Republic",
+          "Food Republic @ VivoCity"
+        ],
+        "storefronts": [
+          "Chicken Rice (Food Republic)",
+          "Laksa (Food Republic)",
+          "Western (Food Republic)"
+        ],
+        "tenants": [],
+        "manageable": 5
+      },
+      "permissions": [
+        "audit.view",
+        "brand.manage",
+        "campaign.manage",
+        "crm.manage",
+        "crm.view",
+        "menu.manage",
+        "merchant.manage",
+        "order.manage",
+        "order.view",
+        "org.manage",
+        "outlet.manage",
+        "payment.process",
+        "report.view",
+        "user.manage"
+      ],
+      "perm_count": 14
+    },
+    {
+      "email": "mgr.ion@breadtalk.sg",
+      "tier": "Storefront \u00b7 BreadTalk @ ION Manager",
+      "role": "manager",
+      "login": true,
+      "tree_http": 200,
+      "can_manage_tree": true,
+      "visible": {
+        "total": 1,
+        "chains": [],
+        "storefronts": [
+          "BreadTalk @ ION"
+        ],
+        "tenants": [],
+        "manageable": 1
+      },
+      "permissions": [
+        "audit.view",
+        "brand.manage",
+        "campaign.manage",
+        "crm.manage",
+        "crm.view",
+        "menu.manage",
+        "merchant.manage",
+        "order.manage",
+        "order.view",
+        "org.manage",
+        "outlet.manage",
+        "payment.process",
+        "report.view",
+        "user.manage"
+      ],
+      "perm_count": 14
+    },
+    {
+      "email": "cashier.ion@breadtalk.sg",
+      "tier": "Storefront \u00b7 BreadTalk @ ION Cashier",
+      "role": "cashier",
+      "login": true,
+      "tree_http": 200,
+      "can_manage_tree": false,
+      "visible": {
+        "total": 1,
+        "chains": [],
+        "storefronts": [
+          "BreadTalk @ ION"
+        ],
+        "tenants": [],
+        "manageable": 0
+      },
+      "permissions": [
+        "order.manage",
+        "order.view",
+        "payment.process"
+      ],
+      "perm_count": 3
+    },
+    {
+      "email": "staff.chicken@breadtalk.sg",
+      "tier": "Storefront \u00b7 Chicken Rice Staff",
+      "role": "staff",
+      "login": true,
+      "tree_http": 200,
+      "can_manage_tree": false,
+      "visible": {
+        "total": 1,
+        "chains": [],
+        "storefronts": [
+          "Chicken Rice (Food Republic)"
+        ],
+        "tenants": [],
+        "manageable": 0
+      },
+      "permissions": [
+        "order.manage",
+        "order.view",
+        "payment.process"
+      ],
+      "perm_count": 3
+    },
+    {
+      "email": "cashier.tampines@breadtalk.sg",
+      "tier": "Storefront \u00b7 Toast Box Tampines Cashier",
+      "role": "cashier",
+      "login": true,
+      "tree_http": 200,
+      "can_manage_tree": false,
+      "visible": {
+        "total": 1,
+        "chains": [],
+        "storefronts": [
+          "Toast Box @ Tampines"
+        ],
+        "tenants": [],
+        "manageable": 0
+      },
+      "permissions": [
+        "order.manage",
+        "order.view",
+        "payment.process"
+      ],
+      "perm_count": 3
+    },
+    {
+      "email": "mgr.dtf@breadtalk.sg",
+      "tier": "Chain \u00b7 Din Tai Fung Manager (Tenant 2)",
+      "role": "manager",
+      "login": true,
+      "tree_http": 200,
+      "can_manage_tree": true,
+      "visible": {
+        "total": 2,
+        "chains": [
+          "Din Tai Fung"
+        ],
+        "storefronts": [
+          "Din Tai Fung @ Paragon"
+        ],
+        "tenants": [],
+        "manageable": 2
+      },
+      "permissions": [
+        "audit.view",
+        "brand.manage",
+        "campaign.manage",
+        "crm.manage",
+        "crm.view",
+        "menu.manage",
+        "merchant.manage",
+        "order.manage",
+        "order.view",
+        "org.manage",
+        "outlet.manage",
+        "payment.process",
+        "report.view",
+        "user.manage"
+      ],
+      "perm_count": 14
+    }
+  ],
+  "checks": {
+    "ceo_sees_all_7_storefronts": true,
+    "ceo_sees_both_tenants": true,
+    "ceo_sees_whole_tree_15_nodes": true,
+    "ceo_can_manage_whole_tree": true,
+    "cfo_read_only": true,
+    "foodcourt_mgr_sees_3_storefronts": true,
+    "toastbox_isolated_2_nodes": true,
+    "storefront_staff_sees_only_its_storefront": true,
+    "dtf_isolated_no_breadtalk": true,
+    "every_account_logged_in": true
+  }
+}

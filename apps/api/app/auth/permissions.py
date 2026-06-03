@@ -24,6 +24,7 @@ P = {
     "merchant.manage": "Manage merchant account settings",
     "brand.manage": "Manage brands",
     "outlet.manage": "Manage outlets, tables, QR codes",
+    "org.manage": "Build the org tree — create/rename nodes at any depth (enterprise→stall)",
     "menu.manage": "Manage menus, items, modifiers",
     "order.view": "View orders",
     "order.manage": "Create/update orders + status",
@@ -60,36 +61,45 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
     ],
     # Enterprise (group) tier — bundles assigned at an Enterprise node, cascading over the group.
     RoleName.GROUP_CEO.value: [
-        "merchant.manage", "brand.manage", "outlet.manage", "menu.manage",
+        "merchant.manage", "brand.manage", "outlet.manage", "org.manage", "menu.manage",
         "order.view", "order.manage", "payment.process", "crm.view", "crm.manage",
         "campaign.manage", "report.view", "user.manage", "audit.view",
     ],
     RoleName.GROUP_COO.value: [
-        "brand.manage", "outlet.manage", "menu.manage", "order.view", "order.manage",
+        "brand.manage", "outlet.manage", "org.manage", "menu.manage", "order.view", "order.manage",
         "payment.process", "crm.view", "crm.manage", "campaign.manage", "report.view",
     ],
     RoleName.GROUP_CFO.value: ["report.view", "audit.view", "crm.view"],   # finance (read)
     RoleName.GROUP_ACCOUNTANT.value: ["report.view", "audit.view"],        # finance (read-only)
     RoleName.MERCHANT_OWNER.value: [
-        "merchant.manage", "brand.manage", "outlet.manage", "menu.manage",
+        "merchant.manage", "brand.manage", "outlet.manage", "org.manage", "menu.manage",
         "order.view", "order.manage", "payment.process", "crm.view", "crm.manage",
         "campaign.manage", "report.view", "user.manage", "audit.view",
     ],
     RoleName.BRAND_MANAGER.value: [
-        "brand.manage", "outlet.manage", "menu.manage", "order.view", "order.manage",
+        "brand.manage", "outlet.manage", "org.manage", "menu.manage", "order.view", "order.manage",
         "crm.view", "report.view",
     ],
     RoleName.AREA_MANAGER.value: [
-        "outlet.manage", "menu.manage", "order.view", "order.manage", "crm.view", "report.view",
+        "outlet.manage", "org.manage", "menu.manage", "order.view", "order.manage", "crm.view",
+        "report.view",
     ],
     RoleName.OUTLET_MANAGER.value: [
-        "outlet.manage", "menu.manage", "order.view", "order.manage", "payment.process",
-        "crm.view", "report.view",
+        "outlet.manage", "org.manage", "menu.manage", "order.view", "order.manage",
+        "payment.process", "crm.view", "report.view",
     ],
     RoleName.STALL_OPERATOR.value: [
         "order.view", "order.manage", "payment.process", "menu.manage",
     ],
     RoleName.STAFF.value: ["order.view", "order.manage", "payment.process"],
+    # Member-tree role PALETTE (Chain/Storefront). Assigned at any node; node sets the reach.
+    RoleName.MANAGER.value: [
+        "merchant.manage", "brand.manage", "outlet.manage", "org.manage", "menu.manage",
+        "order.view", "order.manage", "payment.process", "crm.view", "crm.manage",
+        "campaign.manage", "report.view", "user.manage", "audit.view",
+    ],
+    RoleName.CASHIER.value: ["order.view", "order.manage", "payment.process"],
+    RoleName.FINANCE.value: ["report.view", "audit.view", "crm.view"],   # read-only finance
     RoleName.CUSTOMER.value: [],
 }
 

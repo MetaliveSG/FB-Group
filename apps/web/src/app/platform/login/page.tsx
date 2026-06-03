@@ -38,7 +38,7 @@ export default function OperatorLoginPage() {
       // Verify this account is actually a platform operator.
       try {
         await platformOverview(base, res.access_token);
-        router.push("/operator");
+        router.push("/platform");
       } catch (probeErr: unknown) {
         const msg = probeErr instanceof Error ? probeErr.message : "";
         const status =
@@ -84,7 +84,7 @@ export default function OperatorLoginPage() {
             FB Group
           </h1>
           <p style={{ color: "var(--color-text-muted)", margin: 0 }}>
-            Operator Console — Platform Login
+            Platform Console — Login
           </p>
         </div>
 

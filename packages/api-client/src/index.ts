@@ -61,6 +61,9 @@ export interface StallRef {
   logo: string | null;
   is_open: boolean;
   item_count: number;
+  /** Full-ordering page for this stall when it's a dedicated storefront venue; null for a
+   *  shared-outlet foodcourt stall (the group browse opens its read-only sheet instead). */
+  order_path?: string | null;
 }
 
 export interface QrResolution {
@@ -468,6 +471,8 @@ export interface MerchantCreate {
   owner_email: string;
   owner_password: string;
   owner_name?: string;
+  kind?: "chain" | "storefront";   // member-tree kind for the new top-level tenant
+  subscription_fee?: string;       // per-node SaaS fee
 }
 
 export interface MerchantCreateResult {
@@ -902,6 +907,60 @@ export interface OrgTable {
   qr_token: string | null;
 }
 
+// Member tree (org spine) — two node kinds: CHAIN (structural) | STOREFRONT (sells, leaf).
+export interface OrgTreeNode {
+  id: string;
+  parent_id: string | null;
+  role: string;            // CHAIN | STOREFRONT
+  name: string | null;
+  depth: number;
+  sells: boolean;
+  chain_stopped: boolean;          // a Chain whose children may only be Storefronts
+  is_settlement_boundary: boolean; // this Chain is a tenant ("merchant")
+  subscription_fee: string | null; // per-node SaaS fee (null = inherit)
+  is_active: boolean;
+  can_manage: boolean;     // may THIS caller grow the tree beneath this node?
+  qr_path: string | null;  // customer-scan link: a Storefront → /t/{token}; a Chain → /t/node/{id}; null if unscannable
+  outlet_id?: string | null; // a Storefront's typed Outlet — lets the console scope to it; null for a Chain
+}
+
+// A node-scoped customer browse (the "brand / group app" view): the orderable leaf stalls in a
+// node's scope. is_group = it's a chain (many stalls) vs a single storefront.
+export interface NodeBrowse {
+  node_id: string;
+  name: string;
+  is_group: boolean;
+  stalls: StallRef[];
+}
+
+export interface OrgTree {
+  nodes: OrgTreeNode[];
+  can_manage: boolean;
+}
+
+// A staff login assigned at a member-tree node (role from the palette).
+export interface OrgNodeAccount {
+  assignment_id: string;
+  user_id: string;
+  email: string;
+  full_name: string;
+  is_active: boolean;
+  role: string;            // manager | cashier | staff | finance
+}
+
+// A venue↔stall tenancy edge. rent_type is the foodcourt/coffeeshop switch:
+// FIXED = flat $/mo (landlord blind) · GTO = % of turnover (landlord reads it). rate is $/mo for
+// FIXED, a percentage for GTO.
+export interface Lease {
+  id: string;
+  venue_id: string;
+  tenant_node_id: string;
+  tenant_name: string | null;
+  rent_type: string;       // FIXED | GTO
+  rate: string;
+  is_active: boolean;
+}
+
 // ─── API Client ──────────────────────────────────────────────
 
 export class ApiError extends Error {
@@ -1043,6 +1102,21 @@ export function resolveQr(baseUrl: string, token: string): Promise<QrResolution>
   return fetch(`${baseUrl}/api/v1/qr/${token}`).then(async (res) => {
     if (!res.ok) throw new ApiError(res.status, "QR_ERROR", "Failed to resolve QR token");
     return res.json() as Promise<QrResolution>;
+  });
+}
+
+// Node-scoped browse — a Chain/group's leaf stalls (the "brand app" view).
+export function resolveNodeBrowse(baseUrl: string, nodeId: string): Promise<NodeBrowse> {
+  return fetch(`${baseUrl}/api/v1/qr/node/${nodeId}`).then(async (res) => {
+    if (!res.ok) throw new ApiError(res.status, "NODE_ERROR", "Failed to resolve location");
+    return res.json() as Promise<NodeBrowse>;
+  });
+}
+
+export function resolveNodeMenu(baseUrl: string, nodeId: string, menuId: string): Promise<Menu> {
+  return fetch(`${baseUrl}/api/v1/qr/node/${nodeId}/menu/${menuId}`).then(async (res) => {
+    if (!res.ok) throw new ApiError(res.status, "MENU_ERROR", "Failed to resolve stall menu");
+    return res.json() as Promise<Menu>;
   });
 }
 
@@ -2210,6 +2284,74 @@ export function deleteTable(
   );
 }
 
+// Org tree (member-tree) — scope-aware, no merchant_id: keyed off the caller's node assignments.
+export function orgTree(baseUrl: string, token: string): Promise<OrgTree> {
+  return request(baseUrl, `/org/tree`, {}, token);
+}
+
+export function createOrgNode(
+  baseUrl: string,
+  token: string,
+  data: { parent_id: string; role: string; name: string; chain_stopped?: boolean; subscription_fee?: string }
+): Promise<OrgTreeNode> {
+  return request(baseUrl, `/org/nodes`, { method: "POST", body: JSON.stringify(data) }, token);
+}
+
+export function updateOrgNode(
+  baseUrl: string,
+  token: string,
+  nodeId: string,
+  data: { name?: string; is_active?: boolean; chain_stopped?: boolean; subscription_fee?: string }
+): Promise<OrgTreeNode> {
+  return request(baseUrl, `/org/nodes/${nodeId}`, { method: "PATCH", body: JSON.stringify(data) }, token);
+}
+
+// Node logins (staff at a member-tree node) — scope-aware, no merchant_id.
+export function listNodeAccounts(baseUrl: string, token: string, nodeId: string): Promise<OrgNodeAccount[]> {
+  return request(baseUrl, `/org/nodes/${nodeId}/accounts`, {}, token);
+}
+
+export function createNodeAccount(
+  baseUrl: string,
+  token: string,
+  nodeId: string,
+  data: { email: string; password: string; full_name?: string; role: string }
+): Promise<OrgNodeAccount> {
+  return request(baseUrl, `/org/nodes/${nodeId}/accounts`, { method: "POST", body: JSON.stringify(data) }, token);
+}
+
+export function revokeNodeAccount(baseUrl: string, token: string, nodeId: string, assignmentId: string): Promise<void> {
+  return request(baseUrl, `/org/nodes/${nodeId}/accounts/${assignmentId}`, { method: "DELETE" }, token);
+}
+
+// Leases — stalls leased INTO a venue node (foodcourt GTO vs coffeeshop FIXED).
+export function listVenueLeases(baseUrl: string, token: string, venueId: string): Promise<Lease[]> {
+  return request(baseUrl, `/org/nodes/${venueId}/leases`, {}, token);
+}
+
+export function createLease(
+  baseUrl: string,
+  token: string,
+  venueId: string,
+  data: { tenant_node_id: string; rent_type: string; rate: string }
+): Promise<Lease> {
+  return request(baseUrl, `/org/nodes/${venueId}/leases`, { method: "POST", body: JSON.stringify(data) }, token);
+}
+
+export function updateLease(
+  baseUrl: string,
+  token: string,
+  venueId: string,
+  leaseId: string,
+  data: { rent_type?: string; rate?: string; is_active?: boolean }
+): Promise<Lease> {
+  return request(baseUrl, `/org/nodes/${venueId}/leases/${leaseId}`, { method: "PATCH", body: JSON.stringify(data) }, token);
+}
+
+export function deleteLease(baseUrl: string, token: string, venueId: string, leaseId: string): Promise<void> {
+  return request(baseUrl, `/org/nodes/${venueId}/leases/${leaseId}`, { method: "DELETE" }, token);
+}
+
 // ─── Client class (optional OOP interface) ───────────────────
 
 export class FbGroupApiClient {
@@ -2323,6 +2465,16 @@ export class FbGroupApiClient {
   orgTables(outletId: string, merchantId?: string) { return orgTables(this.baseUrl, this.token!, outletId, merchantId); }
   createTable(outletId: string, data: { label: string; seats?: number }, merchantId?: string) { return createTable(this.baseUrl, this.token!, outletId, data, merchantId); }
   deleteTable(tableId: string, merchantId?: string) { return deleteTable(this.baseUrl, this.token!, tableId, merchantId); }
+  orgTree() { return orgTree(this.baseUrl, this.token!); }
+  createOrgNode(data: { parent_id: string; role: string; name: string; chain_stopped?: boolean; subscription_fee?: string }) { return createOrgNode(this.baseUrl, this.token!, data); }
+  updateOrgNode(nodeId: string, data: { name?: string; is_active?: boolean; chain_stopped?: boolean; subscription_fee?: string }) { return updateOrgNode(this.baseUrl, this.token!, nodeId, data); }
+  listNodeAccounts(nodeId: string) { return listNodeAccounts(this.baseUrl, this.token!, nodeId); }
+  createNodeAccount(nodeId: string, data: { email: string; password: string; full_name?: string; role: string }) { return createNodeAccount(this.baseUrl, this.token!, nodeId, data); }
+  revokeNodeAccount(nodeId: string, assignmentId: string) { return revokeNodeAccount(this.baseUrl, this.token!, nodeId, assignmentId); }
+  listVenueLeases(venueId: string) { return listVenueLeases(this.baseUrl, this.token!, venueId); }
+  createLease(venueId: string, data: { tenant_node_id: string; rent_type: string; rate: string }) { return createLease(this.baseUrl, this.token!, venueId, data); }
+  updateLease(venueId: string, leaseId: string, data: { rent_type?: string; rate?: string; is_active?: boolean }) { return updateLease(this.baseUrl, this.token!, venueId, leaseId, data); }
+  deleteLease(venueId: string, leaseId: string) { return deleteLease(this.baseUrl, this.token!, venueId, leaseId); }
 
   // Round 10 — win-back launcher + merchant settings
   launchWinback(data: WinbackLaunch, merchantId?: string) { return launchWinback(this.baseUrl, this.token!, data, merchantId); }

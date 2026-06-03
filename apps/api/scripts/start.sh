@@ -17,6 +17,13 @@ if [ "${SEED_ON_START:-0}" = "1" ]; then
     || echo "[start] seed check failed (continuing)"
 fi
 
+if [ "${SEED_BREADTALK:-0}" = "1" ]; then
+  # Enterprise org-tree demo (depth 0→4, two merchants under one Enterprise). Idempotent
+  # upsert-by-id, independent of SEED_ON_START, so it reaches an already-seeded DB too.
+  echo "[start] seeding BreadTalk enterprise org tree (idempotent)..."
+  python -m app.seed_breadtalk || echo "[start] breadtalk seed failed (continuing)"
+fi
+
 echo "[start] launching API on :8000"
 # --no-access-log: our RequestLoggingMiddleware emits the (JSON, redacted) access
 # log to file + console, so uvicorn's plain-text one would just duplicate it.

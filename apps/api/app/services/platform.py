@@ -10,6 +10,7 @@ from app.core.security import hash_password
 from app.models.enums import RewardRuleType, RewardScope, RoleName, ScopeType
 from app.models.identity import Role, User, UserRoleAssignment
 from app.models.loyalty import Coalition, LoyaltyAccount, RewardRule, coalition_members
+from app.models.org import OrgNode
 from app.models.payments import Transaction
 from app.models.tenancy import Brand, Merchant, Outlet
 from app.services import merchant_settings
@@ -104,18 +105,41 @@ def list_coalitions(db: Session) -> list[dict]:
 
 
 def create_merchant(db: Session, *, name: str, owner_email: str, owner_password: str,
-                    owner_name: str = "") -> dict:
+                    owner_name: str = "", kind: str = "chain", subscription_fee=None) -> dict:
     if db.scalar(select(User).where(User.email == owner_email)):
         raise ConflictError("A user with this email already exists", code="email_taken")
     role = db.scalar(select(Role).where(Role.name == RoleName.MERCHANT_OWNER.value))
     if not role:
         raise NotFoundError("merchant_owner role missing (run RBAC seed)", code="role_missing")
 
-    merchant = Merchant(name=name)
+    kind = "storefront" if (kind or "").lower() == "storefront" else "chain"
+    merchant = Merchant(name=name, settings={"member_kind": kind})
     db.add(merchant)
     db.flush()
     brand = Brand(merchant_id=merchant.id, name=name)
     db.add(brand)
+    db.flush()
+    # Materialise the member-tree node now (shows immediately) with its kind + per-node fee. A
+    # storefront tenant = a single selling leaf; a chain tenant is drillable. sync_org_tree keeps
+    # it in step later and won't clobber the fee (_upsert doesn't touch subscription_fee).
+    from app.services import org_tree
+    org_tree._upsert(
+        db, node_id=merchant.id, parent_id=None,
+        role=org_tree.ROLE_STOREFRONT if kind == "storefront" else org_tree.ROLE_CHAIN,
+        depth=0, path=merchant.id, name=name, sells=(kind == "storefront"),
+        loyalty_domain_id=merchant.id, settlement_account_id=merchant.id,
+        is_settlement_boundary=True, is_loyalty_domain=True, is_active=True,
+    )
+    db.flush()
+    node = db.get(OrgNode, merchant.id)
+    node.subscription_fee = subscription_fee
+    db.flush()
+    # A storefront tenant IS a selling leaf — give it its typed backing now (outlet + menu(id==node)
+    # + QR) so it is scannable/orderable out of the box. A chain tenant sells nothing itself; its
+    # storefront children are provisioned when they're added (POST /org/nodes).
+    if node.sells:
+        from app.services import storefronts
+        storefronts.provision_storefront(db, node)
     db.flush()
     owner = User(email=owner_email, full_name=owner_name or owner_email,
                  password_hash=hash_password(owner_password))
