@@ -7,7 +7,7 @@ siblings, or another tenant (enforced server-side, not just hidden in the UI). R
 """
 from __future__ import annotations
 
-from datetime import datetime, time, timedelta
+from datetime import date
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.analytics import reports as rpt
 from app.analytics import rfm as rfm_analytics
+from app.analytics.timezones import local_day_bounds_utc, valid_tz
 from app.auth.access import ALL_OUTLETS, Scope
 from app.auth.deps import get_scope, require, resolve_merchant
 from app.core.errors import ForbiddenError, NotFoundError
@@ -84,25 +85,25 @@ def _scope(db: Session, scope: Scope, node_id: str | None, platform: bool,
     return mid, _legacy_allowed(scope, mid, outlet_id)
 
 
-_SG_OFFSET = timedelta(hours=8)
-
-
-def _range(start: str | None, end: str | None):
-    """Parse YYYY-MM-DD as SG-local (UTC+8) calendar days → UTC bounds for the naive-UTC ledger.
-    SG midnight = UTC midnight − 8h, so the window matches the merchant's real trading day."""
-    s = datetime.combine(datetime.fromisoformat(start).date(), time.min) - _SG_OFFSET if start else None
-    e = datetime.combine(datetime.fromisoformat(end).date(), time.max) - _SG_OFFSET if end else None
-    return s, e
+def _range(start: str | None, end: str | None, tz: str):
+    """Parse YYYY-MM-DD as report-tz-local calendar days → HALF-OPEN naive-UTC bounds [start, end_excl)
+    for the naive-UTC ledger. DST-correct (zoneinfo). Both ends are needed together; if only one is
+    given the other defaults to it (a single-day range)."""
+    if not start and not end:
+        return None, None
+    d_from = date.fromisoformat(start) if start else date.fromisoformat(end)  # type: ignore[arg-type]
+    d_to = date.fromisoformat(end) if end else date.fromisoformat(start)      # type: ignore[arg-type]
+    return local_day_bounds_utc(d_from, d_to, tz)
 
 
 # ── endpoints ────────────────────────────────────────────────────────────────
 @router.get("/summary")
 def summary(node_id: str | None = Query(None), platform: bool = Query(False),
             merchant_id: str | None = Query(None), outlet_id: str | None = Query(None),
-            start: str | None = Query(None), end: str | None = Query(None),
+            start: str | None = Query(None), end: str | None = Query(None), tz: str | None = Query(None),
             scope=Depends(get_scope), db: Session = Depends(get_db)):
     mid, allowed = _scope(db, scope, node_id, platform, merchant_id, outlet_id)
-    s, e = _range(start, end)
+    s, e = _range(start, end, valid_tz(tz))
     data = rpt.totals(db, merchant_id=mid, allowed_outlets=allowed, start=s, end=e)
     data.update(rpt.new_vs_repeat_revenue(db, merchant_id=mid, allowed_outlets=allowed, start=s, end=e))
     return data
@@ -113,63 +114,65 @@ def sales(node_id: str | None = Query(None), platform: bool = Query(False),
           merchant_id: str | None = Query(None), outlet_id: str | None = Query(None),
           granularity: str = Query("day", pattern="^(hour|day|week|month)$"),
           days: int = Query(90, ge=1, le=730),
-          start: str | None = Query(None), end: str | None = Query(None),
+          start: str | None = Query(None), end: str | None = Query(None), tz: str | None = Query(None),
           scope=Depends(get_scope), db: Session = Depends(get_db)):
     mid, allowed = _scope(db, scope, node_id, platform, merchant_id, outlet_id)
-    s, e = _range(start, end)
+    rtz = valid_tz(tz)
+    s, e = _range(start, end, rtz)
     return rpt.sales_timeseries(db, merchant_id=mid, allowed_outlets=allowed,
-                                granularity=granularity, days=days, start=s, end=e)
+                                granularity=granularity, days=days, start=s, end=e, tz=rtz)
 
 
 @router.get("/top-items")
 def top_items(node_id: str | None = Query(None), platform: bool = Query(False),
               merchant_id: str | None = Query(None), outlet_id: str | None = Query(None),
               limit: int = Query(10, ge=1, le=50),
-              start: str | None = Query(None), end: str | None = Query(None),
+              start: str | None = Query(None), end: str | None = Query(None), tz: str | None = Query(None),
               scope=Depends(get_scope), db: Session = Depends(get_db)):
     mid, allowed = _scope(db, scope, node_id, platform, merchant_id, outlet_id)
-    s, e = _range(start, end)
+    s, e = _range(start, end, valid_tz(tz))
     return rpt.top_items(db, merchant_id=mid, allowed_outlets=allowed, limit=limit, start=s, end=e)
 
 
 @router.get("/peak-hours")
 def peak_hours(node_id: str | None = Query(None), platform: bool = Query(False),
                merchant_id: str | None = Query(None), outlet_id: str | None = Query(None),
-               start: str | None = Query(None), end: str | None = Query(None),
+               start: str | None = Query(None), end: str | None = Query(None), tz: str | None = Query(None),
                scope=Depends(get_scope), db: Session = Depends(get_db)):
     mid, allowed = _scope(db, scope, node_id, platform, merchant_id, outlet_id)
-    s, e = _range(start, end)
-    return rpt.peak_hours(db, merchant_id=mid, allowed_outlets=allowed, start=s, end=e)
+    rtz = valid_tz(tz)
+    s, e = _range(start, end, rtz)
+    return rpt.peak_hours(db, merchant_id=mid, allowed_outlets=allowed, start=s, end=e, tz=rtz)
 
 
 @router.get("/payments")
 def payments(node_id: str | None = Query(None), platform: bool = Query(False),
              merchant_id: str | None = Query(None), outlet_id: str | None = Query(None),
-             start: str | None = Query(None), end: str | None = Query(None),
+             start: str | None = Query(None), end: str | None = Query(None), tz: str | None = Query(None),
              scope=Depends(get_scope), db: Session = Depends(get_db)):
     mid, allowed = _scope(db, scope, node_id, platform, merchant_id, outlet_id)
-    s, e = _range(start, end)
+    s, e = _range(start, end, valid_tz(tz))
     return rpt.payment_split(db, merchant_id=mid, allowed_outlets=allowed, start=s, end=e)
 
 
 @router.get("/outlets")
 def outlet_comparison(node_id: str | None = Query(None), platform: bool = Query(False),
                       merchant_id: str | None = Query(None),
-                      start: str | None = Query(None), end: str | None = Query(None),
+                      start: str | None = Query(None), end: str | None = Query(None), tz: str | None = Query(None),
                       scope=Depends(get_scope), db: Session = Depends(get_db)):
     mid, allowed = _scope(db, scope, node_id, platform, merchant_id, None)
-    s, e = _range(start, end)
+    s, e = _range(start, end, valid_tz(tz))
     return rpt.outlet_comparison(db, merchant_id=mid, allowed_outlets=allowed, start=s, end=e)
 
 
 @router.get("/rollup")
 def rollup(node_id: str | None = Query(None), platform: bool = Query(False),
-           start: str | None = Query(None), end: str | None = Query(None),
+           start: str | None = Query(None), end: str | None = Query(None), tz: str | None = Query(None),
            scope=Depends(get_scope), db: Session = Depends(get_db)):
     """Per-CHILD breakdown for the member-tree drill-down: Platform → each tenant; a node → its
     direct children (each child's whole-subtree totals). Same RBAC as the other reports."""
     _scope(db, scope, node_id, platform, None, None)   # enforce visibility/perms for this node
-    s, e = _range(start, end)
+    s, e = _range(start, end, valid_tz(tz))
     if platform or (node_id is None and _is_operator(scope)):
         children = list(db.scalars(select(OrgNode).where(OrgNode.depth == 0).order_by(OrgNode.name)).all())
     else:
@@ -191,9 +194,11 @@ def rollup(node_id: str | None = Query(None), platform: bool = Query(False),
 def forecast(node_id: str | None = Query(None), platform: bool = Query(False),
              merchant_id: str | None = Query(None), outlet_id: str | None = Query(None),
              horizon: int = Query(7, ge=1, le=90), window: int = Query(7, ge=1, le=60),
+             tz: str | None = Query(None),
              scope=Depends(get_scope), db: Session = Depends(get_db)):
     mid, allowed = _scope(db, scope, node_id, platform, merchant_id, outlet_id)
-    return rpt.forecast(db, merchant_id=mid, allowed_outlets=allowed, horizon_days=horizon, window=window)
+    return rpt.forecast(db, merchant_id=mid, allowed_outlets=allowed, horizon_days=horizon,
+                        window=window, tz=valid_tz(tz))
 
 
 @router.get("/rfm")

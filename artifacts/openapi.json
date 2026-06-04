@@ -2894,6 +2894,22 @@
             }
           },
           {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tz"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -3054,6 +3070,22 @@
             }
           },
           {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tz"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -3203,6 +3235,22 @@
             }
           },
           {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tz"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -3337,6 +3385,22 @@
                 }
               ],
               "title": "End"
+            }
+          },
+          {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tz"
             }
           },
           {
@@ -3477,6 +3541,22 @@
             }
           },
           {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tz"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -3598,6 +3678,22 @@
             }
           },
           {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tz"
+            }
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -3701,6 +3797,22 @@
                 }
               ],
               "title": "End"
+            }
+          },
+          {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tz"
             }
           },
           {
@@ -3830,6 +3942,22 @@
               "minimum": 1,
               "default": 7,
               "title": "Window"
+            }
+          },
+          {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tz"
             }
           },
           {
