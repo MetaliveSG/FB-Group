@@ -94,7 +94,15 @@ def _scope(db: Session, scope: Scope, node_id: str | None, platform: bool,
         # spans multiple tenant merchants); the outlet set already confines the scope. tz from the
         # node's tenant (settlement boundary it rolls up to).
         return None, _subtree_outlet_ids(db, node), _tenant_tz(db, node.settlement_account_id, tz)
-    # No node + no platform: operator defaults to Platform; everyone else to their merchant scope.
+    # An explicitly chosen merchant (operator drill-in, or a node account naming its own tenant) →
+    # resolve to that single merchant. `resolve_merchant` enforces access (a super-admin may name any).
+    # Per-merchant views (e.g. AI insights) need a concrete mid, not the Platform aggregate — without
+    # this, an operator who has entered a merchant would still fall through to Platform (mid=None).
+    if merchant_id:
+        mid = resolve_merchant(scope, merchant_id)
+        require(scope, "report.view", mid)
+        return mid, _legacy_allowed(scope, mid, outlet_id), _tenant_tz(db, mid, tz)
+    # No node + no platform + no merchant: operator → Platform; everyone else → their merchant scope.
     if _is_operator(scope):
         return None, None, _tenant_tz(db, None, tz)
     mid = resolve_merchant(scope, merchant_id)
