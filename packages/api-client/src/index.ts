@@ -1308,6 +1308,52 @@ export function reportForecast(
   return request(baseUrl, `/reports/forecast${query}`, {}, token);
 }
 
+// ─── Node-scoped Reports dashboard ───────────────────────────
+// SOURCE scope: Platform (operators only, all merchants) | a node (its subtree). A node account is
+// confined to its node + downline by the server. Date range = inclusive YYYY-MM-DD start/end.
+export interface ReportScope { merchantId?: string; nodeId?: string; platform?: boolean; start?: string; end?: string; }
+export interface ReportTotals {
+  revenue: number; orders: number; unique_customers: number; avg_order_value: number;
+  new_customer_revenue: number; repeat_customer_revenue: number;
+}
+export interface PeakHour { hour: number; orders: number; revenue: number; }
+export interface PaymentSplitRow { method: string; amount: number; count: number; }
+export interface RollupRow {
+  node_id: string; name: string; role: string; sells: boolean;
+  revenue: number; orders: number; avg_order_value: number;
+}
+
+function reportQuery(scope?: ReportScope, extra?: Record<string, string | number | undefined>): string {
+  const qs = new URLSearchParams();
+  if (scope?.platform) qs.set("platform", "true");
+  if (scope?.nodeId) qs.set("node_id", scope.nodeId);
+  if (scope?.merchantId) qs.set("merchant_id", scope.merchantId);
+  if (scope?.start) qs.set("start", scope.start);
+  if (scope?.end) qs.set("end", scope.end);
+  for (const [k, v] of Object.entries(extra ?? {})) if (v != null) qs.set(k, String(v));
+  const s = qs.toString();
+  return s ? `?${s}` : "";
+}
+
+export function reportsSummary(b: string, t: string, scope?: ReportScope): Promise<ReportTotals> {
+  return request(b, `/reports/summary${reportQuery(scope)}`, {}, t);
+}
+export function reportsSales(b: string, t: string, scope?: ReportScope, granularity = "day"): Promise<SalesPeriod[]> {
+  return request(b, `/reports/sales${reportQuery(scope, { granularity })}`, {}, t);
+}
+export function reportsTopItems(b: string, t: string, scope?: ReportScope, limit = 8): Promise<TopItem[]> {
+  return request(b, `/reports/top-items${reportQuery(scope, { limit })}`, {}, t);
+}
+export function reportsPeakHours(b: string, t: string, scope?: ReportScope): Promise<PeakHour[]> {
+  return request(b, `/reports/peak-hours${reportQuery(scope)}`, {}, t);
+}
+export function reportsPayments(b: string, t: string, scope?: ReportScope): Promise<PaymentSplitRow[]> {
+  return request(b, `/reports/payments${reportQuery(scope)}`, {}, t);
+}
+export function reportsRollup(b: string, t: string, scope?: ReportScope): Promise<RollupRow[]> {
+  return request(b, `/reports/rollup${reportQuery(scope)}`, {}, t);
+}
+
 // ─── Round 2: Customer loyalty / rewards / wheel ─────────────
 
 export function getLoyalty(

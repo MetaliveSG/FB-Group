@@ -29,6 +29,7 @@ import {
   getStaffToken,
   clearStaffToken,
   setOperatorMerchant,
+  clearOperatorMerchant,
 } from "@/lib/auth";
 import { formatSGD } from "@/lib/format";
 import NodeDetailDrawer from "@/components/NodeDetailDrawer";
@@ -495,9 +496,18 @@ export default function OperatorConsolePage() {
           <h1 className="page-title">Platform Console</h1>
           <p className="page-subtitle">Platform overview across all merchants</p>
         </div>
-        <button onClick={logout} className="btn btn-secondary btn-sm">
-          Logout
-        </button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button
+            onClick={() => { clearOperatorMerchant(); router.push("/merchant/reports"); }}
+            className="btn btn-primary btn-sm"
+            title="Ecosystem-wide reports (defaults to Platform; drill into any node)"
+          >
+            📊 Reports
+          </button>
+          <button onClick={logout} className="btn btn-secondary btn-sm">
+            Logout
+          </button>
+        </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}

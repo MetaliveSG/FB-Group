@@ -110,6 +110,13 @@ GST/CDC/MAS) → **M4** (the barrier to entry). GTM keep-your-POS → `gtm-pos-a
   by stable name (with an empty-seed guard). "Edit the seed → re-run → live reflects it", no migration.
 - **Provider mocks** (OTP / WhatsApp / AI insights): mock by default; real provider only when a flag +
   key are set (e.g. `AI_ENABLED=1` + `ANTHROPIC_API_KEY`). Tests/demo use the deterministic mock path.
+- **Report timezone = SG only (hardcoded), NOT multi-timezone.** Timestamps are stored naive-UTC, but
+  reports present **SG local time via a FIXED `+8h` offset** (`app/analytics/reports.py::SG_OFFSET` /
+  `_local`) for day/hour bucketing, and the date-range filter converts SG calendar days → UTC bounds
+  (`routes/reports.py::_range`). Frontend presets use the browser-local date (not `toISOString`). This
+  is correct for SG (all UTC+8, no DST). `Outlet.timezone` exists as a hook but reports DON'T read it.
+  **True multi-tz is deferred** — swap the fixed offset for per-outlet `zoneinfo` localisation + a
+  tenant default timezone for cross-zone rollups (a group spanning SG/KL/Jakarta has no single "today").
 
 ## Where things are
 - `apps/api/app/models/*.py` — schema (source of truth) · `app/services/` — business logic (ORM only, no raw SQL)
