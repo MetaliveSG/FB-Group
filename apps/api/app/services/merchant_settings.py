@@ -22,6 +22,7 @@ DEFAULTS = {
     "rewards_enabled": True,
     "qr_ordering_enabled": True,
     "pos_enabled": False,
+    "timezone": "Asia/Singapore",   # the tenant's canonical reporting timezone (the "books")
 }
 
 

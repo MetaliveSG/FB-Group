@@ -15,13 +15,14 @@ from sqlalchemy.orm import Session
 
 from app.analytics import reports as rpt
 from app.analytics import rfm as rfm_analytics
-from app.analytics.timezones import local_day_bounds_utc, valid_tz
+from app.analytics.timezones import PLATFORM_DEFAULT_TZ, local_day_bounds_utc, valid_tz
 from app.auth.access import ALL_OUTLETS, Scope
 from app.auth.deps import get_scope, require, resolve_merchant
 from app.core.errors import ForbiddenError, NotFoundError
 from app.db.session import get_db
 from app.models.catalog import Menu
 from app.models.org import OrgNode
+from app.models.tenancy import Merchant
 from app.schemas.insights import AIInsightsOut
 from app.services import ai_insights as ai_service
 from app.services import org_tree
@@ -52,15 +53,30 @@ def _legacy_allowed(scope: Scope, merchant_id: str, outlet_id: str | None):
     return base
 
 
+def _tenant_tz(db: Session, tenant_mid: str | None, explicit: str | None) -> str:
+    """The ONE report timezone (display + day boundaries): explicit `?tz=` → the tenant's
+    `Merchant.settings["timezone"]` → platform default. NEVER per-outlet — a parent spans many
+    outlets, so a per-outlet tz makes the date window ambiguous and breaks parent↔child reconciliation.
+    The dropdown override (`explicit`) is a display lens; it re-renders the whole report in one tz."""
+    if explicit:
+        return valid_tz(explicit)
+    if tenant_mid:
+        m = db.get(Merchant, tenant_mid)
+        if m and isinstance(m.settings, dict) and m.settings.get("timezone"):
+            return valid_tz(m.settings["timezone"])
+    return PLATFORM_DEFAULT_TZ
+
+
 def _scope(db: Session, scope: Scope, node_id: str | None, platform: bool,
-           merchant_id: str | None, outlet_id: str | None):
-    """Resolve the report scope → (merchant_id|None, allowed_outlets|None) + enforce RBAC.
+           merchant_id: str | None, outlet_id: str | None, tz: str | None = None):
+    """Resolve the report scope → (merchant_id|None, allowed_outlets|None, report_tz) + enforce RBAC.
     Platform (operators only) → (None, None) = every merchant. A node → its subtree outlets, only if
-    the caller can SEE that node (operators see all; a node account sees its node + downline only)."""
+    the caller can SEE that node (operators see all; a node account sees its node + downline only).
+    `report_tz` is resolved once here (one tz for the whole report; see `_tenant_tz`)."""
     if platform:
         if not _is_operator(scope):
             raise ForbiddenError("Platform report requires an operator", code="forbidden")
-        return None, None
+        return None, None, _tenant_tz(db, None, tz)   # cross-merchant → platform default tz
     if node_id:
         node = org_tree.node_for(db, node_id)
         if node is None:
@@ -75,14 +91,15 @@ def _scope(db: Session, scope: Scope, node_id: str | None, platform: bool,
             if not all(scope.can("report.view", m) for m in boundaries):
                 raise ForbiddenError("Missing permission: report.view", code="forbidden")
         # merchant_id=None → filter purely by the subtree's outlets (correct even when a group node
-        # spans multiple tenant merchants); the outlet set already confines the scope.
-        return None, _subtree_outlet_ids(db, node)
+        # spans multiple tenant merchants); the outlet set already confines the scope. tz from the
+        # node's tenant (settlement boundary it rolls up to).
+        return None, _subtree_outlet_ids(db, node), _tenant_tz(db, node.settlement_account_id, tz)
     # No node + no platform: operator defaults to Platform; everyone else to their merchant scope.
     if _is_operator(scope):
-        return None, None
+        return None, None, _tenant_tz(db, None, tz)
     mid = resolve_merchant(scope, merchant_id)
     require(scope, "report.view", mid)
-    return mid, _legacy_allowed(scope, mid, outlet_id)
+    return mid, _legacy_allowed(scope, mid, outlet_id), _tenant_tz(db, mid, tz)
 
 
 def _range(start: str | None, end: str | None, tz: str):
@@ -102,10 +119,11 @@ def summary(node_id: str | None = Query(None), platform: bool = Query(False),
             merchant_id: str | None = Query(None), outlet_id: str | None = Query(None),
             start: str | None = Query(None), end: str | None = Query(None), tz: str | None = Query(None),
             scope=Depends(get_scope), db: Session = Depends(get_db)):
-    mid, allowed = _scope(db, scope, node_id, platform, merchant_id, outlet_id)
-    s, e = _range(start, end, valid_tz(tz))
+    mid, allowed, rtz = _scope(db, scope, node_id, platform, merchant_id, outlet_id, tz)
+    s, e = _range(start, end, rtz)
     data = rpt.totals(db, merchant_id=mid, allowed_outlets=allowed, start=s, end=e)
     data.update(rpt.new_vs_repeat_revenue(db, merchant_id=mid, allowed_outlets=allowed, start=s, end=e))
+    data["timezone"] = rtz   # effective report tz → the UI labels it + defaults the dropdown
     return data
 
 
@@ -116,8 +134,7 @@ def sales(node_id: str | None = Query(None), platform: bool = Query(False),
           days: int = Query(90, ge=1, le=730),
           start: str | None = Query(None), end: str | None = Query(None), tz: str | None = Query(None),
           scope=Depends(get_scope), db: Session = Depends(get_db)):
-    mid, allowed = _scope(db, scope, node_id, platform, merchant_id, outlet_id)
-    rtz = valid_tz(tz)
+    mid, allowed, rtz = _scope(db, scope, node_id, platform, merchant_id, outlet_id, tz)
     s, e = _range(start, end, rtz)
     return rpt.sales_timeseries(db, merchant_id=mid, allowed_outlets=allowed,
                                 granularity=granularity, days=days, start=s, end=e, tz=rtz)
@@ -129,8 +146,8 @@ def top_items(node_id: str | None = Query(None), platform: bool = Query(False),
               limit: int = Query(10, ge=1, le=50),
               start: str | None = Query(None), end: str | None = Query(None), tz: str | None = Query(None),
               scope=Depends(get_scope), db: Session = Depends(get_db)):
-    mid, allowed = _scope(db, scope, node_id, platform, merchant_id, outlet_id)
-    s, e = _range(start, end, valid_tz(tz))
+    mid, allowed, rtz = _scope(db, scope, node_id, platform, merchant_id, outlet_id, tz)
+    s, e = _range(start, end, rtz)
     return rpt.top_items(db, merchant_id=mid, allowed_outlets=allowed, limit=limit, start=s, end=e)
 
 
@@ -139,8 +156,7 @@ def peak_hours(node_id: str | None = Query(None), platform: bool = Query(False),
                merchant_id: str | None = Query(None), outlet_id: str | None = Query(None),
                start: str | None = Query(None), end: str | None = Query(None), tz: str | None = Query(None),
                scope=Depends(get_scope), db: Session = Depends(get_db)):
-    mid, allowed = _scope(db, scope, node_id, platform, merchant_id, outlet_id)
-    rtz = valid_tz(tz)
+    mid, allowed, rtz = _scope(db, scope, node_id, platform, merchant_id, outlet_id, tz)
     s, e = _range(start, end, rtz)
     return rpt.peak_hours(db, merchant_id=mid, allowed_outlets=allowed, start=s, end=e, tz=rtz)
 
@@ -150,8 +166,8 @@ def payments(node_id: str | None = Query(None), platform: bool = Query(False),
              merchant_id: str | None = Query(None), outlet_id: str | None = Query(None),
              start: str | None = Query(None), end: str | None = Query(None), tz: str | None = Query(None),
              scope=Depends(get_scope), db: Session = Depends(get_db)):
-    mid, allowed = _scope(db, scope, node_id, platform, merchant_id, outlet_id)
-    s, e = _range(start, end, valid_tz(tz))
+    mid, allowed, rtz = _scope(db, scope, node_id, platform, merchant_id, outlet_id, tz)
+    s, e = _range(start, end, rtz)
     return rpt.payment_split(db, merchant_id=mid, allowed_outlets=allowed, start=s, end=e)
 
 
@@ -160,8 +176,8 @@ def outlet_comparison(node_id: str | None = Query(None), platform: bool = Query(
                       merchant_id: str | None = Query(None),
                       start: str | None = Query(None), end: str | None = Query(None), tz: str | None = Query(None),
                       scope=Depends(get_scope), db: Session = Depends(get_db)):
-    mid, allowed = _scope(db, scope, node_id, platform, merchant_id, None)
-    s, e = _range(start, end, valid_tz(tz))
+    mid, allowed, rtz = _scope(db, scope, node_id, platform, merchant_id, None, tz)
+    s, e = _range(start, end, rtz)
     return rpt.outlet_comparison(db, merchant_id=mid, allowed_outlets=allowed, start=s, end=e)
 
 
@@ -171,8 +187,8 @@ def rollup(node_id: str | None = Query(None), platform: bool = Query(False),
            scope=Depends(get_scope), db: Session = Depends(get_db)):
     """Per-CHILD breakdown for the member-tree drill-down: Platform → each tenant; a node → its
     direct children (each child's whole-subtree totals). Same RBAC as the other reports."""
-    _scope(db, scope, node_id, platform, None, None)   # enforce visibility/perms for this node
-    s, e = _range(start, end, valid_tz(tz))
+    _, _, rtz = _scope(db, scope, node_id, platform, None, None, tz)   # enforce visibility/perms + resolve tz
+    s, e = _range(start, end, rtz)
     if platform or (node_id is None and _is_operator(scope)):
         children = list(db.scalars(select(OrgNode).where(OrgNode.depth == 0).order_by(OrgNode.name)).all())
     else:
@@ -196,9 +212,9 @@ def forecast(node_id: str | None = Query(None), platform: bool = Query(False),
              horizon: int = Query(7, ge=1, le=90), window: int = Query(7, ge=1, le=60),
              tz: str | None = Query(None),
              scope=Depends(get_scope), db: Session = Depends(get_db)):
-    mid, allowed = _scope(db, scope, node_id, platform, merchant_id, outlet_id)
+    mid, allowed, rtz = _scope(db, scope, node_id, platform, merchant_id, outlet_id, tz)
     return rpt.forecast(db, merchant_id=mid, allowed_outlets=allowed, horizon_days=horizon,
-                        window=window, tz=valid_tz(tz))
+                        window=window, tz=rtz)
 
 
 @router.get("/rfm")
@@ -214,7 +230,7 @@ def ai_insights(merchant_id: str | None = Query(None), outlet_id: str | None = Q
                 scope=Depends(get_scope), db: Session = Depends(get_db)):
     """AI growth advisor — executive summary + ranked next-best actions. Uses Claude when
     configured, else a deterministic heuristic. Scoped like the other reports."""
-    mid, allowed = _scope(db, scope, node_id, platform, merchant_id, outlet_id)
+    mid, allowed, _rtz = _scope(db, scope, node_id, platform, merchant_id, outlet_id)
     if mid is None:   # Platform aggregate has no single merchant; insights are per-merchant
         raise ForbiddenError("Pick a merchant/node for AI insights", code="needs_merchant")
     return ai_service.generate(db, merchant_id=mid, scope=scope, allowed_outlets=allowed)

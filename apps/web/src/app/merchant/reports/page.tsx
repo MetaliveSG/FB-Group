@@ -9,6 +9,7 @@ import {
 } from "@/lib/api";
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import { formatSGD } from "@/lib/format";
+import { REPORT_TIMEZONES } from "@/lib/timezones";
 import MerchantSidebar from "@/components/MerchantSidebar";
 import type {
   OrgTreeNode, ReportScope, ReportTotals, SalesPeriod, TopItem, PaymentSplitRow, RollupRow,
@@ -25,6 +26,7 @@ function isoDaysAgo(n: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+
 export default function ReportsPage() {
   const router = useRouter();
   const base = getApiBase();
@@ -37,6 +39,10 @@ export default function ReportsPage() {
   const [start, setStart] = useState(isoDaysAgo(6));
   const [end, setEnd] = useState(isoDaysAgo(0));
   const [tab, setTab] = useState<"overview" | "payments">("overview");
+  // tzOverride = the display-lens dropdown ("" = use the tenant's business reporting tz).
+  // businessTz = the tenant's canonical reporting tz (the "books"), echoed by the summary payload.
+  const [tzOverride, setTzOverride] = useState("");
+  const [businessTz, setBusinessTz] = useState("Asia/Singapore");
 
   const [summary, setSummary] = useState<ReportTotals | null>(null);
   const [sales, setSales] = useState<SalesPeriod[]>([]);
@@ -89,7 +95,8 @@ export default function ReportsPage() {
     nodeId: source?.nodeId,
     merchantId: getOperatorMerchant()?.id,
     start, end,
-  }), [source, start, end]);
+    tz: tzOverride || undefined,   // "" → backend uses the tenant's business reporting tz
+  }), [source, start, end, tzOverride]);
 
   const load = useCallback(async () => {
     const t = tok();
@@ -107,14 +114,16 @@ export default function ReportsPage() {
         reportsRollup(base, t, sc),
       ]);
       setSummary(su); setSales(sa); setItems(it); setPayments(pa); setRollup(ro);
+      // The summary echoes the effective tz; when no override is active that IS the business tz.
+      if (!tzOverride) setBusinessTz(su.timezone);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load reports");
     } finally {
       setLoading(false);
     }
-  }, [base, source, scope, preset]);
+  }, [base, source, scope, preset, tzOverride]);
 
-  useEffect(() => { if (source) load(); }, [source, start, end, load]);
+  useEffect(() => { if (source) load(); }, [source, start, end, tzOverride, load]);
 
   // SOURCE options: Platform (operators) + every visible node, indented by depth.
   const sourceOptions: SourceSel[] = [
@@ -176,8 +185,25 @@ export default function ReportsPage() {
           <span style={{ color: "var(--color-text-muted)" }}>→</span>
           <input type="date" value={end} min={start} onChange={(e) => setEnd(e.target.value)} />
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <label style={{ fontWeight: 600, fontSize: 13 }}>TIMEZONE</label>
+          <select value={tzOverride} onChange={(e) => setTzOverride(e.target.value)} style={{ minWidth: 210 }}>
+            <option value="">Business — {businessTz}</option>
+            {REPORT_TIMEZONES.map(([z, label]) => (
+              <option key={z} value={z}>{label}</option>
+            ))}
+          </select>
+        </div>
         {loading && <span className="spinner" />}
       </div>
+
+      {/* When a display-lens tz is chosen that differs from the books, say so loudly. */}
+      {tzOverride && tzOverride !== businessTz && (
+        <div className="alert" style={{ background: "#fef3c7", border: "1px solid #fcd34d", color: "#92400e", marginBottom: 16 }}>
+          Viewing in <strong>{tzOverride}</strong> — differs from the business reporting timezone
+          (<strong>{businessTz}</strong>). Official totals (payouts/GST/daily close) use {businessTz}.
+        </div>
+      )}
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 6, marginBottom: 16, borderBottom: "1px solid var(--color-border,#e5e7eb)" }}>
