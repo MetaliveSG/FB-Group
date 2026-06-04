@@ -591,6 +591,7 @@ export interface MerchantSettings {
   rewards_enabled: boolean;
   qr_ordering_enabled: boolean;
   pos_enabled: boolean;
+  timezone: string;   // the tenant's canonical reporting timezone (the "books")
 }
 
 /** Non-sensitive nav booleans any staff member may read (no spin costs / earn rates).
@@ -1311,10 +1312,11 @@ export function reportForecast(
 // ─── Node-scoped Reports dashboard ───────────────────────────
 // SOURCE scope: Platform (operators only, all merchants) | a node (its subtree). A node account is
 // confined to its node + downline by the server. Date range = inclusive YYYY-MM-DD start/end.
-export interface ReportScope { merchantId?: string; nodeId?: string; platform?: boolean; start?: string; end?: string; }
+export interface ReportScope { merchantId?: string; nodeId?: string; platform?: boolean; start?: string; end?: string; tz?: string; }
 export interface ReportTotals {
   revenue: number; orders: number; unique_customers: number; avg_order_value: number;
   new_customer_revenue: number; repeat_customer_revenue: number;
+  timezone: string;   // the effective report timezone (the UI labels it + defaults the dropdown)
 }
 export interface PeakHour { hour: number; orders: number; revenue: number; }
 export interface PaymentSplitRow { method: string; amount: number; count: number; }
@@ -1330,6 +1332,7 @@ function reportQuery(scope?: ReportScope, extra?: Record<string, string | number
   if (scope?.merchantId) qs.set("merchant_id", scope.merchantId);
   if (scope?.start) qs.set("start", scope.start);
   if (scope?.end) qs.set("end", scope.end);
+  if (scope?.tz) qs.set("tz", scope.tz);
   for (const [k, v] of Object.entries(extra ?? {})) if (v != null) qs.set(k, String(v));
   const s = qs.toString();
   return s ? `?${s}` : "";
@@ -1872,6 +1875,7 @@ export function updateSettings(
     rewards_enabled?: boolean;
     qr_ordering_enabled?: boolean;
     pos_enabled?: boolean;
+    timezone?: string;
   },
   merchantId?: string
 ): Promise<MerchantSettings> {

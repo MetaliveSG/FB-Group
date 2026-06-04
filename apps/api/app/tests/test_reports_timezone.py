@@ -43,3 +43,18 @@ def test_valid_tz_falls_back_on_garbage():
     assert valid_tz(None) == PLATFORM_DEFAULT_TZ
     assert valid_tz("Not/AZone") == PLATFORM_DEFAULT_TZ
     assert valid_tz("Asia/Kuala_Lumpur") == "Asia/Kuala_Lumpur"
+
+
+def test_settings_timezone_validated_on_write():
+    """The tenant reporting timezone is strict on write (a bad zone → 422 via the schema validator),
+    unlike the lenient read-path fallback."""
+    import pytest
+    from pydantic import ValidationError
+
+    from app.schemas.org import SettingsUpdateIn
+
+    assert SettingsUpdateIn(timezone="Asia/Kuala_Lumpur").timezone == "Asia/Kuala_Lumpur"
+    assert SettingsUpdateIn(timezone=None).timezone is None          # not provided → fine
+    assert SettingsUpdateIn().timezone is None
+    with pytest.raises(ValidationError):
+        SettingsUpdateIn(timezone="Not/AZone")

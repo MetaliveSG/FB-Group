@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getSettings, updateSettings, getLoyaltyProgram, updateLoyaltyProgram, getApiBase } from "@/lib/api";
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
+import { REPORT_TIMEZONES } from "@/lib/timezones";
 import MerchantSidebar from "@/components/MerchantSidebar";
 import { Toggle } from "@/components/ui";
 import type { MerchantSettings, LoyaltyProgram } from "@fbgroup/api-client";
@@ -69,6 +70,23 @@ export default function SettingsPage() {
       const updated = await updateSettings(base, tok, { [key]: next }, getOperatorMerchant()?.id);
       setSettings(updated);
       setMsg("Settings saved.");
+      setTimeout(() => setMsg(null), 2500);
+    } catch (err: unknown) {
+      const m = err instanceof Error ? err.message : "Failed to save settings";
+      setError(m.includes("403") ? "Settings require the merchant owner role." : m);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveTimezone(tz: string) {
+    const tok = getStaffToken();
+    if (!tok || !settings) return;
+    setSaving(true); setError(null); setMsg(null);
+    try {
+      const updated = await updateSettings(base, tok, { timezone: tz }, getOperatorMerchant()?.id);
+      setSettings(updated);
+      setMsg("Reporting timezone saved.");
       setTimeout(() => setMsg(null), 2500);
     } catch (err: unknown) {
       const m = err instanceof Error ? err.message : "Failed to save settings";
@@ -181,6 +199,26 @@ export default function SettingsPage() {
 
       {error && <div className="alert alert-error">{error}</div>}
       {msg && <div className="alert alert-success">{msg}</div>}
+
+      {settings && (
+        <div className="card" style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontWeight: 600 }}>Reporting timezone</div>
+            <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
+              All sales reports, payouts &amp; the daily close use this timezone (the &ldquo;books&rdquo;).
+            </div>
+          </div>
+          <select value={settings.timezone} disabled={saving} style={{ minWidth: 220 }}
+                  onChange={(e) => saveTimezone(e.target.value)}>
+            {REPORT_TIMEZONES.map(([z, label]) => (
+              <option key={z} value={z}>{label}</option>
+            ))}
+            {!REPORT_TIMEZONES.some(([z]) => z === settings.timezone) && (
+              <option value={settings.timezone}>{settings.timezone}</option>
+            )}
+          </select>
+        </div>
+      )}
 
       {loading ? (
         <div className="page-loading">

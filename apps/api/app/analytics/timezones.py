@@ -27,6 +27,16 @@ def valid_tz(tz: str | None) -> str:
         return PLATFORM_DEFAULT_TZ
 
 
+def require_tz(tz: str) -> str:
+    """Strict: return `tz` if it's a real IANA zone, else raise ValueError — for WRITE-time validation
+    (a bad reporting timezone should 422 on save, not silently fall back). `valid_tz` is the read path."""
+    try:
+        ZoneInfo(tz)
+        return tz
+    except (ZoneInfoNotFoundError, ValueError) as exc:
+        raise ValueError(f"Unknown timezone: {tz!r}") from exc
+
+
 def to_local(dt_utc_naive: datetime, tz: str) -> datetime:
     """Naive-UTC instant → naive local wall-clock (for day/hour bucketing keys). DST-correct."""
     return dt_utc_naive.replace(tzinfo=timezone.utc).astimezone(ZoneInfo(tz)).replace(tzinfo=None)

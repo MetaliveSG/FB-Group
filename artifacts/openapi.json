@@ -13596,6 +13596,11 @@
             "type": "boolean",
             "title": "Pos Enabled",
             "default": false
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone",
+            "default": "Asia/Singapore"
           }
         },
         "type": "object",
@@ -13677,6 +13682,17 @@
               }
             ],
             "title": "Pos Enabled"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
           }
         },
         "type": "object",

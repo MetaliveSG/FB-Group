@@ -110,13 +110,23 @@ GST/CDC/MAS) → **M4** (the barrier to entry). GTM keep-your-POS → `gtm-pos-a
   by stable name (with an empty-seed guard). "Edit the seed → re-run → live reflects it", no migration.
 - **Provider mocks** (OTP / WhatsApp / AI insights): mock by default; real provider only when a flag +
   key are set (e.g. `AI_ENABLED=1` + `ANTHROPIC_API_KEY`). Tests/demo use the deterministic mock path.
-- **Report timezone = SG only (hardcoded), NOT multi-timezone.** Timestamps are stored naive-UTC, but
-  reports present **SG local time via a FIXED `+8h` offset** (`app/analytics/reports.py::SG_OFFSET` /
-  `_local`) for day/hour bucketing, and the date-range filter converts SG calendar days → UTC bounds
-  (`routes/reports.py::_range`). Frontend presets use the browser-local date (not `toISOString`). This
-  is correct for SG (all UTC+8, no DST). `Outlet.timezone` exists as a hook but reports DON'T read it.
-  **True multi-tz is deferred** — swap the fixed offset for per-outlet `zoneinfo` localisation + a
-  tenant default timezone for cross-zone rollups (a group spanning SG/KL/Jakarta has no single "today").
+- **Report timezone — ONE tz per report (default SG); Phase 1 done, DST-correct.** Timestamps are
+  stored naive-UTC (canonical instant); reports localise at read via `app/analytics/timezones.py`
+  (`to_local` = `zoneinfo`, DST-correct; `local_day_bounds_utc` = inclusive local days → HALF-OPEN UTC
+  bounds; `valid_tz`). `tz` is threaded through bucketing (`sales`/`peak_hours`/`forecast`) + a per-request
+  `?tz=`; **default `Asia/Singapore`** → SG output unchanged. `_txns` range is half-open `[start, end)`.
+  **The report tz is a SINGLE value for the whole report AND its drill-down** — so parent total == Σ
+  children and the date window is unambiguous.
+  **Phase 2 — BUILT (tenant-level tz + display dropdown).** `routes/reports.py::_tenant_tz` resolves the
+  ONE report tz: `explicit ?tz=` → `Merchant.settings["timezone"]` (the tenant's canonical reporting tz =
+  the "books"; settable in merchant Settings, strict-validated → 422 via `timezones.require_tz`) →
+  platform default. `_scope` returns it; `/reports/summary` echoes `timezone` so the UI labels it. The
+  Reports page has a **timezone dropdown** that defaults to the tenant tz (NOT the viewer's) and is a
+  **display override** — picking another shows a "differs from the business reporting timezone" banner
+  (official totals/payout/GST use the tenant tz). **NEVER derive the report tz from `Outlet.timezone`** —
+  a parent spans many outlets, so a per-outlet tz makes `from`/`to` ambiguous and breaks parent↔child
+  reconciliation. `Outlet.timezone` stays reserved for a future opt-in single-outlet "in this store's
+  local time" leaf view only. **Phase 3 (deferred):** business-day start (e.g. 4am close, Square/Toast).
 
 ## Where things are
 - `apps/api/app/models/*.py` — schema (source of truth) · `app/services/` — business logic (ORM only, no raw SQL)

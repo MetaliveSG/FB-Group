@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.analytics.timezones import require_tz
 from app.core.passwords import validate_password_strength
 
 
@@ -66,6 +67,8 @@ class SettingsOut(BaseModel):
     rewards_enabled: bool = True
     qr_ordering_enabled: bool = True
     pos_enabled: bool = False
+    # The tenant's canonical reporting timezone (the "books" — payouts/GST/daily close use it).
+    timezone: str = "Asia/Singapore"
 
 
 class NavFlagsOut(BaseModel):
@@ -100,6 +103,12 @@ class SettingsUpdateIn(BaseModel):
     rewards_enabled: bool | None = None
     qr_ordering_enabled: bool | None = None
     pos_enabled: bool | None = None
+    timezone: str | None = None   # IANA reporting timezone for this tenant; validated → 422 on bad
+
+    @field_validator("timezone")
+    @classmethod
+    def _valid_timezone(cls, v: str | None) -> str | None:
+        return require_tz(v) if v is not None else v
 
 
 class LoyaltyProgramOut(BaseModel):
