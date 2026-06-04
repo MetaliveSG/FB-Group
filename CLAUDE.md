@@ -58,12 +58,17 @@ child · node logins · enter). Endpoints: `GET /org/tree`, `POST/PATCH /org/nod
   shows in every mode; **Brands & Outlets are no longer a managed UI** (typed FK anchors only).
 
 ## Roadmap & next phases (priority) — see memory `roadmap-mvp-foundation`
-**MVP (2 weeks) — mostly built.** The MVP merchant is **fully on our stack**: every sale goes through
-**our** channels (table QR · our cashier POS · mobile/web app) → every sale is ours, already uniquely
-id'd → **no "outside" sale, no external-reference/receipt-dedup in the MVP.** "POS link-up" = OUR
-cashier POS (built: `create_manual_order`+`cashier_checkout`), NOT external-POS integration.
-**Remaining work:** verify+harden the 3 channels record sale+rewards consistently · sales report · CRM ·
-rewards (all built) · **PDPA consent at capture** (the one new add) · first-merchant go-live + demo polish.
+**DIRECTION = MVP, not PoC (2026-06-04).** Bar = "a first real merchant runs their business on this"
+(not demo/proof). Local-first still holds (no premature cloud). The MVP merchant is **fully on our
+stack**: every sale goes through **our** channels (table QR · our cashier POS · mobile/web app) → every
+sale is ours, already uniquely id'd → **no "outside" sale, no external-reference/receipt-dedup in the
+MVP.** "POS link-up" = OUR cashier POS (built: `create_manual_order`+`cashier_checkout`), NOT external-POS.
+**MVP definition-of-done (status in memory `roadmap-mvp-foundation`):** ✅ capture loop · onboarding ·
+reports+SEA-tz · CRM · rewards · RBAC. Remaining — **PDPA consent at capture** (one new add) · suspend
+enforced at login/order · `record_sale()` convergence · **unified tree-scoped console** (plan-first:
+`docs/architecture-unified-console.md` — operator at tree root, scope-down, fixes the "missing merchant
+id" bug) · **cashier POS on the merchant's device** (MVP bridge = PWA-on-Android + BT printer; real
+terminal = Android POS phase) · day-end closing · first-merchant go-live + demo polish.
 *Optional foundation tidy:* extract a shared `record_sale()` core so the 3 channels converge and external
 doors are a trivial add later — not a blocker. *Do NOT build:* external-POS ingestion/receipt-dedup
 (keep-your-POS = P1), aggregator pull-in (P5), venue/lease/settlement/franchising/Storefront-re-key.
@@ -86,6 +91,10 @@ moat it builds — never ship a phase without knowing which defensibility it ser
 - P3 ★★ **franchising / value-rollup** → **builds M2·M5** [+M4] — royalty rollup + central menu; the Storefront re-key.
 - P4 ★★ **AI ops** → **deepens M1** [+M4] — demand → labour + waste markdown (moat only via the cross-merchant data).
 - P5 ★ **ops depth** → **builds M5** — KDS/inventory/aggregator pull-in (become the primary screen; selective).
+- **Android POS** ★★★ (HARDWARE, pulled forward by the real onboarding) → **builds M5** [+M1] — real
+  cashier terminal (Sunmi/iMin/PAX: thermal printer + drawer + offline + card). MVP bridge = PWA-on-
+  Android-tablet + BT ESC/POS printer NOW; native (Expo/RN) or Capacitor wrapper as the terminal. Depends
+  on `record_sale()` core + day-end closing. See memory `android-pos-phase`.
 Cross-cutting (NOT MVP): real providers (NETS/PayNow/Stripe, WhatsApp BSP) → **M4**+protect M1 trust;
 scale stack (Redis/queues/websockets — arrive P2/4/5); staging+IaC+AWS. Compliance (PDPA/Nutri-Grade/
 GST/CDC/MAS) → **M4** (the barrier to entry). GTM keep-your-POS → `gtm-pos-agnostic-capture` (feeds M1/M5).
