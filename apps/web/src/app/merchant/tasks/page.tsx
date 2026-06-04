@@ -12,6 +12,8 @@ import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth"
 import { getApiBase } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import MerchantSidebar from "@/components/MerchantSidebar";
+import NodeDirectory from "@/components/NodeDirectory";
+import { useScope } from "@/lib/useScope";
 import type { TaskOut } from "@fbgroup/api-client";
 
 const PRIORITY_COLOR: Record<string, { bg: string; fg: string }> = {
@@ -36,6 +38,9 @@ export default function MyTasksPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const { scope, isOperator, nodes, ready, enter } = useScope();
+  const needPick = ready && isOperator && !!scope && scope.tenantId === null;
 
   const load = useCallback(
     async (tok: string) => {
@@ -72,6 +77,7 @@ export default function MyTasksPage() {
       router.push("/merchant/login");
       return;
     }
+    if (!ready || needPick) return;
     setLoading(true);
     load(tok)
       .then(() => setLoading(false))
@@ -84,7 +90,7 @@ export default function MyTasksPage() {
           setLoading(false);
         }
       });
-  }, [load, router]);
+  }, [load, router, ready, needPick]);
 
   async function completeTask(task: TaskOut) {
     const tok = getStaffToken();
@@ -99,6 +105,14 @@ export default function MyTasksPage() {
     } finally {
       setUpdatingId(null);
     }
+  }
+
+  if (needPick) {
+    return (
+      <MerchantSidebar active="tasks">
+        <NodeDirectory feature="My Tasks" nodes={nodes} currentNodeId={scope!.currentNodeId} onEnter={enter} />
+      </MerchantSidebar>
+    );
   }
 
   return (

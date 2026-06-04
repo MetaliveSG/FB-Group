@@ -6,6 +6,8 @@ import { getSettings, updateSettings, getLoyaltyProgram, updateLoyaltyProgram, g
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import { REPORT_TIMEZONES } from "@/lib/timezones";
 import MerchantSidebar from "@/components/MerchantSidebar";
+import NodeDirectory from "@/components/NodeDirectory";
+import { useScope } from "@/lib/useScope";
 import { Toggle } from "@/components/ui";
 import type { MerchantSettings, LoyaltyProgram } from "@fbgroup/api-client";
 
@@ -32,12 +34,17 @@ export default function SettingsPage() {
   const [welcome, setWelcome] = useState("");
   const [birthday, setBirthday] = useState("");
 
+  // Tree-scoped guard: settings are per-tenant → an operator above a tenant boundary picks a merchant first.
+  const { scope, isOperator, nodes, ready, enter } = useScope();
+  const needPick = ready && isOperator && !!scope && scope.tenantId === null;
+
   useEffect(() => {
     const tok = getStaffToken();
     if (!tok) {
       router.push("/merchant/login");
       return;
     }
+    if (!ready || needPick) return; // wait for scope; don't fetch until a merchant is in scope
     const mid = getOperatorMerchant()?.id;
     Promise.all([getSettings(base, tok, mid), getLoyaltyProgram(base, tok, mid)])
       .then(([s, lp]) => {
@@ -60,7 +67,7 @@ export default function SettingsPage() {
           setLoading(false);
         }
       });
-  }, [base, router]);
+  }, [base, router, ready, needPick]);
 
   async function toggleModule(key: ModuleFlag, next: boolean) {
     const tok = getStaffToken();
@@ -189,6 +196,14 @@ export default function SettingsPage() {
     (earnRate !== String(loyalty.points_per_dollar) ||
       welcome !== String(loyalty.welcome_bonus) ||
       birthday !== String(loyalty.birthday_bonus));
+
+  if (needPick) {
+    return (
+      <MerchantSidebar active="settings">
+        <NodeDirectory feature="Settings" nodes={nodes} currentNodeId={scope!.currentNodeId} onEnter={enter} />
+      </MerchantSidebar>
+    );
+  }
 
   return (
     <MerchantSidebar active="settings">

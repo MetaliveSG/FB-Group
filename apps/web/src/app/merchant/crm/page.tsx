@@ -18,6 +18,8 @@ import { formatSGD, churnColor } from "@/lib/format";
 import LineChart from "@/components/LineChart";
 import BarChart from "@/components/BarChart";
 import MerchantSidebar from "@/components/MerchantSidebar";
+import NodeDirectory from "@/components/NodeDirectory";
+import { useScope } from "@/lib/useScope";
 import type {
   CustomerSummary,
   SegmentSummary,
@@ -33,6 +35,11 @@ function SidebarLayout({ children }: { children: React.ReactNode }) {
 export default function CrmPage() {
   const router = useRouter();
   const base = getApiBase();
+
+  // Tree-scoped guard: an operator sitting ABOVE a tenant boundary (Platform scope, no merchant
+  // entered) must pick a merchant — CRM is tenant-wide, so loading it with a null merchant_id would 500.
+  const { scope, isOperator, nodes, ready, enter } = useScope();
+  const needPick = ready && isOperator && !!scope && scope.tenantId === null;
 
   const [token, setToken] = useState<string | null>(null);
   const [customers, setCustomers] = useState<CustomerSummary[]>([]);
@@ -95,10 +102,11 @@ export default function CrmPage() {
   );
 
   useEffect(() => {
-    if (token) {
+    // Wait for the scope to resolve; don't fetch while we still owe the user a merchant pick.
+    if (token && ready && !needPick) {
       loadData(token, segmentFilter, search);
     }
-  }, [token, loadData, segmentFilter, search]);
+  }, [token, loadData, segmentFilter, search, ready, needPick]);
 
   function toggleOne(id: string) {
     setSelected((prev) => {
@@ -187,6 +195,19 @@ export default function CrmPage() {
     label: item.name,
     value: item.revenue,
   }));
+
+  if (needPick) {
+    return (
+      <SidebarLayout>
+        <NodeDirectory
+          feature="CRM & Analytics"
+          nodes={nodes}
+          currentNodeId={scope!.currentNodeId}
+          onEnter={enter}
+        />
+      </SidebarLayout>
+    );
+  }
 
   if (loading && !customers.length) {
     return (

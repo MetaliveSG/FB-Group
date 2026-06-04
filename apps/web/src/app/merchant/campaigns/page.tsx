@@ -6,6 +6,8 @@ import { listCampaigns, createCampaign, getApiBase } from "@/lib/api";
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import { formatSGD } from "@/lib/format";
 import MerchantSidebar from "@/components/MerchantSidebar";
+import NodeDirectory from "@/components/NodeDirectory";
+import { useScope } from "@/lib/useScope";
 import PointMultipliers from "@/components/PointMultipliers";
 import {
   CAMPAIGN_TYPES,
@@ -52,6 +54,9 @@ export default function CampaignsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const { scope, isOperator, nodes, ready, enter } = useScope();
+  const needPick = ready && isOperator && !!scope && scope.tenantId === null;
+
   // New campaign form
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
@@ -77,6 +82,7 @@ export default function CampaignsPage() {
       router.push("/merchant/login");
       return;
     }
+    if (!ready || needPick) return;
     load(tok)
       .then(() => setLoading(false))
       .catch((err: unknown) => {
@@ -89,7 +95,7 @@ export default function CampaignsPage() {
           setLoading(false);
         }
       });
-  }, [load, router]);
+  }, [load, router, ready, needPick]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -122,6 +128,14 @@ export default function CampaignsPage() {
     } finally {
       setCreating(false);
     }
+  }
+
+  if (needPick) {
+    return (
+      <MerchantSidebar active="campaigns">
+        <NodeDirectory feature="Campaigns" nodes={nodes} currentNodeId={scope!.currentNodeId} onEnter={enter} />
+      </MerchantSidebar>
+    );
   }
 
   return (

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { listUsers, inviteUser, revokeAssignment, menuOutlets, getApiBase } from "@/lib/api";
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import MerchantSidebar from "@/components/MerchantSidebar";
+import NodeDirectory from "@/components/NodeDirectory";
+import { useScope } from "@/lib/useScope";
 import { Icons } from "@/components/ui";
 import {
   STAFF_ROLES,
@@ -30,6 +32,9 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [forbidden, setForbidden] = useState(false);
+
+  const { scope, isOperator, nodes, ready, enter } = useScope();
+  const needPick = ready && isOperator && !!scope && scope.tenantId === null;
 
   // Invite form
   const [showForm, setShowForm] = useState(false);
@@ -61,6 +66,7 @@ export default function TeamPage() {
       router.push("/merchant/login");
       return;
     }
+    if (!ready || needPick) return;
     load(tok)
       .then(() => setLoading(false))
       .catch((err: unknown) => {
@@ -80,7 +86,7 @@ export default function TeamPage() {
           setLoading(false);
         }
       });
-  }, [load, router]);
+  }, [load, router, ready, needPick]);
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
@@ -147,6 +153,14 @@ export default function TeamPage() {
       return `outlet: ${o?.name ?? scopeId ?? "?"}`;
     }
     return scopeType;
+  }
+
+  if (needPick) {
+    return (
+      <MerchantSidebar active="team">
+        <NodeDirectory feature="Team" nodes={nodes} currentNodeId={scope!.currentNodeId} onEnter={enter} />
+      </MerchantSidebar>
+    );
   }
 
   return (

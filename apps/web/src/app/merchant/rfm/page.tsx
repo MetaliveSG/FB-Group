@@ -6,6 +6,8 @@ import { rfm, launchWinback, getApiBase } from "@/lib/api";
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import { formatSGD } from "@/lib/format";
 import MerchantSidebar from "@/components/MerchantSidebar";
+import NodeDirectory from "@/components/NodeDirectory";
+import { useScope } from "@/lib/useScope";
 import type { RfmReport, WinbackResult } from "@fbgroup/api-client";
 
 const WINBACK_SEGMENTS = ["At Risk", "Hibernating", "Can't Lose Them"];
@@ -55,6 +57,9 @@ export default function RfmPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const { scope, isOperator, nodes, ready, enter } = useScope();
+  const needPick = ready && isOperator && !!scope && scope.tenantId === null;
+
   // Win-back launcher
   const [withCampaign, setWithCampaign] = useState(true);
   const [launching, setLaunching] = useState(false);
@@ -74,6 +79,7 @@ export default function RfmPage() {
       router.push("/merchant/login");
       return;
     }
+    if (!ready || needPick) return;
     load(tok)
       .then(() => setLoading(false))
       .catch((err: unknown) => {
@@ -86,7 +92,7 @@ export default function RfmPage() {
           setLoading(false);
         }
       });
-  }, [load, router]);
+  }, [load, router, ready, needPick]);
 
   async function handleLaunchWinback() {
     const tok = getStaffToken();
@@ -113,6 +119,14 @@ export default function RfmPage() {
     report && Object.values(report.distribution).length > 0
       ? Math.max(...Object.values(report.distribution))
       : 1;
+
+  if (needPick) {
+    return (
+      <MerchantSidebar active="rfm">
+        <NodeDirectory feature="RFM Analytics" nodes={nodes} currentNodeId={scope!.currentNodeId} onEnter={enter} />
+      </MerchantSidebar>
+    );
+  }
 
   return (
     <MerchantSidebar active="rfm">

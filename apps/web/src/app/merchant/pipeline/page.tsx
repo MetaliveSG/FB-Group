@@ -12,6 +12,8 @@ import {
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import { formatSGD, prettyStage } from "@/lib/format";
 import MerchantSidebar from "@/components/MerchantSidebar";
+import NodeDirectory from "@/components/NodeDirectory";
+import { useScope } from "@/lib/useScope";
 import type { Pipeline, PipelineStage, Opportunity, PipelineType } from "@fbgroup/api-client";
 
 function stageHeaderColor(s: PipelineStage): { bg: string; fg: string } {
@@ -31,6 +33,9 @@ export default function PipelinePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const { scope, isOperator, nodes, ready, enter } = useScope();
+  const needPick = ready && isOperator && !!scope && scope.tenantId === null;
 
   const load = useCallback(
     async (tok: string, pipelineType: PipelineType) => {
@@ -55,6 +60,7 @@ export default function PipelinePage() {
       router.push("/merchant/login");
       return;
     }
+    if (!ready || needPick) return;
     setLoading(true);
     load(tok, mode)
       .then(() => setLoading(false))
@@ -68,7 +74,7 @@ export default function PipelinePage() {
           setLoading(false);
         }
       });
-  }, [load, router, mode]);
+  }, [load, router, mode, ready, needPick]);
 
   // Stage keys for the active mode, in board order from the API.
   const stageKeys = pipe ? pipe.stages.map((s) => s.stage) : [];
@@ -106,6 +112,14 @@ export default function PipelinePage() {
       >
         {label}
       </button>
+    );
+  }
+
+  if (needPick) {
+    return (
+      <MerchantSidebar active="pipeline">
+        <NodeDirectory feature="Pipeline" nodes={nodes} currentNodeId={scope!.currentNodeId} onEnter={enter} />
+      </MerchantSidebar>
     );
   }
 
