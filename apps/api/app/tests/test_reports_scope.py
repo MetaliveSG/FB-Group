@@ -57,3 +57,18 @@ def test_group_manager_sees_subtree_not_platform(client, db):
     assert _summary(client, t, node_id="btg").status_code == 200      # the whole group
     assert _summary(client, t, node_id="b_tb").status_code == 200     # a downline sub-chain ✓
     assert _summary(client, t, platform="true").status_code == 403    # still not an operator ✗
+
+
+def test_operator_ai_insights_resolves_an_explicitly_chosen_merchant(client, db):
+    """An operator who has DRILLED INTO a merchant (the console sends ?merchant_id=) gets that
+    merchant's insights — not the Platform default that has no single merchant. Regression: _scope
+    used to ignore an explicit merchant_id for operators and fall through to Platform → ai-insights
+    then 403'd "Pick a merchant/node" even after entering a merchant."""
+    build_breadtalk(db)
+    super_admin(db)
+    t = staff_token(client, "root@platform.sg")
+    r = client.get("/api/v1/reports/ai-insights?merchant_id=m1", headers=H(t))
+    assert r.status_code == 200, r.text                               # resolves the chosen merchant
+    assert "summary" in r.json()
+    # No merchant chosen (Platform aggregate) → insights are per-merchant → still 403.
+    assert client.get("/api/v1/reports/ai-insights?platform=true", headers=H(t)).status_code == 403
