@@ -20,6 +20,7 @@ import {
 
 type ActiveKey =
   | "crm"
+  | "reports"
   | "insights"
   | "orders"
   | "pipeline"
@@ -51,6 +52,7 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { key: "crm", label: "CRM & Analytics", href: "/merchant/crm", perm: "crm.view", scope: "group" },
+  { key: "reports", label: "Reports", href: "/merchant/reports", perm: "report.view", scope: "both" },
   { key: "orders", label: "Orders", href: "/merchant/orders", perm: "order.view", scope: "group" },
   { key: "insights", label: "✨ AI Insights", href: "/merchant/insights", perm: "report.view", scope: "group" },
   { key: "pipeline", label: "Pipeline", href: "/merchant/pipeline", perm: "crm.view", flag: "pipeline_enabled", scope: "group" },
