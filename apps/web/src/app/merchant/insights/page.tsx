@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { aiInsights, getApiBase } from "@/lib/api";
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import MerchantSidebar from "@/components/MerchantSidebar";
+import NodeDirectory from "@/components/NodeDirectory";
+import { useScope } from "@/lib/useScope";
 import type { AIInsights } from "@fbgroup/api-client";
 
 const PRIORITY_STYLE: Record<string, { bg: string; fg: string; label: string }> = {
@@ -20,6 +22,9 @@ export default function InsightsPage() {
   const [data, setData] = useState<AIInsights | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { scope, isOperator, nodes, ready, enter } = useScope();
+  const needPick = ready && isOperator && !!scope && scope.tenantId === null;
 
   const load = useCallback(async () => {
     const tok = getStaffToken();
@@ -45,10 +50,19 @@ export default function InsightsPage() {
   }, [base, router]);
 
   useEffect(() => {
+    if (!ready || needPick) return;
     load();
-  }, [load]);
+  }, [load, ready, needPick]);
 
   const claude = data?.generated_by === "claude";
+
+  if (needPick) {
+    return (
+      <MerchantSidebar active="insights">
+        <NodeDirectory feature="AI Insights" nodes={nodes} currentNodeId={scope!.currentNodeId} onEnter={enter} />
+      </MerchantSidebar>
+    );
+  }
 
   return (
     <MerchantSidebar active="insights">

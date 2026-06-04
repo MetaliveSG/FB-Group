@@ -17,6 +17,8 @@ import {
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import { formatSGD } from "@/lib/format";
 import MerchantSidebar from "@/components/MerchantSidebar";
+import NodeDirectory from "@/components/NodeDirectory";
+import { useScope } from "@/lib/useScope";
 import { Icons, Toggle } from "@/components/ui";
 import type { MenuAdminOutlet, Menu } from "@fbgroup/api-client";
 
@@ -37,6 +39,9 @@ export default function MenuEditorPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { scope, isOperator, nodes, ready, enter } = useScope();
+  const needPick = ready && isOperator && !!scope && scope.tenantId === null;
+
   // forms
   const [newCategory, setNewCategory] = useState("");
   const [newItem, setNewItem] = useState<Record<string, { name: string; price: string; description: string }>>({});
@@ -56,6 +61,7 @@ export default function MenuEditorPage() {
       router.push("/merchant/login");
       return;
     }
+    if (!ready || needPick) return;
     menuOutlets(base, tok, mid(), scopedNode())   // backend scopes to the entered node's subtree
       .then(async (all) => {
         // A single Storefront → restrict to its one outlet (hide the selector); a chain → its subtree.
@@ -79,7 +85,7 @@ export default function MenuEditorPage() {
         }
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router]);
+  }, [router, ready, needPick]);
 
   async function reload() {
     const tok = getStaffToken();
@@ -191,6 +197,14 @@ export default function MenuEditorPage() {
     const tok = getStaffToken();
     if (!tok) return;
     run(() => deleteModifier(base, tok, modifierId, mid()));
+  }
+
+  if (needPick) {
+    return (
+      <MerchantSidebar active="menu">
+        <NodeDirectory feature="Menu Editor" nodes={nodes} currentNodeId={scope!.currentNodeId} onEnter={enter} />
+      </MerchantSidebar>
+    );
   }
 
   return (

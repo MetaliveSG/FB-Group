@@ -6,6 +6,8 @@ import { getMerchantOrders, getApiBase } from "@/lib/api";
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import { formatSGD } from "@/lib/format";
 import MerchantSidebar from "@/components/MerchantSidebar";
+import NodeDirectory from "@/components/NodeDirectory";
+import { useScope } from "@/lib/useScope";
 import type { MerchantOrder } from "@fbgroup/api-client";
 
 const STATUSES = ["", "pending", "accepted", "preparing", "ready", "completed", "cancelled"];
@@ -24,6 +26,10 @@ export default function MerchantOrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  // Tree-scoped guard: orders are tenant-wide → an operator above a tenant boundary picks a merchant first.
+  const { scope, isOperator, nodes, ready, enter } = useScope();
+  const needPick = ready && isOperator && !!scope && scope.tenantId === null;
+
   const load = useCallback(async (s: string) => {
     const tok = getStaffToken();
     if (!tok) { router.push("/merchant/login"); return; }
@@ -36,7 +42,15 @@ export default function MerchantOrdersPage() {
     }
   }, [base, router]);
 
-  useEffect(() => { load(status); }, [load, status]);
+  useEffect(() => { if (ready && !needPick) load(status); }, [load, status, ready, needPick]);
+
+  if (needPick) {
+    return (
+      <MerchantSidebar active="orders">
+        <NodeDirectory feature="Orders" nodes={nodes} currentNodeId={scope!.currentNodeId} onEnter={enter} />
+      </MerchantSidebar>
+    );
+  }
 
   return (
     <MerchantSidebar active="orders">

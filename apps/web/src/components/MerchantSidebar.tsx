@@ -80,7 +80,12 @@ export default function MerchantSidebar({
   const [pipelineEnabled, setPipelineEnabled] = useState(true);
 
   useEffect(() => {
-    setOperator(getOperatorMerchant());
+    const sync = () => setOperator(getOperatorMerchant());
+    sync();
+    // A NodeDirectory pick (useScope.enter) fires this so the banner + "← Platform Console" appear
+    // immediately, without a full reload.
+    window.addEventListener("fbgroup:operator-changed", sync);
+    return () => window.removeEventListener("fbgroup:operator-changed", sync);
   }, []);
 
   // Fetch the caller's permissions + feature flags to render the nav (the server still

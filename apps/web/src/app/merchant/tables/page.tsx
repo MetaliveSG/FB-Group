@@ -6,6 +6,8 @@ import { QRCodeSVG } from "qrcode.react";
 import { orgTables, createTable, deleteTable, menuOutlets, getApiBase } from "@/lib/api";
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import MerchantSidebar from "@/components/MerchantSidebar";
+import NodeDirectory from "@/components/NodeDirectory";
+import { useScope } from "@/lib/useScope";
 import { Icons } from "@/components/ui";
 import type { OrgTable, MenuAdminOutlet } from "@fbgroup/api-client";
 
@@ -34,6 +36,9 @@ export default function TablesQrPage() {
   const tableLabel = `T${String(num).padStart(2, "0")}`;
   const [printTarget, setPrintTarget] = useState<string | null>(null); // "all" | tableId | null
 
+  const { scope, isOperator, nodes, ready, enter } = useScope();
+  const needPick = ready && isOperator && !!scope && scope.tenantId === null;
+
   // The public customer-scan origin (where /t/{token} is served). Browser origin in this PoC.
   const [origin, setOrigin] = useState("");
   // Mount gate: everything here is client-only (localStorage drill-in context + window.origin + QR
@@ -50,6 +55,7 @@ export default function TablesQrPage() {
   useEffect(() => {
     const tok = getStaffToken();
     if (!tok) { router.push("/merchant/login"); return; }
+    if (!ready || needPick) return;
     menuOutlets(base, tok, mid(), ctxNode())   // backend scopes to the entered node's subtree
       .then((all) => {
         setOutlets(all);
@@ -63,7 +69,7 @@ export default function TablesQrPage() {
         setError(msg || "Failed to load outlets");
         setLoading(false);
       });
-  }, [base, router]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [base, router, ready, needPick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const load = useCallback(async () => {
     const tok = getStaffToken();
@@ -128,6 +134,14 @@ export default function TablesQrPage() {
   }
 
   const printList = printTarget === "all" ? tables : tables.filter((t) => t.id === printTarget);
+
+  if (needPick) {
+    return (
+      <MerchantSidebar active="tables">
+        <NodeDirectory feature="Tables & QR" nodes={nodes} currentNodeId={scope!.currentNodeId} onEnter={enter} />
+      </MerchantSidebar>
+    );
+  }
 
   // Until mounted, render the same minimal tree the server did (no client-only data) → no mismatch.
   if (!mounted) {
