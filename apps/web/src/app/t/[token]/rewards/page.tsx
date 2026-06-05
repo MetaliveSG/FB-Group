@@ -27,6 +27,7 @@ import {
 } from "@/components/ui";
 import CustomerTabBar from "@/components/CustomerTabBar";
 import GamesMenu from "@/components/GamesMenu";
+import { QRCodeSVG } from "qrcode.react";
 import type {
   QrResolution,
   LoyaltySummary,
@@ -72,6 +73,7 @@ export default function RewardsPage() {
   const [loggedOut, setLoggedOut] = useState(false);
   const [redeemingId, setRedeemingId] = useState<string | null>(null);
   const [lastVoucher, setLastVoucher] = useState<RedeemResponse | null>(null);
+  const [qrVoucher, setQrVoucher] = useState<MyVoucher | null>(null);   // showing this voucher's QR to the cashier
 
   const loadAll = useCallback(
     async (tok: string, mid: string) => {
@@ -262,20 +264,28 @@ export default function RewardsPage() {
           </Card>
         )}
 
-        {/* My Vouchers */}
+        {/* My Vouchers — tap an unused one to show its QR to the cashier */}
         {vouchers.length > 0 && (
           <>
             <SectionTitle>My Vouchers</SectionTitle>
             <Card flush>
-              {vouchers.map((v) => (
-                <ListItem
-                  key={v.voucher_code}
-                  icon={Icons.Ticket}
-                  title={v.reward_name}
-                  meta={<><code>{v.voucher_code}</code> · {relativeTime(v.created_at)}</>}
-                  right={<Badge tone={v.status === "active" ? "success" : "default"}>{v.status}</Badge>}
-                />
-              ))}
+              {[...vouchers]
+                .sort((a, b) => (a.status === "issued" ? 0 : 1) - (b.status === "issued" ? 0 : 1))
+                .map((v) => {
+                  const usable = v.status === "issued";
+                  const tone = usable ? "success" : v.status === "redeemed" ? "default" : "danger";
+                  const label = usable ? "Tap to use" : v.status === "redeemed" ? "Used" : v.status;
+                  return (
+                    <ListItem
+                      key={v.voucher_code}
+                      icon={Icons.Ticket}
+                      title={v.value ? `${v.reward_name} · $${v.value.toFixed(2)} off` : v.reward_name}
+                      meta={<><code>{v.voucher_code}</code> · {relativeTime(v.created_at)}</>}
+                      onClick={usable ? () => setQrVoucher(v) : undefined}
+                      right={<Badge tone={tone}>{label}</Badge>}
+                    />
+                  );
+                })}
             </Card>
           </>
         )}
@@ -302,6 +312,31 @@ export default function RewardsPage() {
           </>
         )}
       </main>
+
+      {/* Voucher QR — show to the cashier to scan & redeem */}
+      {qrVoucher && (
+        <div
+          onClick={() => setQrVoucher(null)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex",
+                   alignItems: "center", justifyContent: "center", padding: "var(--space-4)", zIndex: 50 }}
+        >
+          <div onClick={(e) => e.stopPropagation()}
+               style={{ background: "#fff", borderRadius: "var(--radius-lg)", padding: "var(--space-5)",
+                        width: "100%", maxWidth: 320, textAlign: "center" }}>
+            <div style={{ fontWeight: 800, fontSize: "var(--text-lg)", marginBottom: 4 }}>{qrVoucher.reward_name}</div>
+            {qrVoucher.value ? (
+              <div style={{ color: "var(--color-primary)", fontWeight: 800, marginBottom: "var(--space-3)" }}>${qrVoucher.value.toFixed(2)} off</div>
+            ) : <div style={{ marginBottom: "var(--space-3)" }} />}
+            <div style={{ display: "flex", justifyContent: "center", padding: "var(--space-3)", background: "#fff" }}>
+              <QRCodeSVG value={qrVoucher.voucher_code} size={200} />
+            </div>
+            <div style={{ marginTop: "var(--space-3)", fontFamily: "monospace", fontSize: "var(--text-lg)", letterSpacing: 1 }}>{qrVoucher.voucher_code}</div>
+            <div style={{ color: "var(--color-text-muted)", fontSize: "var(--text-sm)", marginTop: "var(--space-2)" }}>Show this to the cashier to redeem.</div>
+            <div style={{ height: "var(--space-3)" }} />
+            <Button block variant="ghost" onClick={() => setQrVoucher(null)}>Close</Button>
+          </div>
+        </div>
+      )}
 
       {tabBar}
     </Shell>

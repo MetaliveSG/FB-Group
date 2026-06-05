@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Fragment } from "react";
 import { useRouter } from "next/navigation";
-import { getMerchantOrders, getApiBase } from "@/lib/api";
+import { getMerchantOrders, redeemVoucher, getApiBase } from "@/lib/api";
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import { formatSGD } from "@/lib/format";
 import MerchantSidebar from "@/components/MerchantSidebar";
@@ -25,6 +25,9 @@ export default function MerchantOrdersPage() {
   const [status, setStatus] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [vCode, setVCode] = useState("");
+  const [vBusy, setVBusy] = useState(false);
+  const [vMsg, setVMsg] = useState<{ id: string; text: string; ok: boolean } | null>(null);
 
   // Tree-scoped guard: orders are tenant-wide → an operator above a tenant boundary picks a merchant first.
   const { scope, isOperator, nodes, ready, enter } = useScope();
@@ -43,6 +46,25 @@ export default function MerchantOrdersPage() {
   }, [base, router]);
 
   useEffect(() => { if (ready && !needPick) load(status); }, [load, status, ready, needPick]);
+
+  async function applyVoucher(orderId: string) {
+    const code = vCode.trim();
+    if (!code) return;
+    const tok = getStaffToken();
+    if (!tok) { router.push("/merchant/login"); return; }
+    setVBusy(true); setVMsg(null);
+    try {
+      const r = await redeemVoucher(base, tok, code, { order_id: orderId });
+      setVMsg({ id: orderId, ok: true,
+        text: `Applied $${(r.discount_amount ?? 0).toFixed(2)} — new total $${(r.order_total ?? 0).toFixed(2)}` });
+      setVCode("");
+      await load(status);
+    } catch (err: unknown) {
+      setVMsg({ id: orderId, ok: false, text: err instanceof Error ? err.message : "Voucher could not be applied" });
+    } finally {
+      setVBusy(false);
+    }
+  }
 
   if (needPick) {
     return (
@@ -121,6 +143,24 @@ export default function MerchantOrdersPage() {
                                 <span>Total</span><span>{formatSGD(o.total)}</span>
                               </div>
                             </div>
+                            {/* Cashier: scan/enter a voucher to apply it to this order */}
+                            {o.status !== "completed" && o.status !== "cancelled" && (
+                              <div style={{ borderTop: "1px dashed var(--color-border)", marginTop: 10, paddingTop: 10, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                                <input
+                                  value={vCode}
+                                  onChange={(e) => setVCode(e.target.value.toUpperCase())}
+                                  placeholder="Scan or enter voucher code"
+                                  style={{ flex: 1, minWidth: 180, fontFamily: "monospace" }}
+                                  onKeyDown={(e) => { if (e.key === "Enter") applyVoucher(o.id); }}
+                                />
+                                <button className="btn btn-primary btn-sm" disabled={vBusy} onClick={() => applyVoucher(o.id)}>
+                                  {vBusy ? "Applying…" : "Apply voucher"}
+                                </button>
+                                {vMsg && vMsg.id === o.id && (
+                                  <span style={{ fontSize: 13, color: vMsg.ok ? "#166534" : "#991b1b" }}>{vMsg.text}</span>
+                                )}
+                              </div>
+                            )}
                           </td>
                         </tr>
                       )}

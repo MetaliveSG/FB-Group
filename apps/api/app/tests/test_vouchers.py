@@ -140,6 +140,11 @@ def test_scope_subtree_redemption(client, db):
         assert _redeem(client, otok, v.voucher_code, order_id=o["id"]).status_code == 200, scope
 
 
+def test_campaign_id_column_fits_welcome_synthetic():
+    """Regression (Postgres VARCHAR vs SQLite): campaign_id must hold "welcome:{32-hex merchant id}"."""
+    assert RewardRedemption.__table__.c.campaign_id.type.length >= len("welcome:") + 32
+
+
 def test_preview_does_not_consume(client, db):
     w = make_world(db)
     cust = register_customer(client, email="v6@b.sg", phone="+6590000406")
