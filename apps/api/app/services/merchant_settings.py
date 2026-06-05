@@ -26,6 +26,8 @@ DEFAULTS = {
     # Welcome voucher pack granted on signup (issued by vouchers.issue_welcome_pack). Default off.
     "welcome_voucher": {"enabled": False, "count": 1, "value": 0, "per_period": None,
                         "valid_days": None, "name": "Welcome voucher"},
+    # POS receipt company header (configured at the console).
+    "receipt": {"company_name": "", "uen": "", "address": "", "phone": "", "footer": "Thank you!"},
 }
 
 

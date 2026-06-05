@@ -1,14 +1,19 @@
-"""User management — invite users, assign scoped roles, revoke (Module 10)."""
+"""User management — invite users, assign scoped roles, revoke (Module 10) + POS staff PINs."""
 from __future__ import annotations
 
-from sqlalchemy import select
+import re
+
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError, ConflictError, ForbiddenError, NotFoundError
-from app.core.security import hash_password
+from app.core.security import hash_password, verify_password
 from app.models.enums import RoleName, ScopeType
 from app.models.identity import Role, User, UserRoleAssignment
+from app.models.org import OrgNode
 from app.models.tenancy import Brand, Outlet
+
+_PIN_RE = re.compile(r"^\d{4,6}$")
 
 # Roles a merchant admin (owner) is allowed to grant. Never super_admin / platform.
 GRANTABLE_ROLES = {
@@ -102,7 +107,7 @@ def revoke_assignment(db: Session, *, merchant_id: str, assignment_id: str) -> N
 def _account_row(db: Session, a: UserRoleAssignment, u: User) -> dict:
     role = db.get(Role, a.role_id)
     return {"assignment_id": a.id, "user_id": u.id, "email": u.email, "full_name": u.full_name,
-            "is_active": u.is_active, "role": role.name if role else "?"}
+            "is_active": u.is_active, "role": role.name if role else "?", "pin_set": bool(u.pin_hash)}
 
 
 def list_node_accounts(db: Session, *, node_id: str) -> list[dict]:
@@ -116,7 +121,7 @@ def list_node_accounts(db: Session, *, node_id: str) -> list[dict]:
 
 
 def create_node_account(db: Session, *, node_id: str, email: str, password: str,
-                        full_name: str, role: str) -> dict:
+                        full_name: str, role: str, pin: str | None = None) -> dict:
     if role not in NODE_GRANTABLE_ROLES:
         raise ForbiddenError("Role cannot be granted", code="role_not_allowed")
     if db.scalar(select(User).where(User.email == email)):
@@ -131,7 +136,58 @@ def create_node_account(db: Session, *, node_id: str, email: str, password: str,
                            scope_type=ScopeType.NODE.value, scope_id=node_id)
     db.add(a)
     db.flush()
+    if pin:
+        set_pin(db, user_id=user.id, pin=pin, merchant_id=_node_merchant(db, node_id))
     return _account_row(db, a, user)
+
+
+# --- POS staff PIN -------------------------------------------------------
+def _node_merchant(db: Session, node_id: str) -> str:
+    node = db.get(OrgNode, node_id)
+    if node is None:
+        raise NotFoundError("Node not found", code="node_not_found")
+    return node.settlement_account_id
+
+
+def _merchant_staff(db: Session, merchant_id: str) -> list[User]:
+    """Active back-office users scoped to this merchant — via a NODE under its settlement boundary
+    or a direct MERCHANT assignment. The candidate set for PIN resolution + uniqueness."""
+    node_ids = select(OrgNode.id).where(OrgNode.settlement_account_id == merchant_id)
+    return list(db.scalars(
+        select(User).join(UserRoleAssignment, UserRoleAssignment.user_id == User.id).where(
+            User.is_active.is_(True),
+            or_(
+                and_(UserRoleAssignment.scope_type == ScopeType.NODE.value,
+                     UserRoleAssignment.scope_id.in_(node_ids)),
+                and_(UserRoleAssignment.scope_type == ScopeType.MERCHANT.value,
+                     UserRoleAssignment.scope_id == merchant_id),
+            ),
+        ).distinct()
+    ).all())
+
+
+def set_pin(db: Session, *, user_id: str, pin: str, merchant_id: str) -> None:
+    """Set/replace a staff PIN (4–6 digits), unique within the merchant so PIN-login resolves one person."""
+    if not _PIN_RE.match(pin or ""):
+        raise AppError("PIN must be 4–6 digits", code="bad_pin", status_code=422)
+    user = db.get(User, user_id)
+    if user is None:
+        raise NotFoundError("User not found", code="user_not_found")
+    for other in _merchant_staff(db, merchant_id):
+        if other.id != user_id and other.pin_hash and verify_password(pin, other.pin_hash):
+            raise ConflictError("Another staff member already uses this PIN", code="pin_taken")
+    user.pin_hash = hash_password(pin)
+    db.flush()
+
+
+def resolve_pin(db: Session, *, merchant_id: str, pin: str) -> User | None:
+    """The active staff member in this merchant whose PIN matches, else None."""
+    if not _PIN_RE.match(pin or ""):
+        return None
+    for u in _merchant_staff(db, merchant_id):
+        if u.pin_hash and verify_password(pin, u.pin_hash):
+            return u
+    return None
 
 
 def revoke_node_account(db: Session, *, node_id: str, assignment_id: str) -> None:

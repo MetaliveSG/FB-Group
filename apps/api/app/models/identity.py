@@ -42,6 +42,9 @@ class User(PKMixin, TimestampMixin, Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     full_name: Mapped[str] = mapped_column(String(160), default="")
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Optional POS quick-login PIN (bcrypt hash). Set/reset at the console; unique per merchant so
+    # PIN-login resolves one staff member. See app/services/users_admin.py + /auth/staff/pin-login.
+    pin_hash: Mapped[str | None] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     role_assignments: Mapped[list["UserRoleAssignment"]] = relationship(

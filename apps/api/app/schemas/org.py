@@ -71,6 +71,15 @@ class WelcomeVoucherCfg(BaseModel):
     name: str = Field(default="Welcome voucher", max_length=120)
 
 
+class ReceiptCfg(BaseModel):
+    """Company header printed on POS receipts (configured at the console)."""
+    company_name: str = Field(default="", max_length=120)
+    uen: str = Field(default="", max_length=40)         # SG business reg no.
+    address: str = Field(default="", max_length=200)
+    phone: str = Field(default="", max_length=40)
+    footer: str = Field(default="Thank you!", max_length=200)
+
+
 class SettingsOut(BaseModel):
     pipeline_enabled: bool
     wheel_spin_cost: int
@@ -82,6 +91,7 @@ class SettingsOut(BaseModel):
     # The tenant's canonical reporting timezone (the "books" — payouts/GST/daily close use it).
     timezone: str = "Asia/Singapore"
     welcome_voucher: WelcomeVoucherCfg = Field(default_factory=WelcomeVoucherCfg)
+    receipt: ReceiptCfg = Field(default_factory=ReceiptCfg)
 
 
 class NavFlagsOut(BaseModel):
@@ -118,6 +128,7 @@ class SettingsUpdateIn(BaseModel):
     pos_enabled: bool | None = None
     timezone: str | None = None   # IANA reporting timezone for this tenant; validated → 422 on bad
     welcome_voucher: WelcomeVoucherCfg | None = None
+    receipt: ReceiptCfg | None = None
 
     @field_validator("timezone")
     @classmethod
@@ -192,6 +203,7 @@ class NodeAccountOut(BaseModel):
     full_name: str
     is_active: bool
     role: str                       # manager | cashier | staff | finance
+    pin_set: bool = False           # has a POS quick-login PIN
 
 
 class NodeAccountCreateIn(BaseModel):
@@ -199,8 +211,13 @@ class NodeAccountCreateIn(BaseModel):
     password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(default="", max_length=160)
     role: str = Field(pattern="^(manager|cashier|staff|finance)$")
+    pin: str | None = Field(default=None, pattern=r"^\d{4,6}$")   # optional POS quick-login PIN
 
     _pw = field_validator("password")(validate_password_strength)
+
+
+class PinSetIn(BaseModel):
+    pin: str = Field(pattern=r"^\d{4,6}$")
 
 
 # --- Leases (venue↔stall tenancy edge — foodcourt GTO vs coffeeshop FIXED) ----

@@ -27,6 +27,7 @@ from app.schemas.org import (
     OrgNodeUpdateIn,
     OrgTreeOut,
     OutletCreateIn,
+    PinSetIn,
     OutletOut,
     OutletUpdateIn,
     SettingsOut,
@@ -209,12 +210,24 @@ def create_node_account(node_id: str, body: NodeAccountCreateIn,
                         scope=Depends(get_scope), db: Session = Depends(get_db)):
     org_tree.get_managed_node(db, scope, node_id)
     acct = users_admin.create_node_account(db, node_id=node_id, email=body.email,
-                                           password=body.password, full_name=body.full_name, role=body.role)
+                                           password=body.password, full_name=body.full_name,
+                                           role=body.role, pin=body.pin)
     audit_record(db, action="org.node_account_create", actor_id=scope.user_id,
                  entity_type="org_node", entity_id=node_id,
                  meta={"email": body.email, "role": body.role})
     db.commit()
     return acct
+
+
+@router.post("/nodes/{node_id}/accounts/{user_id}/pin", status_code=204)
+def set_node_account_pin(node_id: str, user_id: str, body: PinSetIn,
+                         scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """Set/reset a staff member's POS PIN (manager of the node; unique within the merchant)."""
+    node = org_tree.get_managed_node(db, scope, node_id)
+    users_admin.set_pin(db, user_id=user_id, pin=body.pin, merchant_id=node.settlement_account_id)
+    audit_record(db, action="org.node_account_pin_set", actor_id=scope.user_id,
+                 entity_type="org_node", entity_id=node_id, meta={"user_id": user_id})
+    db.commit()
 
 
 @router.delete("/nodes/{node_id}/accounts/{assignment_id}", status_code=204)
