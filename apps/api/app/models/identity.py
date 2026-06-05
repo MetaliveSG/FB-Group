@@ -76,7 +76,9 @@ class Customer(PKMixin, TimestampMixin, Base):
     full_name: Mapped[str] = mapped_column(String(160), default="")
     birthday: Mapped[date | None] = mapped_column(Date)
     gender: Mapped[str | None] = mapped_column(String(16))  # male|female|other|null (optional)
-    marketing_consent: Mapped[bool] = mapped_column(Boolean, default=True)
+    # PDPA: marketing is EXPRESS opt-in → default False. The audit trail lives in `customer_consents`;
+    # this is the current quick flag campaigns filter on. See app/services/consent.py.
+    marketing_consent: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     identities: Mapped[list["CustomerAuthIdentity"]] = relationship(
@@ -99,3 +101,20 @@ class CustomerAuthIdentity(PKMixin, TimestampMixin, Base):
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
 
     customer: Mapped["Customer"] = relationship(back_populates="identities")
+
+
+class CustomerConsent(PKMixin, TimestampMixin, Base):
+    """Append-only PDPA consent audit — ONE row per consent action (grant/withdraw), captured AT the
+    point we collect PII. Keyed to the data-controller `merchant_id` (the loyalty domain resolved from
+    the QR context; PDPA = consent is given to an organisation) + the `purpose`. This is the legal
+    record; `Customer.marketing_consent` is the denormalised current flag. See app/services/consent.py."""
+
+    __tablename__ = "customer_consents"
+
+    customer_id: Mapped[str] = mapped_column(ForeignKey("customers.id", ondelete="CASCADE"), index=True)
+    merchant_id: Mapped[str | None] = mapped_column(String(32), index=True)  # loyalty domain / tenant; None = platform
+    purpose: Mapped[str] = mapped_column(String(16), nullable=False)  # "terms" | "marketing"
+    granted: Mapped[bool] = mapped_column(Boolean, default=False)
+    version: Mapped[str] = mapped_column(String(24), default="")      # consent/notice version captured
+    source: Mapped[str] = mapped_column(String(24), default="")       # qr_signup | register | sso | profile
+    ip: Mapped[str | None] = mapped_column(String(64))

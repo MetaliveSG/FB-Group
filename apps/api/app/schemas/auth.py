@@ -24,7 +24,16 @@ class _PhoneMixin:
         return self
 
 
-class CustomerRegisterRequest(BaseModel, _PhoneMixin):
+class _ConsentMixin(BaseModel):
+    """PDPA consent captured at signup. `accepted_terms` (notice acknowledgement) is required to
+    create an account; `marketing_opt_in` is express opt-in (default off). `consent_merchant_id` =
+    the data-controller (loyalty domain) resolved from the QR context, recorded in the audit trail."""
+    accepted_terms: bool = False
+    marketing_opt_in: bool = False
+    consent_merchant_id: str | None = None
+
+
+class CustomerRegisterRequest(_ConsentMixin, _PhoneMixin):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(default="", max_length=160)
@@ -43,14 +52,14 @@ class OtpRequest(BaseModel, _PhoneMixin):
     region: str = Field(default="SG", pattern=_REGION_RE)
 
 
-class OtpVerifyRequest(BaseModel, _PhoneMixin):
+class OtpVerifyRequest(_ConsentMixin, _PhoneMixin):
     phone: str
     region: str = Field(default="SG", pattern=_REGION_RE)
     code: str = Field(min_length=4, max_length=8)
     full_name: str = Field(default="", max_length=160)
 
 
-class SsoLoginRequest(BaseModel):
+class SsoLoginRequest(_ConsentMixin):
     provider: Literal["google", "apple"]
     sub: str = Field(min_length=1, max_length=255)
     email: EmailStr | None = None
@@ -72,6 +81,13 @@ class CustomerOut(ORMModel):
     phone: str | None = None
     full_name: str
     birthday: date | None = None
+    marketing_consent: bool = False
+
+
+class ConsentUpdateRequest(BaseModel):
+    """Grant or withdraw marketing consent (the PDPA withdrawal path), from the customer profile."""
+    marketing_opt_in: bool
+    merchant_id: str | None = None
 
 
 class UserOut(ORMModel):

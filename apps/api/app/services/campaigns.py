@@ -67,11 +67,19 @@ def _target_segment(campaign: Campaign) -> str | None:
 def build_audience(db: Session, *, merchant_id: str, scope: Scope, campaign: Campaign) -> int:
     segment = _target_segment(campaign)
     items = crm_service.list_customers(db, merchant_id=merchant_id, scope=scope, segment=segment)
+    cand_ids = [it.customer.id for it in items]
+    # PDPA / Spam Control: a marketing campaign only reaches customers with marketing consent on file.
+    consented = set(db.scalars(
+        select(Customer.id).where(Customer.id.in_(cand_ids), Customer.marketing_consent.is_(True))
+    ).all()) if cand_ids else set()
     db.query(CampaignAudience).filter(CampaignAudience.campaign_id == campaign.id).delete()
-    for it in items:
-        db.add(CampaignAudience(campaign_id=campaign.id, customer_id=it.customer.id))
+    added = 0
+    for cid in cand_ids:
+        if cid in consented:
+            db.add(CampaignAudience(campaign_id=campaign.id, customer_id=cid))
+            added += 1
     db.flush()
-    return len(items)
+    return added
 
 
 def _render(template: str, customer: Customer) -> str:

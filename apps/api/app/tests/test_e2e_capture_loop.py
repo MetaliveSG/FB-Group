@@ -18,7 +18,8 @@ def test_scan_qr_to_crm_capture(client, db):
     phone = "+6588881234"
     code = client.post("/api/v1/auth/customer/otp/request", json={"phone": phone}).json()["debug_code"]
     auth = client.post("/api/v1/auth/customer/otp/verify",
-                       json={"phone": phone, "code": code, "full_name": "Golden Guest"}).json()
+                       json={"phone": phone, "code": code, "full_name": "Golden Guest",
+                             "accepted_terms": True}).json()
     ctok = auth["access_token"]
     customer_id = auth["customer"]["id"]
 

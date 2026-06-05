@@ -42,7 +42,7 @@ def test_otp_login_and_invalid_otp_blocked(client):
     bad = client.post("/api/v1/auth/customer/otp/verify", json={"phone": "+6580000001", "code": "000000"})
     assert bad.status_code == 401 and bad.json()["error"]["code"] == "invalid_otp"
 
-    good = client.post("/api/v1/auth/customer/otp/verify", json={"phone": "+6580000001", "code": code})
+    good = client.post("/api/v1/auth/customer/otp/verify", json={"phone": "+6580000001", "code": code, "accepted_terms": True})
     assert good.status_code == 200 and good.json()["actor"] == "customer"
 
 

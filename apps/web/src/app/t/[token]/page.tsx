@@ -157,7 +157,7 @@ function MenuItemCard({
 
 // ─── OTP login ────────────────────────────────────────────────
 
-function OtpPanel({ onSuccess }: { onSuccess: (token: string, customer: Record<string, unknown>) => void }) {
+function OtpPanel({ onSuccess, merchantId }: { onSuccess: (token: string, customer: Record<string, unknown>) => void; merchantId?: string }) {
   const base = getApiBase();
   const [phone, setPhone] = useState("");
   const [region, setRegion] = useState(DEFAULT_REGION);
@@ -165,6 +165,8 @@ function OtpPanel({ onSuccess }: { onSuccess: (token: string, customer: Record<s
   const [fullName, setFullName] = useState("");
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [debugCode, setDebugCode] = useState<string | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);   // PDPA: required to create an account
+  const [marketing, setMarketing] = useState(false);            // express opt-in (default off)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -191,7 +193,11 @@ function OtpPanel({ onSuccess }: { onSuccess: (token: string, customer: Record<s
     setError(null);
     setLoading(true);
     try {
-      const res = await otpVerify(base, phone, code, fullName || undefined, region);
+      const res = await otpVerify(base, phone, code, fullName || undefined, region, {
+        accepted_terms: acceptedTerms,
+        marketing_opt_in: marketing,
+        consent_merchant_id: merchantId,
+      });
       setCustomerToken(res.access_token);
       setCustomerRefreshToken(res.refresh_token);
       if (res.customer) setCustomerData(res.customer as Record<string, unknown>);
@@ -235,7 +241,16 @@ function OtpPanel({ onSuccess }: { onSuccess: (token: string, customer: Record<s
               Dev mode — OTP auto-filled: <strong>{debugCode}</strong>
             </div>
           )}
-          <Button block variant="primary" size="lg" type="submit" loading={loading}>Verify &amp; Login</Button>
+          {/* PDPA consent at capture */}
+          <label style={{ display: "flex", gap: "var(--space-2)", alignItems: "flex-start", fontSize: "var(--text-sm)", marginBottom: "var(--space-2)", cursor: "pointer" }}>
+            <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0 }} />
+            <span>I agree to the <a href="/privacy" target="_blank" rel="noopener noreferrer">Terms &amp; Privacy Policy</a>, and to my details being used to process my order and loyalty rewards.</span>
+          </label>
+          <label style={{ display: "flex", gap: "var(--space-2)", alignItems: "flex-start", fontSize: "var(--text-sm)", marginBottom: "var(--space-3)", cursor: "pointer", color: "var(--color-text-muted)" }}>
+            <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0 }} />
+            <span>Send me offers, rewards &amp; updates (optional — you can opt out anytime).</span>
+          </label>
+          <Button block variant="primary" size="lg" type="submit" loading={loading} disabled={!acceptedTerms}>Verify &amp; Login</Button>
           <div style={{ height: "var(--space-2)" }} />
           <Button block variant="ghost" type="button" onClick={() => setStep("phone")}>Back</Button>
         </form>
@@ -464,6 +479,7 @@ export default function TablePage() {
         />
         <main style={{ flex: 1, padding: "var(--space-4)" }}>
           <OtpPanel
+            merchantId={qrData?.merchant?.id}
             onSuccess={(tok, cust) => {
               setCustomerTokenState(tok);
               if (cust.full_name) setCustomerName(cust.full_name as string);

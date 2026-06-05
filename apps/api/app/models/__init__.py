@@ -20,6 +20,7 @@ from app.models.engagement import (  # noqa: F401
 from app.models.identity import (  # noqa: F401
     Customer,
     CustomerAuthIdentity,
+    CustomerConsent,
     Permission,
     Role,
     User,

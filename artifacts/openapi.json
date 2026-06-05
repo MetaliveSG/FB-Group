@@ -230,6 +230,66 @@
         }
       }
     },
+    "/api/v1/auth/customer/consent": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Update Consent",
+        "description": "Grant or WITHDRAW marketing consent (PDPA withdrawal right) \u2014 records an audit event.",
+        "operationId": "update_consent_api_v1_auth_customer_consent_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/staff/login": {
       "post": {
         "tags": [
@@ -9963,6 +10023,31 @@
         "type": "object",
         "title": "CoalitionUpdateIn"
       },
+      "ConsentUpdateRequest": {
+        "properties": {
+          "marketing_opt_in": {
+            "type": "boolean",
+            "title": "Marketing Opt In"
+          },
+          "merchant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "marketing_opt_in"
+        ],
+        "title": "ConsentUpdateRequest",
+        "description": "Grant or withdraw marketing consent (the PDPA withdrawal path), from the customer profile."
+      },
       "CustomerLoginRequest": {
         "properties": {
           "email": {
@@ -10127,6 +10212,11 @@
               }
             ],
             "title": "Birthday"
+          },
+          "marketing_consent": {
+            "type": "boolean",
+            "title": "Marketing Consent",
+            "default": false
           }
         },
         "type": "object",
@@ -10224,6 +10314,27 @@
       },
       "CustomerRegisterRequest": {
         "properties": {
+          "accepted_terms": {
+            "type": "boolean",
+            "title": "Accepted Terms",
+            "default": false
+          },
+          "marketing_opt_in": {
+            "type": "boolean",
+            "title": "Marketing Opt In",
+            "default": false
+          },
+          "consent_merchant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Merchant Id"
+          },
           "email": {
             "type": "string",
             "format": "email",
@@ -12650,6 +12761,27 @@
       },
       "OtpVerifyRequest": {
         "properties": {
+          "accepted_terms": {
+            "type": "boolean",
+            "title": "Accepted Terms",
+            "default": false
+          },
+          "marketing_opt_in": {
+            "type": "boolean",
+            "title": "Marketing Opt In",
+            "default": false
+          },
+          "consent_merchant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Merchant Id"
+          },
           "phone": {
             "type": "string",
             "title": "Phone"
@@ -13740,6 +13872,27 @@
       },
       "SsoLoginRequest": {
         "properties": {
+          "accepted_terms": {
+            "type": "boolean",
+            "title": "Accepted Terms",
+            "default": false
+          },
+          "marketing_opt_in": {
+            "type": "boolean",
+            "title": "Marketing Opt In",
+            "default": false
+          },
+          "consent_merchant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Merchant Id"
+          },
           "provider": {
             "type": "string",
             "enum": [
