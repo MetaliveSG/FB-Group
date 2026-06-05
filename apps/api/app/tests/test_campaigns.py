@@ -4,11 +4,24 @@ from app.tests.factories import make_world
 from app.tests.helpers import H, checkout, place_order, register_customer, staff_token
 
 
-def _captured(client, w, email, phone):
-    cust = register_customer(client, email=email, phone=phone)
+def _captured(client, w, email, phone, marketing_opt_in=True):
+    # Campaigns reach marketing-consented customers (PDPA), so the demo diners opt in by default.
+    cust = register_customer(client, email=email, phone=phone, marketing_opt_in=marketing_opt_in)
     order = place_order(client, cust["access_token"], w.qr_token, [{"menu_item_id": w.burger_id, "quantity": 1}])
     checkout(client, cust["access_token"], order["id"])
     return cust["customer"]["id"]
+
+
+def test_campaign_audience_excludes_non_consented(client, db):
+    """PDPA enforcement: a diner without marketing consent is not added to a campaign audience."""
+    w = make_world(db)
+    otok = staff_token(client, w.owner_email)
+    _captured(client, w, "yes@b.sg", "+6590000201", marketing_opt_in=True)
+    _captured(client, w, "no@b.sg", "+6590000202", marketing_opt_in=False)
+    cid = client.post("/api/v1/campaigns", json={"name": "Promo", "campaign_type": "whatsapp_promo"},
+                      headers=H(otok)).json()["id"]
+    aud = client.post(f"/api/v1/campaigns/{cid}/audience", headers=H(otok)).json()
+    assert aud["audience_size"] == 1   # only the consented diner
 
 
 def test_campaign_create_audience_send_metrics(client, db):

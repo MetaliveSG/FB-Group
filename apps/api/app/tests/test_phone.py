@@ -41,7 +41,7 @@ def test_otp_with_region_normalizes_consistently(client, db):
     body = {"phone": "0161234567", "region": "MY"}
     code = client.post("/api/v1/auth/customer/otp/request", json=body).json()["debug_code"]
     # verify must normalize the SAME way (same OTP store key) and store E.164.
-    r = client.post("/api/v1/auth/customer/otp/verify", json={**body, "code": code})
+    r = client.post("/api/v1/auth/customer/otp/verify", json={**body, "code": code, "accepted_terms": True})
     assert r.status_code == 200, r.text
     assert r.json()["customer"]["phone"] == "+60161234567"
 

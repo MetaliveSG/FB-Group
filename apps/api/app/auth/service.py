@@ -17,6 +17,7 @@ from app.core.security import (
 )
 from app.models.enums import AuthProvider
 from app.models.identity import Customer, CustomerAuthIdentity, User
+from app.services import consent
 
 
 # --- Token helpers ------------------------------------------------------
@@ -61,6 +62,10 @@ def register_customer_password(
     full_name: str = "",
     phone: str | None = None,
     birthday: date | None = None,
+    accepted_terms: bool = False,
+    marketing_opt_in: bool = False,
+    consent_merchant_id: str | None = None,
+    ip: str | None = None,
 ) -> Customer:
     if _get_identity(db, AuthProvider.PASSWORD.value, email):
         raise ConflictError("An account with this email already exists", code="email_taken")
@@ -72,6 +77,10 @@ def register_customer_password(
     customer = Customer(email=email, phone=phone, full_name=full_name, birthday=birthday)
     db.add(customer)
     db.flush()
+    # PDPA: capture consent AT the moment we create the PII record (raises if terms not accepted).
+    consent.capture_signup_consent(db, customer=customer, merchant_id=consent_merchant_id,
+                                   accepted_terms=accepted_terms, marketing_opt_in=marketing_opt_in,
+                                   source="register", ip=ip)
     db.add(
         CustomerAuthIdentity(
             customer_id=customer.id,
@@ -97,7 +106,9 @@ def request_otp(db: Session, *, phone: str) -> str:
     return otp_store.issue(phone)  # returns code (dev/mock)
 
 
-def verify_otp_login(db: Session, *, phone: str, code: str, full_name: str = "") -> Customer:
+def verify_otp_login(db: Session, *, phone: str, code: str, full_name: str = "",
+                     accepted_terms: bool = False, marketing_opt_in: bool = False,
+                     consent_merchant_id: str | None = None, ip: str | None = None) -> Customer:
     if not otp_store.verify(phone, code):
         raise AuthError("Invalid or expired OTP", code="invalid_otp")
     # Find existing customer by phone (account linking), else create.
@@ -106,6 +117,10 @@ def verify_otp_login(db: Session, *, phone: str, code: str, full_name: str = "")
         customer = Customer(phone=phone, full_name=full_name)
         db.add(customer)
         db.flush()
+        # PDPA: a NEW diner → capture consent at this first PII collection (raises if terms not accepted).
+        consent.capture_signup_consent(db, customer=customer, merchant_id=consent_merchant_id,
+                                       accepted_terms=accepted_terms, marketing_opt_in=marketing_opt_in,
+                                       source="qr_signup", ip=ip)
     if not _get_identity(db, AuthProvider.MOBILE_OTP.value, phone):
         db.add(
             CustomerAuthIdentity(
@@ -120,7 +135,9 @@ def verify_otp_login(db: Session, *, phone: str, code: str, full_name: str = "")
 
 
 # --- Customer: SSO (mock Google/Apple) ---------------------------------
-def sso_login(db: Session, *, provider: str, sub: str, email: str | None = None, full_name: str = "") -> Customer:
+def sso_login(db: Session, *, provider: str, sub: str, email: str | None = None, full_name: str = "",
+              accepted_terms: bool = False, marketing_opt_in: bool = False,
+              consent_merchant_id: str | None = None, ip: str | None = None) -> Customer:
     """Mock SSO: in production `sub`/`email` come from a verified provider token.
 
     Links to an existing customer by email if present (account linking).
@@ -136,6 +153,9 @@ def sso_login(db: Session, *, provider: str, sub: str, email: str | None = None,
         customer = Customer(email=email, full_name=full_name)
         db.add(customer)
         db.flush()
+        consent.capture_signup_consent(db, customer=customer, merchant_id=consent_merchant_id,
+                                       accepted_terms=accepted_terms, marketing_opt_in=marketing_opt_in,
+                                       source="sso", ip=ip)
     elif email and not customer.email:
         customer.email = email
     db.add(

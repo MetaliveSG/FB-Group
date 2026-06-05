@@ -94,6 +94,7 @@ export interface TokenResponse {
     phone: string | null;
     full_name: string | null;
     birthday: string | null;
+    marketing_consent?: boolean;
   };
   user?: {
     id: string;
@@ -1135,17 +1136,37 @@ export function otpRequest(baseUrl: string, phone: string, region: string = "SG"
   });
 }
 
+export interface ConsentInput {
+  accepted_terms?: boolean;     // notice acknowledgement — required to create a NEW account
+  marketing_opt_in?: boolean;   // express opt-in to promotional messages
+  consent_merchant_id?: string; // the data-controller (loyalty domain) from the QR context
+}
+
 export function otpVerify(
   baseUrl: string,
   phone: string,
   code: string,
   full_name?: string,
-  region: string = "SG"
+  region: string = "SG",
+  consent?: ConsentInput
 ): Promise<TokenResponse> {
   return request(baseUrl, "/auth/customer/otp/verify", {
     method: "POST",
-    body: JSON.stringify({ phone, code, full_name, region }),
+    body: JSON.stringify({ phone, code, full_name, region, ...consent }),
   });
+}
+
+/** Grant or withdraw marketing consent (PDPA withdrawal right). Returns the updated customer. */
+export function updateCustomerConsent(
+  baseUrl: string,
+  token: string,
+  marketing_opt_in: boolean,
+  merchant_id?: string
+): Promise<TokenResponse["customer"]> {
+  return request(baseUrl, "/auth/customer/consent", {
+    method: "POST",
+    body: JSON.stringify({ marketing_opt_in, merchant_id }),
+  }, token);
 }
 
 export function customerRegister(

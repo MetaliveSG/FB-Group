@@ -8,8 +8,11 @@ def H(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
 
 
-def register_customer(client, email="diner@b.sg", phone=None, full_name="Diner", birthday=None):
-    payload = {"email": email, "password": "secret123", "full_name": full_name}
+def register_customer(client, email="diner@b.sg", phone=None, full_name="Diner", birthday=None,
+                      marketing_opt_in=False):
+    # accepted_terms=True: PDPA consent is required to create an account (see services/consent.py).
+    payload = {"email": email, "password": "secret123", "full_name": full_name,
+               "accepted_terms": True, "marketing_opt_in": marketing_opt_in}
     if phone:
         payload["phone"] = phone
     if birthday:

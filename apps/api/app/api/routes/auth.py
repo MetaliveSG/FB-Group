@@ -9,12 +9,14 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.auth import service as auth_service
+from app.auth.deps import get_current_customer
 from app.core.config import settings
 from app.core.errors import AuthError, RateLimitedError
 from app.core.rate_limit import rate_limiter
 from app.core.security import decode_token
 from app.db.session import get_db
 from app.schemas.auth import (
+    ConsentUpdateRequest,
     CustomerLoginRequest,
     CustomerOut,
     CustomerRegisterRequest,
@@ -27,6 +29,7 @@ from app.schemas.auth import (
     TokenResponse,
     UserOut,
 )
+from app.services import consent as consent_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -47,10 +50,12 @@ def _customer_token(customer) -> TokenResponse:
 
 # --- Customer: email + password ----------------------------------------
 @router.post("/customer/register", response_model=TokenResponse, status_code=201)
-def customer_register(body: CustomerRegisterRequest, db: Session = Depends(get_db)):
+def customer_register(body: CustomerRegisterRequest, request: Request, db: Session = Depends(get_db)):
     customer = auth_service.register_customer_password(
         db, email=body.email, password=body.password, full_name=body.full_name,
         phone=body.phone, birthday=body.birthday,
+        accepted_terms=body.accepted_terms, marketing_opt_in=body.marketing_opt_in,
+        consent_merchant_id=body.consent_merchant_id, ip=_client_ip(request),
     )
     db.commit()
     return _customer_token(customer)
@@ -75,20 +80,38 @@ def otp_request(body: OtpRequest, request: Request, db: Session = Depends(get_db
 
 
 @router.post("/customer/otp/verify", response_model=TokenResponse)
-def otp_verify(body: OtpVerifyRequest, db: Session = Depends(get_db)):
-    customer = auth_service.verify_otp_login(db, phone=body.phone, code=body.code, full_name=body.full_name)
+def otp_verify(body: OtpVerifyRequest, request: Request, db: Session = Depends(get_db)):
+    customer = auth_service.verify_otp_login(
+        db, phone=body.phone, code=body.code, full_name=body.full_name,
+        accepted_terms=body.accepted_terms, marketing_opt_in=body.marketing_opt_in,
+        consent_merchant_id=body.consent_merchant_id, ip=_client_ip(request),
+    )
     db.commit()
     return _customer_token(customer)
 
 
 # --- Customer: SSO mock ------------------------------------------------
 @router.post("/customer/sso", response_model=TokenResponse)
-def customer_sso(body: SsoLoginRequest, db: Session = Depends(get_db)):
+def customer_sso(body: SsoLoginRequest, request: Request, db: Session = Depends(get_db)):
     customer = auth_service.sso_login(
-        db, provider=body.provider, sub=body.sub, email=body.email, full_name=body.full_name
+        db, provider=body.provider, sub=body.sub, email=body.email, full_name=body.full_name,
+        accepted_terms=body.accepted_terms, marketing_opt_in=body.marketing_opt_in,
+        consent_merchant_id=body.consent_merchant_id, ip=_client_ip(request),
     )
     db.commit()
     return _customer_token(customer)
+
+
+# --- Customer: PDPA consent withdrawal / update (authenticated) --------
+@router.post("/customer/consent", response_model=CustomerOut)
+def update_consent(body: ConsentUpdateRequest, request: Request,
+                   customer=Depends(get_current_customer), db: Session = Depends(get_db)):
+    """Grant or WITHDRAW marketing consent (PDPA withdrawal right) — records an audit event."""
+    consent_service.set_marketing(db, customer=customer, merchant_id=body.merchant_id,
+                                  granted=body.marketing_opt_in, source="profile", ip=_client_ip(request))
+    db.commit()
+    db.refresh(customer)
+    return CustomerOut.model_validate(customer)
 
 
 # --- Staff login -------------------------------------------------------
