@@ -61,6 +61,19 @@ child · node logins · enter). Endpoints: `GET /org/tree`, `POST/PATCH /org/nod
   Tables & QR sub-scope; **CRM/Orders/Settings stay tenant-wide** (loyalty ring = the tenant). Full nav
   shows in every mode; **Brands & Outlets are no longer a managed UI** (typed FK anchors only).
 
+## Vouchers & redemption (decided 2026-06-05 — see `docs/architecture-vouchers.md`)
+**Shared Voucher core, two issuers, one redemption.** A voucher carries `value` + rules (single-use ·
+valid window · **per-day/week/month cap** · min-spend) and is redeemed by ONE cashier flow (scan QR /
+enter code → validate → mark used → apply to the order, on the checkout/`record_sale` path).
+**Loyalty** = the *earned* issuer (points catalog · birthday · wheel/jackpot; configured in Settings).
+**Campaign** = the *granted* issuer (welcome pack · referral · promo · win-back). Litmus: *earned,
+always-on, everyone* → loyalty; *granted to a trigger/segment* → campaign. So a **welcome "10×$1 on
+signup, 1/period"** = a **campaign** (trigger=register) issuing from the core; **"$1 off for N coins"** =
+**loyalty** — both redeemed the SAME way. Mirrors BreadTalk (Welcome eVoucher vs points Bun Voucher).
+**As-built gap:** issuance works (`RewardRedemption` + `voucher_code` from catalog/wheel/jackpot) but
+the **cashier redeem half is NOT built** (no validate/mark-used/apply-to-order; no rules; status
+`redeemed`/`active` inconsistent). Build order: core+redemption → issuance hooks → UI.
+
 ## Roadmap & next phases (priority) — see memory `roadmap-mvp-foundation`
 **DIRECTION = MVP, not PoC (2026-06-04).** Bar = "a first real merchant runs their business on this"
 (not demo/proof). Local-first still holds (no premature cloud). The MVP merchant is **fully on our
