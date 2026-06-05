@@ -191,9 +191,10 @@ def play_jackpot(db: Session, *, customer_id: str, merchant_id: str) -> dict:
         voucher_code = _voucher_code()
         db.add(RewardRedemption(
             account_id=acct.id,
+            merchant_id=merchant_id,
             reward_name=f"Free {won_prize.item_name}",
             points_spent=0,
-            status="active",
+            status="issued",
             voucher_code=voucher_code,
         ))
         if merchant is not None:

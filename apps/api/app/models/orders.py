@@ -34,6 +34,10 @@ class Order(PKMixin, TimestampMixin, Base):
     subtotal: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     service_charge: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     tax: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
+    # Voucher discount applied at the till (cashier scans/enters a voucher). total = subtotal +
+    # service_charge + tax − discount_amount, floored at 0. See app/services/vouchers.py.
+    discount_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
+    voucher_code: Mapped[str | None] = mapped_column(String(32))
     total: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
 
     placed_at: Mapped[datetime | None] = mapped_column()

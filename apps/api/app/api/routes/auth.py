@@ -30,6 +30,7 @@ from app.schemas.auth import (
     UserOut,
 )
 from app.services import consent as consent_service
+from app.services import vouchers as voucher_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -41,6 +42,18 @@ def _client_ip(request: Request) -> str:
 def _rate_limit(key: str, limit: int) -> None:
     if not rate_limiter.hit(key, limit):
         raise RateLimitedError("Too many requests — please slow down", code="rate_limited")
+
+
+def _issue_welcome(db: Session, customer, merchant_id: str | None) -> None:
+    """Best-effort welcome voucher pack (idempotent) AFTER the signup is committed — a rewards
+    hiccup must never block login/signup."""
+    if not merchant_id:
+        return
+    try:
+        voucher_service.issue_welcome_pack(db, customer_id=customer.id, merchant_id=merchant_id)
+        db.commit()
+    except Exception:  # best-effort: roll back the pack, keep the (already-committed) signup
+        db.rollback()
 
 
 def _customer_token(customer) -> TokenResponse:
@@ -58,6 +71,7 @@ def customer_register(body: CustomerRegisterRequest, request: Request, db: Sessi
         consent_merchant_id=body.consent_merchant_id, ip=_client_ip(request),
     )
     db.commit()
+    _issue_welcome(db, customer, body.consent_merchant_id)
     return _customer_token(customer)
 
 
@@ -87,6 +101,7 @@ def otp_verify(body: OtpVerifyRequest, request: Request, db: Session = Depends(g
         consent_merchant_id=body.consent_merchant_id, ip=_client_ip(request),
     )
     db.commit()
+    _issue_welcome(db, customer, body.consent_merchant_id)
     return _customer_token(customer)
 
 
@@ -99,6 +114,7 @@ def customer_sso(body: SsoLoginRequest, request: Request, db: Session = Depends(
         consent_merchant_id=body.consent_merchant_id, ip=_client_ip(request),
     )
     db.commit()
+    _issue_welcome(db, customer, body.consent_merchant_id)
     return _customer_token(customer)
 
 

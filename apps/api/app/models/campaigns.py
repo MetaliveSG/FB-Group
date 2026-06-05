@@ -18,6 +18,9 @@ class Campaign(PKMixin, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(160), nullable=False)
     campaign_type: Mapped[str] = mapped_column(String(32), nullable=False)  # CampaignType
     segment_key: Mapped[str | None] = mapped_column(String(48))  # target audience segment
+    # Scope: the member-tree node this campaign reaches (its subtree). NULL = the whole tenant.
+    # Vouchers it issues inherit this as their redemption scope. See docs/architecture-vouchers.md §6.
+    scope_node_id: Mapped[str | None] = mapped_column(String(32))
     message_template: Mapped[str] = mapped_column(String(1000), default="")
     reward_points: Mapped[int] = mapped_column(Integer, default=0)
     config: Mapped[dict] = mapped_column(JSON, default=dict)

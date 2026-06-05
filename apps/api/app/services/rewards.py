@@ -144,6 +144,8 @@ def my_vouchers(db: Session, *, customer_id: str, merchant_id: str) -> list[dict
             "voucher_code": r.voucher_code,
             "reward_name": r.reward_name,
             "status": r.status,
+            "value": float(r.value or 0),
+            "valid_until": r.valid_until,
             "created_at": r.created_at,
         }
         for r in reds
@@ -183,8 +185,9 @@ def redeem_catalog_item(db: Session, *, customer_id: str, merchant_id: str, item
     record_reward_txn(db, account=acct, txn_type=RewardTxnType.REDEEM.value,
                       points=-item.cost_points, reason=f"Redeemed: {item.name}")
     code = _voucher_code()
-    db.add(RewardRedemption(account_id=acct.id, reward_name=item.name,
-                            points_spent=item.cost_points, status="redeemed", voucher_code=code))
+    db.add(RewardRedemption(account_id=acct.id, merchant_id=merchant_id, reward_name=item.name,
+                            points_spent=item.cost_points, status="issued", voucher_code=code,
+                            value=item.value))
     db.flush()
     logger.info("reward_redeemed", extra={"extra": {
         "customer_id": customer_id, "merchant_id": merchant_id, "item": item.name,
@@ -254,8 +257,9 @@ def spin_wheel(db: Session, *, customer_id: str, merchant_id: str) -> dict:
         prize["points"] = seg.prize_value
     elif seg.prize_kind == WheelPrizeKind.VOUCHER.value:
         code = _voucher_code()
-        db.add(RewardRedemption(account_id=acct.id, reward_name=seg.voucher_name or seg.label,
-                                points_spent=0, status="redeemed", voucher_code=code))
+        db.add(RewardRedemption(account_id=acct.id, merchant_id=merchant_id,
+                                reward_name=seg.voucher_name or seg.label,
+                                points_spent=0, status="issued", voucher_code=code))
         prize["voucher_code"] = code
 
     db.flush()

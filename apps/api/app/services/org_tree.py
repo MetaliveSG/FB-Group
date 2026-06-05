@@ -141,6 +141,17 @@ def _subtree_filter(path: str):
     return or_(OrgNode.path == path, OrgNode.path.like(path + PATH_SEP + "%"))
 
 
+def node_in_subtree(db: Session, *, ancestor_id: str, node_id: str) -> bool:
+    """True iff `node_id` is `ancestor_id` or a descendant of it (voucher scope = subtree reach)."""
+    if ancestor_id == node_id:
+        return True
+    anc = db.get(OrgNode, ancestor_id)
+    node = db.get(OrgNode, node_id)
+    if anc is None or node is None:
+        return False
+    return node.path == anc.path or node.path.startswith(anc.path + PATH_SEP)
+
+
 def subtree(db: Session, node: OrgNode, *, active_only: bool = True) -> list[OrgNode]:
     stmt = select(OrgNode).where(_subtree_filter(node.path))
     if active_only:
