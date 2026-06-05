@@ -22,6 +22,7 @@ const TYPE_LABELS: Record<CampaignType, string> = {
   weekday_boost: "Weekday Boost",
   new_customer_return: "New Customer Return",
   vip_reward: "VIP Reward",
+  voucher: "Voucher (issue $ off)",
 };
 
 function TypeBadge({ type }: { type: CampaignType }) {
@@ -64,6 +65,12 @@ export default function CampaignsPage() {
   const [segment, setSegment] = useState("");
   const [template, setTemplate] = useState("Hi {name}, enjoy a special offer this week!");
   const [rewardPoints, setRewardPoints] = useState("");
+  // Voucher campaign: scope (a member-tree node) + the voucher to issue.
+  const [scopeNode, setScopeNode] = useState("");
+  const [vValue, setVValue] = useState("1");
+  const [vCount, setVCount] = useState("1");
+  const [vPerPeriod, setVPerPeriod] = useState("");
+  const [vValidDays, setVValidDays] = useState("30");
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -114,6 +121,15 @@ export default function CampaignsPage() {
           segment_key: segment.trim() || undefined,
           message_template: template,
           reward_points: parseInt(rewardPoints, 10) || 0,
+          scope_node_id: scopeNode || undefined,
+          voucher: type === "voucher"
+            ? {
+                value: parseFloat(vValue) || 0,
+                count: parseInt(vCount, 10) || 1,
+                per_period: (vPerPeriod || null) as "day" | "week" | "month" | null,
+                valid_days: parseInt(vValidDays, 10) || undefined,
+              }
+            : undefined,
         },
         getOperatorMerchant()?.id
       );
@@ -201,6 +217,36 @@ export default function CampaignsPage() {
                 style={{ flex: 1, minWidth: 140 }}
               />
             </div>
+            {/* Scope: which part of the tree this campaign reaches (its subtree). Blank = whole tenant. */}
+            <select value={scopeNode} onChange={(e) => setScopeNode(e.target.value)} style={{ minWidth: 220 }}>
+              <option value="">Whole merchant (tenant-wide)</option>
+              {[...nodes].sort((a, b) => a.depth - b.depth).map((n) => (
+                <option key={n.id} value={n.id}>
+                  {" ".repeat(n.depth * 2)}{n.name ?? n.id}{n.sells ? " (storefront)" : ""}
+                </option>
+              ))}
+            </select>
+            {type === "voucher" && (
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8, padding: "10px 12px" }}>
+                <label style={{ fontSize: 13 }}>$ off
+                  <input type="number" min="0" step="0.5" value={vValue} onChange={(e) => setVValue(e.target.value)} style={{ width: 90, display: "block" }} />
+                </label>
+                <label style={{ fontSize: 13 }}>Count / customer
+                  <input type="number" min="1" value={vCount} onChange={(e) => setVCount(e.target.value)} style={{ width: 110, display: "block" }} />
+                </label>
+                <label style={{ fontSize: 13 }}>Usable
+                  <select value={vPerPeriod} onChange={(e) => setVPerPeriod(e.target.value)} style={{ display: "block" }}>
+                    <option value="">No limit</option>
+                    <option value="day">1 per day</option>
+                    <option value="week">1 per week</option>
+                    <option value="month">1 per month</option>
+                  </select>
+                </label>
+                <label style={{ fontSize: 13 }}>Valid (days)
+                  <input type="number" min="1" value={vValidDays} onChange={(e) => setVValidDays(e.target.value)} style={{ width: 100, display: "block" }} />
+                </label>
+              </div>
+            )}
             <textarea
               placeholder="Message template"
               value={template}

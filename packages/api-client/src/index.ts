@@ -597,6 +597,15 @@ export interface WinbackResult {
   campaign_delivered: number;
 }
 
+export interface WelcomeVoucherCfg {
+  enabled: boolean;
+  count: number;
+  value: number;
+  per_period: "day" | "week" | "month" | null;
+  valid_days: number | null;
+  name: string;
+}
+
 export interface MerchantSettings {
   pipeline_enabled: boolean;
   wheel_spin_cost: number;
@@ -605,6 +614,7 @@ export interface MerchantSettings {
   qr_ordering_enabled: boolean;
   pos_enabled: boolean;
   timezone: string;   // the tenant's canonical reporting timezone (the "books")
+  welcome_voucher: WelcomeVoucherCfg;
 }
 
 /** Non-sensitive nav booleans any staff member may read (no spin costs / earn rates).
@@ -678,7 +688,8 @@ export type CampaignType =
   | "winback"
   | "weekday_boost"
   | "new_customer_return"
-  | "vip_reward";
+  | "vip_reward"
+  | "voucher";
 
 export const CAMPAIGN_TYPES: CampaignType[] = [
   "whatsapp_promo",
@@ -687,7 +698,16 @@ export const CAMPAIGN_TYPES: CampaignType[] = [
   "weekday_boost",
   "new_customer_return",
   "vip_reward",
+  "voucher",
 ];
+
+export interface VoucherConfig {
+  value: number;
+  count?: number;
+  per_period?: "day" | "week" | "month" | null;
+  valid_days?: number | null;
+  name?: string | null;
+}
 
 export interface CampaignMetrics {
   audience: number;
@@ -747,6 +767,8 @@ export interface CampaignCreate {
   segment_key?: string;
   message_template?: string;
   reward_points?: number;
+  scope_node_id?: string;     // member-tree node this campaign reaches (subtree); omit = tenant-wide
+  voucher?: VoucherConfig;    // if set, the campaign can issue these vouchers to its audience
   starts_at?: string;
   ends_at?: string;
 }
@@ -1935,6 +1957,7 @@ export function updateSettings(
     qr_ordering_enabled?: boolean;
     pos_enabled?: boolean;
     timezone?: string;
+    welcome_voucher?: WelcomeVoucherCfg;
   },
   merchantId?: string
 ): Promise<MerchantSettings> {
@@ -2029,6 +2052,20 @@ export function buildAudience(
   return request(
     baseUrl,
     `/campaigns/${campaignId}/audience${mq(merchantId)}`,
+    { method: "POST" },
+    token
+  );
+}
+
+export function issueCampaignVouchers(
+  baseUrl: string,
+  token: string,
+  campaignId: string,
+  merchantId?: string
+): Promise<{ issued: number }> {
+  return request(
+    baseUrl,
+    `/campaigns/${campaignId}/issue-vouchers${mq(merchantId)}`,
     { method: "POST" },
     token
   );

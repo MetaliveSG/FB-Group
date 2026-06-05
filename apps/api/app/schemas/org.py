@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -59,6 +60,17 @@ class TableOut(BaseModel):
     qr_token: str | None = None
 
 
+class WelcomeVoucherCfg(BaseModel):
+    """Welcome voucher pack granted on signup (the "10× $1, one per day" campaign). Stored in
+    merchants.settings; issued by services/vouchers.issue_welcome_pack on registration."""
+    enabled: bool = False
+    count: int = Field(default=1, ge=1, le=100)
+    value: float = Field(default=0, ge=0)
+    per_period: Literal["day", "week", "month"] | None = None
+    valid_days: int | None = Field(default=None, ge=1, le=3650)
+    name: str = Field(default="Welcome voucher", max_length=120)
+
+
 class SettingsOut(BaseModel):
     pipeline_enabled: bool
     wheel_spin_cost: int
@@ -69,6 +81,7 @@ class SettingsOut(BaseModel):
     pos_enabled: bool = False
     # The tenant's canonical reporting timezone (the "books" — payouts/GST/daily close use it).
     timezone: str = "Asia/Singapore"
+    welcome_voucher: WelcomeVoucherCfg = Field(default_factory=WelcomeVoucherCfg)
 
 
 class NavFlagsOut(BaseModel):
@@ -104,6 +117,7 @@ class SettingsUpdateIn(BaseModel):
     qr_ordering_enabled: bool | None = None
     pos_enabled: bool | None = None
     timezone: str | None = None   # IANA reporting timezone for this tenant; validated → 422 on bad
+    welcome_voucher: WelcomeVoucherCfg | None = None
 
     @field_validator("timezone")
     @classmethod

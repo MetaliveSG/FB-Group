@@ -5980,6 +5980,81 @@
         }
       }
     },
+    "/api/v1/campaigns/{campaign_id}/issue-vouchers": {
+      "post": {
+        "tags": [
+          "campaigns"
+        ],
+        "summary": "Issue Campaign Vouchers",
+        "description": "Issue the campaign's configured voucher to its audience (granted-voucher issuer).",
+        "operationId": "issue_campaign_vouchers_api_v1_campaigns__campaign_id__issue_vouchers_post",
+        "parameters": [
+          {
+            "name": "campaign_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Campaign Id"
+            }
+          },
+          {
+            "name": "merchant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Merchant Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoucherIssueResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/campaigns/{campaign_id}/send": {
       "post": {
         "tags": [
@@ -9651,7 +9726,8 @@
               "winback",
               "weekday_boost",
               "new_customer_return",
-              "vip_reward"
+              "vip_reward",
+              "voucher"
             ],
             "title": "Campaign Type"
           },
@@ -9677,6 +9753,27 @@
             "minimum": 0.0,
             "title": "Reward Points",
             "default": 0
+          },
+          "scope_node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Node Id"
+          },
+          "voucher": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VoucherConfigIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "starts_at": {
             "anyOf": [
@@ -9867,6 +9964,17 @@
           "reward_points": {
             "type": "integer",
             "title": "Reward Points"
+          },
+          "scope_node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Node Id"
           },
           "is_active": {
             "type": "boolean",
@@ -13909,6 +14017,9 @@
             "type": "string",
             "title": "Timezone",
             "default": "Asia/Singapore"
+          },
+          "welcome_voucher": {
+            "$ref": "#/components/schemas/WelcomeVoucherCfg"
           }
         },
         "type": "object",
@@ -14001,6 +14112,16 @@
               }
             ],
             "title": "Timezone"
+          },
+          "welcome_voucher": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WelcomeVoucherCfg"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -14583,6 +14704,82 @@
         ],
         "title": "ValidationError"
       },
+      "VoucherConfigIn": {
+        "properties": {
+          "value": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Value"
+          },
+          "count": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Count",
+            "default": 1
+          },
+          "per_period": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "day",
+                  "week",
+                  "month"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Period"
+          },
+          "valid_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 3650.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Days"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "VoucherConfigIn",
+        "description": "Vouchers a campaign issues to its audience (the granted-voucher issuer)."
+      },
+      "VoucherIssueResult": {
+        "properties": {
+          "issued": {
+            "type": "integer",
+            "title": "Issued"
+          }
+        },
+        "type": "object",
+        "required": [
+          "issued"
+        ],
+        "title": "VoucherIssueResult"
+      },
       "VoucherPreviewOut": {
         "properties": {
           "voucher_code": {
@@ -14717,6 +14914,66 @@
           "status"
         ],
         "title": "VoucherRedeemOut"
+      },
+      "WelcomeVoucherCfg": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": false
+          },
+          "count": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Count",
+            "default": 1
+          },
+          "value": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Value",
+            "default": 0
+          },
+          "per_period": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "day",
+                  "week",
+                  "month"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Period"
+          },
+          "valid_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 3650.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Days"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Name",
+            "default": "Welcome voucher"
+          }
+        },
+        "type": "object",
+        "title": "WelcomeVoucherCfg",
+        "description": "Welcome voucher pack granted on signup (the \"10\u00d7 $1, one per day\" campaign). Stored in\nmerchants.settings; issued by services/vouchers.issue_welcome_pack on registration."
       },
       "WheelConfigOut": {
         "properties": {

@@ -6,6 +6,7 @@ import {
   campaignDetail,
   buildAudience,
   sendCampaign,
+  issueCampaignVouchers,
   campaignMetrics,
   getApiBase,
 } from "@/lib/api";
@@ -25,6 +26,7 @@ const TYPE_LABELS: Record<CampaignType, string> = {
   weekday_boost: "Weekday Boost",
   new_customer_return: "New Customer Return",
   vip_reward: "VIP Reward",
+  voucher: "Voucher (issue $ off)",
 };
 
 function statusColor(status: string): { bg: string; fg: string } {
@@ -62,6 +64,7 @@ export default function CampaignDetailPage() {
   const [audienceSize, setAudienceSize] = useState<number | null>(null);
   const [building, setBuilding] = useState(false);
   const [sending, setSending] = useState(false);
+  const [issuing, setIssuing] = useState(false);
 
   const load = useCallback(
     async (tok: string) => {
@@ -137,6 +140,22 @@ export default function CampaignDetailPage() {
       setError(err instanceof Error ? err.message : "Failed to send campaign");
     } finally {
       setSending(false);
+    }
+  }
+
+  async function handleIssueVouchers() {
+    const tok = getStaffToken();
+    if (!tok) return;
+    setIssuing(true);
+    setError(null);
+    try {
+      const res = await issueCampaignVouchers(base, tok, campaignId, getOperatorMerchant()?.id);
+      flash(`Issued vouchers to ${res.issued} customer${res.issued === 1 ? "" : "s"}.`);
+      await load(tok);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to issue vouchers");
+    } finally {
+      setIssuing(false);
     }
   }
 
@@ -221,12 +240,23 @@ export default function CampaignDetailPage() {
               Audience: {audienceSize} recipient{audienceSize === 1 ? "" : "s"}
             </span>
           )}
+          {campaign.campaign_type === "voucher" && (
+            <button
+              className="btn btn-primary btn-sm"
+              disabled={issuing || !hasAudience}
+              onClick={handleIssueVouchers}
+              title={hasAudience ? "" : "Build an audience first"}
+              style={{ marginLeft: "auto" }}
+            >
+              {issuing ? "Issuing…" : "Issue vouchers to audience"}
+            </button>
+          )}
           <button
             className="btn btn-primary btn-sm"
             disabled={sending || !hasAudience}
             onClick={handleSend}
             title={hasAudience ? "" : "Build an audience first"}
-            style={{ marginLeft: "auto" }}
+            style={{ marginLeft: campaign.campaign_type === "voucher" ? undefined : "auto" }}
           >
             {sending ? "Sending…" : "Send via WhatsApp (mock)"}
           </button>

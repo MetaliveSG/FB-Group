@@ -140,6 +140,19 @@ def test_scope_subtree_redemption(client, db):
         assert _redeem(client, otok, v.voucher_code, order_id=o["id"]).status_code == 200, scope
 
 
+def test_settings_welcome_voucher_roundtrip(client, db):
+    """The welcome pack is configurable via the Settings API (not just the DB)."""
+    w = make_world(db)
+    otok = staff_token(client, w.owner_email)
+    r = client.patch("/api/v1/org/settings", json={"welcome_voucher": {
+        "enabled": True, "count": 5, "value": 1, "per_period": "day", "valid_days": 30, "name": "$1 Welcome"}},
+        headers=H(otok))
+    assert r.status_code == 200, r.text
+    assert r.json()["welcome_voucher"]["enabled"] is True and r.json()["welcome_voucher"]["count"] == 5
+    g = client.get("/api/v1/org/settings", headers=H(otok)).json()
+    assert g["welcome_voucher"]["value"] == 1.0 and g["welcome_voucher"]["per_period"] == "day"
+
+
 def test_campaign_id_column_fits_welcome_synthetic():
     """Regression (Postgres VARCHAR vs SQLite): campaign_id must hold "welcome:{32-hex merchant id}"."""
     assert RewardRedemption.__table__.c.campaign_id.type.length >= len("welcome:") + 32
