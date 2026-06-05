@@ -8,10 +8,23 @@ from app.auth.deps import get_scope, require, resolve_merchant
 from app.core.errors import NotFoundError
 from app.db.session import get_db
 from app.models.orders import Order
+from app.schemas.rewards import MyVoucherOut
 from app.schemas.vouchers import VoucherPreviewOut, VoucherRedeemIn, VoucherRedeemOut
+from app.services import rewards as rewards_service
 from app.services import vouchers as voucher_service
 
 router = APIRouter(prefix="/vouchers", tags=["vouchers"])
+
+
+@router.get("/diner/{customer_id}", response_model=list[MyVoucherOut])
+def diner_vouchers(customer_id: str, merchant_id: str | None = Query(None),
+                   scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """Staff: an attached diner's UNUSED vouchers at this merchant — so the cashier can apply one
+    without the diner's phone."""
+    mid = resolve_merchant(scope, merchant_id)
+    require(scope, "order.view", mid)
+    return [v for v in rewards_service.my_vouchers(db, customer_id=customer_id, merchant_id=mid)
+            if v["status"] == "issued"]
 
 
 def _merchant_for(db: Session, scope, order: Order | None, merchant_id: str | None) -> str:

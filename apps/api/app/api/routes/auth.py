@@ -23,6 +23,7 @@ from app.schemas.auth import (
     OtpRequest,
     OtpRequestResponse,
     OtpVerifyRequest,
+    PinLoginRequest,
     RefreshRequest,
     SsoLoginRequest,
     StaffLoginRequest,
@@ -135,6 +136,15 @@ def update_consent(body: ConsentUpdateRequest, request: Request,
 def staff_login(body: StaffLoginRequest, request: Request, db: Session = Depends(get_db)):
     _rate_limit(f"login:{_client_ip(request)}:{body.email}", settings.RATE_LIMIT_LOGIN_PER_MIN)
     user = auth_service.login_user(db, email=body.email, password=body.password)
+    toks = auth_service.issue_tokens(user.id, "user")
+    return TokenResponse(actor="user", user=UserOut.model_validate(user), **toks)
+
+
+# --- Staff POS PIN login ----------------------------------------------
+@router.post("/staff/pin-login", response_model=TokenResponse)
+def staff_pin_login(body: PinLoginRequest, request: Request, db: Session = Depends(get_db)):
+    _rate_limit(f"pin:{_client_ip(request)}:{body.merchant_id}", settings.RATE_LIMIT_LOGIN_PER_MIN)
+    user = auth_service.pin_login(db, merchant_id=body.merchant_id, pin=body.pin)
     toks = auth_service.issue_tokens(user.id, "user")
     return TokenResponse(actor="user", user=UserOut.model_validate(user), **toks)
 

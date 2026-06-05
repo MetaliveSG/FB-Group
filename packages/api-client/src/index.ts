@@ -1262,6 +1262,75 @@ export function checkout(
   );
 }
 
+// ── POS (staff) ────────────────────────────────────────────────────
+export interface ReceiptPayload {
+  company: { name: string; uen: string; address: string; phone: string };
+  outlet: { name: string; address: string };
+  stall: string | null;
+  order_id: string;
+  table_label: string | null;
+  created_at: string;
+  items: { name: string; quantity: number; line_total: number; modifiers: string[] }[];
+  subtotal: number; service_charge: number; tax: number; discount: number;
+  voucher_code: string | null; total: number;
+  payment: { method: string; status: string; reference: string | null } | null;
+  points_earned: number | null;
+  footer: string;
+}
+
+/** POS PIN quick-login → staff token. */
+export function pinLogin(baseUrl: string, merchant_id: string, pin: string): Promise<TokenResponse> {
+  return request(baseUrl, "/auth/staff/pin-login", { method: "POST", body: JSON.stringify({ merchant_id, pin }) });
+}
+
+/** Staff creates a walk-in order (POS). */
+export function createManualOrder(
+  baseUrl: string,
+  token: string,
+  data: {
+    outlet_id: string;
+    items: { menu_item_id: string; quantity: number; modifier_ids?: string[] }[];
+    table_id?: string;
+    customer_phone?: string;
+    order_type?: string;
+  }
+): Promise<OrderOut> {
+  return request(baseUrl, "/orders/manual", { method: "POST", body: JSON.stringify(data) }, token);
+}
+
+/** Staff takes payment for a walk-in order (mock). */
+export function cashierCheckout(
+  baseUrl: string,
+  token: string,
+  orderId: string,
+  method: PaymentMethod,
+  force_outcome?: string
+): Promise<CheckoutResponse> {
+  return request(baseUrl, `/orders/${orderId}/cashier-checkout`,
+    { method: "POST", body: JSON.stringify({ method, force_outcome }) }, token);
+}
+
+export function getReceipt(baseUrl: string, token: string, orderId: string): Promise<ReceiptPayload> {
+  return request(baseUrl, `/orders/${orderId}/receipt`, {}, token);
+}
+
+/** Staff: set/reset a node account's POS PIN. */
+export function setStaffPin(
+  baseUrl: string, token: string, nodeId: string, userId: string, pin: string, merchantId?: string
+): Promise<void> {
+  return request(baseUrl, `/org/nodes/${nodeId}/accounts/${userId}/pin${mq(merchantId)}`,
+    { method: "POST", body: JSON.stringify({ pin }) }, token);
+}
+
+/** Staff: an attached diner's unused vouchers at this merchant. */
+export function dinerVouchers(
+  baseUrl: string, token: string, customerId: string, merchantId?: string
+): Promise<MyVoucher[]> {
+  const q = new URLSearchParams();
+  if (merchantId) q.set("merchant_id", merchantId);
+  return request(baseUrl, `/vouchers/diner/${customerId}?${q.toString()}`, {}, token);
+}
+
 export function crmCustomers(
   baseUrl: string,
   token: string,

@@ -22,8 +22,10 @@ from app.schemas.orders import (
     PaymentOut,
     QrOrderCreate,
 )
+from app.schemas.pos import ReceiptOut
 from app.services import orders as orders_service
 from app.services import qr as qr_service
+from app.services import receipts
 from app.services.audit import record as audit_record
 from app.services.orders import OrderItemInput
 
@@ -181,3 +183,16 @@ def cashier_checkout(
         points_earned=result.points_earned,
         order_id=order.id,
     )
+
+
+# --- Receipt (POS) -----------------------------------------------------
+@router.get("/{order_id}/receipt", response_model=ReceiptOut)
+def order_receipt(order_id: str, scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """Printable receipt payload — company header (console) + outlet/stall + lines + payment."""
+    order = db.get(Order, order_id)
+    if not order:
+        raise NotFoundError("Order not found", code="order_not_found")
+    require(scope, "order.view", order.merchant_id)
+    if not scope.can_view_outlet(order.merchant_id, order.outlet_id):
+        raise ForbiddenError("Outside your outlet scope", code="outlet_scope")
+    return ReceiptOut(**receipts.build_receipt(db, order=order))

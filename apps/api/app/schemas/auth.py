@@ -71,6 +71,12 @@ class StaffLoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class PinLoginRequest(BaseModel):
+    """POS quick-login — resolves the staff member in `merchant_id` whose PIN matches."""
+    merchant_id: str = Field(min_length=1, max_length=32)
+    pin: str = Field(min_length=4, max_length=6)
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str
 

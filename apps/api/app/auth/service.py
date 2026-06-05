@@ -186,3 +186,17 @@ def login_user(db: Session, *, email: str, password: str) -> User:
             raise ForbiddenError("Account suspended — contact the platform operator",
                                  code="account_suspended")
     return user
+
+
+def pin_login(db: Session, *, merchant_id: str, pin: str) -> User:
+    """POS quick-login: resolve the staff member in `merchant_id` whose PIN matches. Suspend-aware."""
+    from app.models.tenancy import Merchant
+    from app.services.users_admin import resolve_pin
+
+    m = db.get(Merchant, merchant_id)
+    if m is None or not m.is_active:
+        raise ForbiddenError("This store is unavailable", code="account_suspended")
+    user = resolve_pin(db, merchant_id=merchant_id, pin=pin)
+    if user is None:
+        raise AuthError("Invalid PIN", code="invalid_pin")
+    return user
