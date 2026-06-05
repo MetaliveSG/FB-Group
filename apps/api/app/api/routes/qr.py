@@ -43,8 +43,11 @@ def resolve_qr(token: str, db: Session = Depends(get_db)):
         for m in menus
     ]
     flags = boundaries.module_flags(db, merchant_id=qr.merchant_id)
+    # Suspend: a suspended tenant shows as "ordering unavailable" (graceful) — the order endpoint also
+    # hard-blocks, and storefront/chain-level suspend is enforced per-stall at order time.
+    ordering_enabled = flags["qr_ordering_enabled"] and merchant.is_active
     inline_menu = None
-    if flags["qr_ordering_enabled"] and not is_foodcourt and menus:
+    if ordering_enabled and not is_foodcourt and menus:
         inline_menu = MenuOut.model_validate(catalog_service.get_outlet_menu(db, qr.outlet_id, menus[0].id))
 
     return QrContextOut(
@@ -56,7 +59,7 @@ def resolve_qr(token: str, db: Session = Depends(get_db)):
         is_foodcourt=is_foodcourt,
         stalls=stalls,
         menu=inline_menu,
-        ordering_enabled=flags["qr_ordering_enabled"],
+        ordering_enabled=ordering_enabled,
         rewards_enabled=flags["rewards_enabled"],
     )
 

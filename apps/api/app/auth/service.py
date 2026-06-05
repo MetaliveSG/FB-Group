@@ -8,7 +8,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.auth.otp import otp_store
-from app.core.errors import AuthError, ConflictError
+from app.core.errors import AuthError, ConflictError, ForbiddenError
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -172,4 +172,17 @@ def login_user(db: Session, *, email: str, password: str) -> User:
     user = db.scalar(select(User).where(User.email == email))
     if not user or not user.is_active or not verify_password(password, user.password_hash):
         raise AuthError("Invalid email or password", code="invalid_credentials")
+    # Suspend enforcement: a merchant-staff (non-operator) whose every merchant is suspended cannot log
+    # in. Operators (super_admin / platform roles) are always allowed — they manage + un-suspend.
+    from app.auth.access import resolve_scope
+    from app.models.tenancy import Merchant
+
+    scope = resolve_scope(db, user)
+    if not scope.is_super_admin and not scope.platform_perms:
+        mids = scope.accessible_merchant_ids
+        if mids and not db.scalar(
+            select(Merchant.id).where(Merchant.id.in_(mids), Merchant.is_active.is_(True))
+        ):
+            raise ForbiddenError("Account suspended — contact the platform operator",
+                                 code="account_suspended")
     return user
