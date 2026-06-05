@@ -125,6 +125,17 @@ def node_for(db: Session, entity_id: str) -> OrgNode | None:
     return db.get(OrgNode, entity_id)
 
 
+def is_live(db: Session, node: OrgNode) -> bool:
+    """True iff the node AND all its ancestors are active — suspend CASCADES down the tree
+    (suspending a Chain effectively suspends every Storefront beneath it). `node.path` is the
+    PATH_SEP-joined chain of ancestor ids (incl. self)."""
+    ancestor_ids = node.path.split(PATH_SEP)
+    suspended = db.scalar(
+        select(OrgNode.id).where(OrgNode.id.in_(ancestor_ids), OrgNode.is_active.is_(False)).limit(1)
+    )
+    return suspended is None
+
+
 def _subtree_filter(path: str):
     """Node at `path` plus every descendant (`path.%`)."""
     return or_(OrgNode.path == path, OrgNode.path.like(path + PATH_SEP + "%"))

@@ -26,8 +26,8 @@ from app.auth.access import ALL_OUTLETS, Scope
 from app.models.identity import Customer
 from app.models.orders import Order, OrderItem
 from app.models.payments import Payment, Transaction
-from app.models.tenancy import DiningTable, Outlet
-from app.services import boundaries
+from app.models.tenancy import DiningTable, Merchant, Outlet
+from app.services import boundaries, org_tree
 
 
 @dataclass
@@ -69,6 +69,12 @@ def create_order(
         raise ConflictError("Order must contain at least one item", code="empty_order")
 
     outlet = _load_outlet(db, outlet_id)
+    # Suspend enforcement: a suspended TENANT takes no orders on any channel (QR / cashier POS / app).
+    # Storefront/chain-level suspend is checked per-stall in the item loop (cascade-aware).
+    merchant = db.get(Merchant, outlet.merchant_id)
+    if not merchant or not merchant.is_active:
+        raise ConflictError("This store is currently unavailable", code="store_suspended")
+    _checked_storefronts: set[str] = set()
     # QR ordering is gated by the merchant's `qr_ordering_enabled` module flag (Phase 2):
     # a rewards-only merchant accepts no customer QR orders. Staff/POS channels are unaffected.
     if channel == OrderChannel.QR and not boundaries.module_flags(db, merchant_id=outlet.merchant_id)["qr_ordering_enabled"]:
@@ -100,6 +106,14 @@ def create_order(
         if not item.is_available:
             raise ConflictError(f"Item '{item.name}' is unavailable", code="item_unavailable")
         _validate_item_belongs_to_outlet(db, item, outlet.id)
+        # Cascade-aware suspend check for the stall (Storefront node id == its Menu id) being ordered.
+        category = db.get(MenuCategory, item.category_id)
+        sf_id = category.menu_id if category else None
+        if sf_id and sf_id not in _checked_storefronts:
+            _checked_storefronts.add(sf_id)
+            sf_node = org_tree.node_for(db, sf_id)
+            if sf_node is not None and not org_tree.is_live(db, sf_node):
+                raise ConflictError("This store is currently unavailable", code="store_suspended")
 
         unit = item.price
         mod_snapshot = []
