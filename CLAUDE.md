@@ -22,6 +22,10 @@ cd apps/api && .venv/bin/python -m app.seed && .venv/bin/uvicorn app.main:app
 cd apps/api && .venv/bin/python -m pytest          # backend tests
 # Re-seed the SG-local merchant against live Postgres (idempotent, safe, no data loss):
 cd apps/api && .venv/bin/python -m app.seed_kampong
+# Ensure the demo merchants (Breadtalk Group + Pepper Lunch Group) + their 3 Manager logins —
+# idempotent, additive, fixed node ids → reproducible QR tokens (against live Postgres):
+cd apps/api && .venv/bin/python -m app.seed_demo_merchants
+#   (or in Docker: docker-compose -f infra/docker-compose.yml exec api python -m app.seed_demo_merchants)
 # Full stack (Postgres + API + web):
 docker-compose -f infra/docker-compose.yml up --build
 # Frontend:
@@ -152,7 +156,8 @@ GST/CDC/MAS) → **M4** (the barrier to entry). GTM keep-your-POS → `gtm-pos-a
   - `owner@breadtalk.sg` → **Breadtalk Group** (+ downline: Bakery, Toast Box, Toast Box @ Taka/Orchard)
   - `owner@pepperlunch.sg` → **Pepper Lunch Group** (+ all Pepper Lunch outlets) *(genuine Merchant-Owner from onboarding; pw reset to the standard)*
   - `manager@toastbox.sg` → **Toast Box @ Orchard** only (single-storefront scope)
-  - These are **live-DB accounts** (not seeded) → recreate after a data wipe (operator can add via the node drawer, or re-run the ensure-script).
+  - Durable via the ensure-script: `python -m app.seed_demo_merchants` (idempotent; rebuilds both
+    groups + storefronts + these 3 logins with fixed node ids → stable QR tokens). Run after a data wipe.
 - Customer QR: scan tokens are the live storefronts' QR (see each Storefront's *Tables & QR*); OTP phone `+6580000000` (DEBUG returns the code).
 
 ## Memory & skills
