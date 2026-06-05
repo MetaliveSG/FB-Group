@@ -103,6 +103,24 @@ export default function SettingsPage() {
     }
   }
 
+  async function saveWelcomeVoucher(changes: Partial<NonNullable<MerchantSettings["welcome_voucher"]>>) {
+    const tok = getStaffToken();
+    if (!tok || !settings) return;
+    setSaving(true); setError(null); setMsg(null);
+    try {
+      const wv = { ...settings.welcome_voucher, ...changes };
+      const updated = await updateSettings(base, tok, { welcome_voucher: wv }, getOperatorMerchant()?.id);
+      setSettings(updated);
+      setMsg("Welcome voucher saved.");
+      setTimeout(() => setMsg(null), 2500);
+    } catch (err: unknown) {
+      const m = err instanceof Error ? err.message : "Failed to save settings";
+      setError(m.includes("403") ? "Settings require the merchant owner role." : m);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function saveLoyalty() {
     const tok = getStaffToken();
     if (!tok) return;
@@ -232,6 +250,51 @@ export default function SettingsPage() {
               <option value={settings.timezone}>{settings.timezone}</option>
             )}
           </select>
+        </div>
+      )}
+
+      {/* Welcome voucher pack — granted on signup (a campaign trigger). */}
+      {settings?.welcome_voucher && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontWeight: 600 }}>Welcome voucher</div>
+              <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
+                Vouchers granted automatically when a new customer signs up here.
+              </div>
+            </div>
+            <Toggle on={settings.welcome_voucher.enabled} disabled={saving}
+                    onChange={(v) => saveWelcomeVoucher({ enabled: v })} />
+          </div>
+          {settings.welcome_voucher.enabled && (
+            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 12 }}>
+              <label style={{ fontSize: 13 }}>$ off each
+                <input type="number" min="0" step="0.5" defaultValue={settings.welcome_voucher.value} disabled={saving}
+                       onBlur={(e) => saveWelcomeVoucher({ value: parseFloat(e.target.value) || 0 })}
+                       style={{ width: 90, display: "block" }} />
+              </label>
+              <label style={{ fontSize: 13 }}>How many
+                <input type="number" min="1" defaultValue={settings.welcome_voucher.count} disabled={saving}
+                       onBlur={(e) => saveWelcomeVoucher({ count: parseInt(e.target.value, 10) || 1 })}
+                       style={{ width: 90, display: "block" }} />
+              </label>
+              <label style={{ fontSize: 13 }}>Usable
+                <select value={settings.welcome_voucher.per_period ?? ""} disabled={saving}
+                        onChange={(e) => saveWelcomeVoucher({ per_period: (e.target.value || null) as "day" | "week" | "month" | null })}
+                        style={{ display: "block" }}>
+                  <option value="">No limit</option>
+                  <option value="day">1 per day</option>
+                  <option value="week">1 per week</option>
+                  <option value="month">1 per month</option>
+                </select>
+              </label>
+              <label style={{ fontSize: 13 }}>Valid (days)
+                <input type="number" min="1" defaultValue={settings.welcome_voucher.valid_days ?? ""} disabled={saving}
+                       onBlur={(e) => saveWelcomeVoucher({ valid_days: parseInt(e.target.value, 10) || null })}
+                       style={{ width: 100, display: "block" }} />
+              </label>
+            </div>
+          )}
         </div>
       )}
 

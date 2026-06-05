@@ -53,6 +53,25 @@ def test_campaign_create_audience_send_metrics(client, db):
     assert m["roi"] > 0                     # (20 - 0.04) / 0.04
 
 
+def test_campaign_issues_vouchers(client, db):
+    """A voucher campaign issues its configured voucher to the (consented) audience; idempotent."""
+    from sqlalchemy import select
+    from app.models.loyalty import RewardRedemption
+    w = make_world(db)
+    otok = staff_token(client, w.owner_email)
+    _captured(client, w, "vc@b.sg", "+6590000210", marketing_opt_in=True)
+    camp = client.post("/api/v1/campaigns", json={
+        "name": "$2 promo", "campaign_type": "voucher",
+        "voucher": {"value": 2, "count": 1, "per_period": "week", "valid_days": 14}}, headers=H(otok)).json()
+    cid = camp["id"]
+    assert client.post(f"/api/v1/campaigns/{cid}/audience", headers=H(otok)).json()["audience_size"] >= 1
+    r = client.post(f"/api/v1/campaigns/{cid}/issue-vouchers", headers=H(otok))
+    assert r.status_code == 200 and r.json()["issued"] >= 1
+    v = db.scalar(select(RewardRedemption).where(RewardRedemption.campaign_id == cid))
+    assert v and float(v.value) == 2.0 and v.per_period == "week"
+    assert client.post(f"/api/v1/campaigns/{cid}/issue-vouchers", headers=H(otok)).json()["issued"] == 0  # idempotent
+
+
 def test_campaign_segment_audience(client, db):
     w = make_world(db)
     otok = staff_token(client, w.owner_email)

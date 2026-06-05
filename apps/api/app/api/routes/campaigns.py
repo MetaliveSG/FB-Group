@@ -18,6 +18,7 @@ from app.schemas.campaigns import (
     MessageOut,
     RedemptionIn,
     SendResultOut,
+    VoucherIssueResult,
 )
 from app.services import campaigns as campaign_service
 from app.services.audit import record as audit_record
@@ -44,10 +45,12 @@ def create_campaign(body: CampaignCreateIn, merchant_id: str | None = Query(defa
                     scope=Depends(get_scope), db: Session = Depends(get_db)):
     mid = resolve_merchant(scope, merchant_id)
     require(scope, "campaign.manage", mid)
+    config = {"voucher": body.voucher.model_dump()} if body.voucher else None
     c = campaign_service.create_campaign(
         db, merchant_id=mid, name=body.name, campaign_type=body.campaign_type,
         segment_key=body.segment_key, message_template=body.message_template,
-        reward_points=body.reward_points, starts_at=body.starts_at, ends_at=body.ends_at)
+        reward_points=body.reward_points, starts_at=body.starts_at, ends_at=body.ends_at,
+        scope_node_id=body.scope_node_id, config=config)
     audit_record(db, action="campaign.create", actor_id=scope.user_id, merchant_id=mid,
                  entity_type="campaign", entity_id=c.id)
     db.commit()
@@ -81,6 +84,20 @@ def build_audience(campaign_id: str, merchant_id: str | None = Query(default=Non
     n = campaign_service.build_audience(db, merchant_id=mid, scope=scope, campaign=c)
     db.commit()
     return AudienceResult(audience_size=n)
+
+
+@router.post("/{campaign_id}/issue-vouchers", response_model=VoucherIssueResult)
+def issue_campaign_vouchers(campaign_id: str, merchant_id: str | None = Query(default=None),
+                            scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """Issue the campaign's configured voucher to its audience (granted-voucher issuer)."""
+    mid = resolve_merchant(scope, merchant_id)
+    require(scope, "campaign.manage", mid)
+    c = campaign_service.get_campaign(db, merchant_id=mid, campaign_id=campaign_id)
+    n = campaign_service.issue_campaign_vouchers(db, campaign=c)
+    audit_record(db, action="campaign.issue_vouchers", actor_id=scope.user_id, merchant_id=mid,
+                 entity_type="campaign", entity_id=c.id, meta={"issued": n})
+    db.commit()
+    return VoucherIssueResult(issued=n)
 
 
 @router.post("/{campaign_id}/send", response_model=SendResultOut)

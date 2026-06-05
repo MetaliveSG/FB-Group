@@ -8,8 +8,18 @@ from pydantic import BaseModel, Field
 from app.schemas.common import ORMModel, UtcDatetime
 
 CampaignTypeLit = Literal[
-    "whatsapp_promo", "birthday", "winback", "weekday_boost", "new_customer_return", "vip_reward"
+    "whatsapp_promo", "birthday", "winback", "weekday_boost", "new_customer_return", "vip_reward",
+    "voucher",
 ]
+
+
+class VoucherConfigIn(BaseModel):
+    """Vouchers a campaign issues to its audience (the granted-voucher issuer)."""
+    value: float = Field(ge=0)                    # $ off per voucher
+    count: int = Field(default=1, ge=1, le=100)   # vouchers per customer
+    per_period: Literal["day", "week", "month"] | None = None
+    valid_days: int | None = Field(default=None, ge=1, le=3650)
+    name: str | None = Field(default=None, max_length=120)
 
 
 class CampaignMetricsOut(BaseModel):
@@ -30,6 +40,8 @@ class CampaignCreateIn(BaseModel):
     segment_key: str | None = None
     message_template: str = Field(default="", max_length=1000)
     reward_points: int = Field(default=0, ge=0)
+    scope_node_id: str | None = None        # member-tree node this campaign reaches (subtree); None = tenant-wide
+    voucher: VoucherConfigIn | None = None  # if set, the campaign can issue these vouchers to its audience
     starts_at: UtcDatetime | None = None
     ends_at: UtcDatetime | None = None
 
@@ -41,6 +53,7 @@ class CampaignOut(ORMModel):
     segment_key: str | None = None
     message_template: str
     reward_points: int
+    scope_node_id: str | None = None
     is_active: bool
     starts_at: UtcDatetime | None = None
     ends_at: UtcDatetime | None = None
@@ -76,6 +89,10 @@ class CampaignDetailOut(BaseModel):
 
 class AudienceResult(BaseModel):
     audience_size: int
+
+
+class VoucherIssueResult(BaseModel):
+    issued: int
 
 
 class SendResultOut(BaseModel):
