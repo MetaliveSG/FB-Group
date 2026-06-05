@@ -7,6 +7,7 @@ import {
   listNodeAccounts,
   createNodeAccount,
   revokeNodeAccount,
+  setStaffPin,
   listVenueLeases,
   createLease,
   updateLease,
@@ -336,6 +337,16 @@ export default function NodeDetailDrawer({
                   <div key={a.assignment_id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
                     <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.email}</span>
                     <span className="badge" style={{ background: "#eef2ff", color: "#3730a3", fontSize: 10, textTransform: "capitalize" }}>{a.role}</span>
+                    <button title={a.pin_set ? "PIN set — reset" : "Set POS PIN"} disabled={busy}
+                      onClick={() => {
+                        const pin = window.prompt(`Set POS PIN for ${a.email} (4–6 digits):`);
+                        if (pin === null) return;
+                        if (!/^\d{4,6}$/.test(pin)) { window.alert("PIN must be 4–6 digits"); return; }
+                        run(() => setStaffPin(base, tok(), node.id, a.user_id, pin), reloadAccounts);
+                      }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: a.pin_set ? "#166534" : "#6b7280", fontSize: 11, fontWeight: 600 }}>
+                      {a.pin_set ? "PIN ✓" : "Set PIN"}
+                    </button>
                     <button aria-label="Revoke" title="Revoke login" disabled={busy}
                       onClick={() => run(() => revokeNodeAccount(base, tok(), node.id, a.assignment_id), reloadAccounts)}
                       style={{ background: "none", border: "none", cursor: "pointer", color: "#b91c1c", fontSize: 15 }}>×</button>

@@ -606,6 +606,14 @@ export interface WelcomeVoucherCfg {
   name: string;
 }
 
+export interface ReceiptCfg {
+  company_name: string;
+  uen: string;
+  address: string;
+  phone: string;
+  footer: string;
+}
+
 export interface MerchantSettings {
   pipeline_enabled: boolean;
   wheel_spin_cost: number;
@@ -615,6 +623,7 @@ export interface MerchantSettings {
   pos_enabled: boolean;
   timezone: string;   // the tenant's canonical reporting timezone (the "books")
   welcome_voucher: WelcomeVoucherCfg;
+  receipt: ReceiptCfg;
 }
 
 /** Non-sensitive nav booleans any staff member may read (no spin costs / earn rates).
@@ -982,6 +991,7 @@ export interface OrgNodeAccount {
   full_name: string;
   is_active: boolean;
   role: string;            // manager | cashier | staff | finance
+  pin_set?: boolean;       // has a POS quick-login PIN
 }
 
 // A venue↔stall tenancy edge. rent_type is the foodcourt/coffeeshop switch:
@@ -2027,6 +2037,7 @@ export function updateSettings(
     pos_enabled?: boolean;
     timezone?: string;
     welcome_voucher?: WelcomeVoucherCfg;
+    receipt?: ReceiptCfg;
   },
   merchantId?: string
 ): Promise<MerchantSettings> {
