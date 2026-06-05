@@ -331,6 +331,40 @@ tbody tr.clickable {
   position: sticky;
   top: 0;
   height: 100vh;
+  transition: width 0.15s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.sidebar.collapsed {
+  width: 68px;
+}
+.sidebar.collapsed .sidebar-nav {
+  padding: 0 10px;
+}
+.sidebar.collapsed .sidebar-link {
+  padding: 10px 0;
+}
+.sidebar-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  user-select: none;
+  padding: 12px 12px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+.sidebar-section-title:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+.sidebar-link svg {
+  flex-shrink: 0;
 }
 
 .sidebar-logo {
