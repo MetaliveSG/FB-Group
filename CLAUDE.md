@@ -147,9 +147,13 @@ GST/CDC/MAS) → **M4** (the barrier to entry). GTM keep-your-POS → `gtm-pos-a
 
 ## Demo credentials
 - Operator: `http://localhost:3001/platform/login` → `superadmin@platform.sg` / `Password123!`
-- Merchant owner: `http://localhost:3001/merchant/login` → `owner@makan.sg` (or `owner@kampongeats.sg`) / `Password123!`
-- Customer QR: `http://localhost:3001/t/orchard-01` (or `kampong-bedok-01`); OTP phone `+6580000000` (DEBUG returns the code)
-- QR tokens are **stable slugs** (per outlet+table) that survive reseeds.
+- Merchant dashboard: `http://localhost:3001/merchant/login` (live UI-onboarded merchants; the old
+  seeded `owner@makan.sg` was cleared). All `Password123!`, role = node-scoped **Manager** (owner-equiv):
+  - `owner@breadtalk.sg` → **Breadtalk Group** (+ downline: Bakery, Toast Box, Toast Box @ Taka/Orchard)
+  - `owner@pepperlunch.sg` → **Pepper Lunch Group** (+ all Pepper Lunch outlets) *(genuine Merchant-Owner from onboarding; pw reset to the standard)*
+  - `manager@toastbox.sg` → **Toast Box @ Orchard** only (single-storefront scope)
+  - These are **live-DB accounts** (not seeded) → recreate after a data wipe (operator can add via the node drawer, or re-run the ensure-script).
+- Customer QR: scan tokens are the live storefronts' QR (see each Storefront's *Tables & QR*); OTP phone `+6580000000` (DEBUG returns the code).
 
 ## Memory & skills
 - Persistent memory: `~/.claude/projects/-Volumes-Data-Drive-Coding-multi-agent-FB-Group/memory/`
