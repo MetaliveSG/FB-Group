@@ -130,8 +130,10 @@ class RewardRedemption(PKMixin, TimestampMixin, Base):
     value: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     min_spend: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     valid_until: Mapped[datetime | None] = mapped_column()
-    # Issuance batch (a campaign/welcome pack) — groups vouchers for the per-period redemption cap.
-    campaign_id: Mapped[str | None] = mapped_column(String(32), index=True)
+    # Issuance batch (a Campaign id OR a synthetic like "welcome:{merchant_id}") — groups vouchers for
+    # the per-period cap. 64 wide: holds a 32-hex campaign id AND prefixed synthetic ids (Postgres
+    # enforces VARCHAR length; SQLite tests don't — keep this ample).
+    campaign_id: Mapped[str | None] = mapped_column(String(64), index=True)
     per_period: Mapped[str | None] = mapped_column(String(8))   # None | day | week | month
     redeemed_at: Mapped[datetime | None] = mapped_column()
     redeemed_by_user_id: Mapped[str | None] = mapped_column(String(32))
