@@ -42,6 +42,8 @@ class MyVoucherOut(ORMModel):
     voucher_code: str
     reward_name: str
     status: str
+    value: float = 0
+    valid_until: UtcDatetime | None = None
     created_at: UtcDatetime
 
 

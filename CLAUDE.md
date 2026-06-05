@@ -70,9 +70,11 @@ enter code → validate → mark used → apply to the order, on the checkout/`r
 always-on, everyone* → loyalty; *granted to a trigger/segment* → campaign. So a **welcome "10×$1 on
 signup, 1/period"** = a **campaign** (trigger=register) issuing from the core; **"$1 off for N coins"** =
 **loyalty** — both redeemed the SAME way. Mirrors BreadTalk (Welcome eVoucher vs points Bun Voucher).
-**As-built gap:** issuance works (`RewardRedemption` + `voucher_code` from catalog/wheel/jackpot) but
-the **cashier redeem half is NOT built** (no validate/mark-used/apply-to-order; no rules; status
-`redeemed`/`active` inconsistent). Build order: core+redemption → issuance hooks → UI.
+**Scope (campaign reach):** scope = a member-tree **node**; reach = its **subtree**. Voucher carries
+`scope_node_id` (redemption validates redeeming storefront ∈ subtree, reusing the suspend path machinery);
+`merchant_id` = the funding tenant. Tiers 1–2 (leaf/chain/owned-group, one tenant pays) = BUILT; tier 3
+(independent cross-merchant = **coalition + split settlement M2**) = DEFERRED, seam reserved (`scope_type:
+node|coalition`). Default scope = the tenant node (tenant-wide; additive, never re-key).
 
 ## Roadmap & next phases (priority) — see memory `roadmap-mvp-foundation`
 **DIRECTION = MVP, not PoC (2026-06-04).** Bar = "a first real merchant runs their business on this"

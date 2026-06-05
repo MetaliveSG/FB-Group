@@ -60,6 +60,33 @@ register) that issues vouchers from the core, with the per-period cap as a vouch
 3. **UI**: customer "My Vouchers" (show QR to cashier) + a cashier "Scan/Redeem voucher" action on the
    Orders/POS screen.
 
+## 6. Scope — campaign reach across the member tree (decided 2026-06-05)
+
+"A campaign must apply to 1 leaf, a parent, or multiple merchants" = **one concept: scope = a
+member-tree NODE; reach = its subtree.** The tree already expresses leaf vs parent (reuse `node.path`
++ `org_tree.is_live`/subtree). Scope answers three SEPARATE questions:
+
+| Axis | Question | Resolved by |
+|---|---|---|
+| Audience | *who* gets it | customers in the scope node's subtree (+ segment) |
+| Redemption validity | *where* it can be used | redeeming storefront ∈ subtree(scope_node) |
+| Funding / settlement | *who pays* the discount | settlement account resolved on the node |
+
+**Three tiers (BUILDING tiers 1–2; tier 3 deferred):**
+1. **Leaf / sub-chain / chain within one tenant** — `scope_node_id` = any node under one settlement
+   boundary; funding = the tenant (one payer). Covers "1 leaf or parent" entirely.
+2. **A group spanning sub-tenants you OWN** — still one `scope_node_id` (the group node = one subtree);
+   funding allocates across owned tenants (internal, not true split settlement).
+3. **Independent cross-merchant — a COALITION** *(DEFERRED → P2)*: scope = a `Coalition`
+   (`coalition_members`; `LoyaltyAccount.scope_type=COALITION`); funding = **split settlement (M2)**.
+   Reserve the seam (`scope_type: node | coalition`); don't build now.
+
+**Implementation:** the voucher (`RewardRedemption`) gains **`scope_node_id`** (the node defining
+redemption reach); `merchant_id` stays as the resolved **funding** tenant. Redeem validates the
+redeeming storefront ∈ subtree(scope_node) (reuses the suspend path/subtree machinery). `Campaign` also
+carries `scope_node_id`. Default scope = the tenant node (tenant-wide), so existing issuers are
+unaffected (additive — never re-key). Audience-by-subtree is the documented next refinement.
+
 ## 5. Industry reference (SG F&B)
 
 - **BreadTalk Group Rewards** — 1pt/$1 store-credit; redeem from 1 point; **Bun Vouchers** (≤$2.30 item)

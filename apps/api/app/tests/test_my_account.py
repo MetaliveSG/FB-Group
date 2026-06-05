@@ -129,4 +129,4 @@ def test_my_vouchers_lists_redemptions(client, db):
     assert len(data) == 1
     assert data[0]["voucher_code"]
     assert data[0]["reward_name"] == "Free Coffee"
-    assert data[0]["status"] in {"active", "redeemed"}  # catalog redeem → "redeemed"
+    assert data[0]["status"] == "issued"  # catalog redeem ISSUES a voucher; cashier redemption marks it used

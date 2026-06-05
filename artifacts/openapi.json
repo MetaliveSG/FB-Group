@@ -9013,6 +9013,166 @@
           }
         }
       }
+    },
+    "/api/v1/vouchers/{code}": {
+      "get": {
+        "tags": [
+          "vouchers"
+        ],
+        "summary": "Preview Voucher",
+        "description": "Dry-run: validate a scanned/typed voucher (no mutation) so the cashier can confirm before applying.",
+        "operationId": "preview_voucher_api_v1_vouchers__code__get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          },
+          {
+            "name": "merchant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Merchant Id"
+            }
+          },
+          {
+            "name": "order_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoucherPreviewOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vouchers/{code}/redeem": {
+      "post": {
+        "tags": [
+          "vouchers"
+        ],
+        "summary": "Redeem Voucher",
+        "description": "Cashier redeems a voucher (scan QR / enter code) \u2192 marks it used + applies its value to the order.",
+        "operationId": "redeem_voucher_api_v1_vouchers__code__redeem_post",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoucherRedeemIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoucherRedeemOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -11802,6 +11962,22 @@
             "type": "string",
             "title": "Status"
           },
+          "value": {
+            "type": "number",
+            "title": "Value",
+            "default": 0
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Until"
+          },
           "created_at": {
             "type": "string",
             "title": "Created At"
@@ -14406,6 +14582,141 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VoucherPreviewOut": {
+        "properties": {
+          "voucher_code": {
+            "type": "string",
+            "title": "Voucher Code"
+          },
+          "reward_name": {
+            "type": "string",
+            "title": "Reward Name"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "min_spend": {
+            "type": "string",
+            "title": "Min Spend"
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Until"
+          },
+          "valid": {
+            "type": "boolean",
+            "title": "Valid",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "voucher_code",
+          "reward_name",
+          "value",
+          "min_spend"
+        ],
+        "title": "VoucherPreviewOut",
+        "description": "Dry-run validation (cashier checks before applying)."
+      },
+      "VoucherRedeemIn": {
+        "properties": {
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id"
+          },
+          "merchant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant Id"
+          }
+        },
+        "type": "object",
+        "title": "VoucherRedeemIn"
+      },
+      "VoucherRedeemOut": {
+        "properties": {
+          "voucher_code": {
+            "type": "string",
+            "title": "Voucher Code"
+          },
+          "reward_name": {
+            "type": "string",
+            "title": "Reward Name"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id"
+          },
+          "discount_amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount Amount"
+          },
+          "order_total": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "voucher_code",
+          "reward_name",
+          "value",
+          "status"
+        ],
+        "title": "VoucherRedeemOut"
       },
       "WheelConfigOut": {
         "properties": {

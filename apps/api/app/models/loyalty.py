@@ -112,11 +112,29 @@ class RewardTransaction(PKMixin, TimestampMixin, Base):
 
 
 class RewardRedemption(PKMixin, TimestampMixin, Base):
+    """A voucher — issued by loyalty (earned) OR a campaign (granted), redeemed by ONE cashier flow.
+    See docs/architecture-vouchers.md + app/services/vouchers.py. `status`: issued → redeemed (used)
+    / expired / void."""
     __tablename__ = "reward_redemptions"
 
     account_id: Mapped[str] = mapped_column(ForeignKey("loyalty_accounts.id", ondelete="CASCADE"), index=True)
     order_id: Mapped[str | None] = mapped_column(ForeignKey("orders.id", ondelete="SET NULL"))
     reward_name: Mapped[str] = mapped_column(String(160), nullable=False)
     points_spent: Mapped[int] = mapped_column(Integer, nullable=False)
-    status: Mapped[str] = mapped_column(String(16), default="redeemed")
-    voucher_code: Mapped[str | None] = mapped_column(String(32))
+    status: Mapped[str] = mapped_column(String(16), default="issued", index=True)  # issued|redeemed|expired|void
+    voucher_code: Mapped[str | None] = mapped_column(String(32), index=True)
+
+    # Voucher core (PDPA-unrelated). `merchant_id` = the data-controller tenant (denormalised from the
+    # loyalty account for direct redeem queries). `value` = $ off applied at redemption (0 = free item).
+    merchant_id: Mapped[str | None] = mapped_column(String(32), index=True)
+    value: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
+    min_spend: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
+    valid_until: Mapped[datetime | None] = mapped_column()
+    # Issuance batch (a campaign/welcome pack) — groups vouchers for the per-period redemption cap.
+    campaign_id: Mapped[str | None] = mapped_column(String(32), index=True)
+    per_period: Mapped[str | None] = mapped_column(String(8))   # None | day | week | month
+    redeemed_at: Mapped[datetime | None] = mapped_column()
+    redeemed_by_user_id: Mapped[str | None] = mapped_column(String(32))
+    # Scope (campaign reach): the member-tree node whose SUBTREE this voucher is redeemable in.
+    # NULL = tenant-wide (any storefront of `merchant_id`). See docs/architecture-vouchers.md §6.
+    scope_node_id: Mapped[str | None] = mapped_column(String(32), index=True)

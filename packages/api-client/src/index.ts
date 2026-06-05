@@ -329,8 +329,20 @@ export interface MyOrder {
 export interface MyVoucher {
   voucher_code: string;
   reward_name: string;
-  status: string;
+  status: string;          // issued | redeemed | expired | void
+  value?: number;          // $ off (0 = free item)
+  valid_until?: string | null;
   created_at: string;
+}
+
+export interface VoucherRedeemResult {
+  voucher_code: string;
+  reward_name: string;
+  value: number;
+  status: string;
+  order_id?: string | null;
+  discount_amount?: number | null;
+  order_total?: number | null;
 }
 
 export interface MyProfile {
@@ -1433,6 +1445,32 @@ export function getMyVouchers(
   merchantId: string
 ): Promise<MyVoucher[]> {
   return request(baseUrl, `/me/vouchers?merchant_id=${encodeURIComponent(merchantId)}`, {}, token);
+}
+
+/** Staff: dry-run validate a scanned/typed voucher (no mutation). */
+export function previewVoucher(
+  baseUrl: string,
+  token: string,
+  code: string,
+  opts: { orderId?: string; merchantId?: string } = {}
+): Promise<{ voucher_code: string; reward_name: string; value: number; min_spend: number; valid_until: string | null; valid: boolean }> {
+  const q = new URLSearchParams();
+  if (opts.orderId) q.set("order_id", opts.orderId);
+  if (opts.merchantId) q.set("merchant_id", opts.merchantId);
+  return request(baseUrl, `/vouchers/${encodeURIComponent(code)}?${q.toString()}`, {}, token);
+}
+
+/** Staff/cashier: redeem a voucher (scan QR / enter code) → marks used + applies to the order. */
+export function redeemVoucher(
+  baseUrl: string,
+  token: string,
+  code: string,
+  body: { order_id?: string; merchant_id?: string }
+): Promise<VoucherRedeemResult> {
+  return request(baseUrl, `/vouchers/${encodeURIComponent(code)}/redeem`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  }, token);
 }
 
 export function getRewardsCatalog(
