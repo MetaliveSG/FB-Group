@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { staffLogin } from "@/lib/api";
 import { setStaffToken, setStaffRefreshToken, setStaffUser } from "@/lib/auth";
@@ -9,10 +9,20 @@ import { getApiBase } from "@/lib/api";
 export default function MerchantLoginPage() {
   const router = useRouter();
   const base = getApiBase();
-  const [email, setEmail] = useState("owner@makan.sg");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("Password123!");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pre-fill from ?email=&pw= (the landing page passes the chosen merchant's credentials).
+  // Read from the URL in an effect (client-only) to avoid the useSearchParams Suspense build constraint.
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const e = sp.get("email");
+    const p = sp.get("pw");
+    if (e) setEmail(e);
+    if (p) setPassword(p);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -104,11 +114,13 @@ export default function MerchantLoginPage() {
                 marginBottom: 16,
               }}
             >
-              <strong>Demo credentials:</strong>
+              <strong>Demo credentials</strong> (all <code>Password123!</code>):
               <br />
-              Owner: <code>owner@makan.sg</code> / <code>Password123!</code>
+              Breadtalk Group: <code>owner@breadtalk.sg</code>
               <br />
-              Manager: <code>manager.orchard@makan.sg</code> / <code>Password123!</code>
+              Pepper Lunch Group: <code>owner@pepperlunch.sg</code>
+              <br />
+              Toast Box @ Orchard: <code>manager@toastbox.sg</code>
             </div>
 
             <button
