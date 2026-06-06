@@ -291,8 +291,9 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Staff & PINs (POS) — owner self-serve for POS logins (below the Receipt header). */}
-      <PosStaffCard base={base} />
+      {/* Staff & PINs (POS) — owner self-serve for POS logins (below the Receipt header).
+          merchantId scopes the picker to the in-scope tenant (operators get the whole forest from /org/tree). */}
+      <PosStaffCard base={base} merchantId={getOperatorMerchant()?.id} />
 
       {/* Welcome voucher pack — granted on signup (a campaign trigger). */}
       {settings?.welcome_voucher && (
