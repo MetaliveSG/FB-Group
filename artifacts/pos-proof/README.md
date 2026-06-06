@@ -33,10 +33,12 @@ zero errors.
 A POS user is PIN-only: synthetic `@pos.local` email + locked password → can't web-login; a web user
 can't PIN-login. **PINs are stored READABLY (owner choice — migration `y3z4pospin`):** the owner reveals
 any operator's current PIN via an eye icon and can **set a chosen PIN** or auto-generate one; PINs are
-**unique per storefront**. Creating a Storefront auto-provisions a **3-person team (1 manager + 2
-cashiers)**. Owners self-serve via **Settings → "Staff & PINs (POS)"** (list with eye-reveal · Change PIN ·
-add with optional chosen PIN · remove); the node drawer's web "Set PIN" was removed ("Logins" → "Web
-logins"). Endpoints: `GET/POST /org/nodes/{id}/pos-staff` (create accepts an optional `pin`),
+**unique per storefront**. Creating a Storefront auto-provisions a **3-person team (1 Supervisor + 2
+Cashiers)**. POS role palette = **Supervisor** (on-floor lead: POS ops + store reports) and **Cashier**
+— Supervisor is a DISTINCT role from the web "Manager" (no org/menu/staff powers); web logins drop
+"cashier" entirely (manager/staff/finance). Owners self-serve via **Settings → "Staff & PINs (POS)"**
+(list with eye-reveal · Change PIN · add with optional chosen PIN · remove); the node drawer's web "Set
+PIN" was removed ("Logins" → "Web logins"). Endpoints: `GET/POST /org/nodes/{id}/pos-staff` (create accepts an optional `pin`),
 `POST …/{uid}/reset-pin` (body `{pin}` = chosen, or omit = auto), `DELETE …/{uid}`; pin-login takes
 `outlet_id`. Backend: `test_pos_pin.py` (10) + `test_pos_receipt.py` (3) green.
 **Encrypted at rest (2026-06-07):** PINs are stored as **Fernet ciphertext** (`app/core/pin_crypto.py`,

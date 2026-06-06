@@ -12,7 +12,10 @@ import { getStaffToken } from "@/lib/auth";
 import { Icons } from "@/components/ui";
 import type { OrgTreeNode, PosStaffMember } from "@fbgroup/api-client";
 
-const ROLES = ["cashier", "manager", "staff", "finance"];
+// POS palette — Supervisor (on-floor lead) or Cashier. `store_manager`/older values map for display.
+const ROLES = ["cashier", "supervisor"];
+const ROLE_LABEL: Record<string, string> = { cashier: "Cashier", supervisor: "Supervisor" };
+const roleLabel = (r: string) => ROLE_LABEL[r] ?? r.replace(/_/g, " ");
 
 /**
  * "Staff & PINs (POS)" — merchant-owner self-serve for POS operators.
@@ -146,7 +149,7 @@ export default function PosStaffCard({ base, merchantId }: { base: string; merch
           staff.map((m) => (
             <div key={m.user_id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, borderBottom: "1px solid var(--color-border,#eef0f3)", paddingBottom: 8 }}>
               <span style={{ flex: 1, fontWeight: 500 }}>{m.full_name || "(unnamed)"}</span>
-              <span className="badge" style={{ background: "#eef2ff", color: "#3730a3", fontSize: 10, textTransform: "capitalize" }}>{m.role}</span>
+              <span className="badge" style={{ background: "#eef2ff", color: "#3730a3", fontSize: 10 }}>{roleLabel(m.role)}</span>
               {editing === m.user_id ? (
                 <>
                   <input autoFocus inputMode="numeric" value={editPin} placeholder="4–6 digits"
@@ -186,8 +189,8 @@ export default function PosStaffCard({ base, merchantId }: { base: string; merch
           <input placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} />
           <div style={{ display: "flex", gap: 8 }}>
             <label style={{ fontSize: 12, flex: 1 }}>Role
-              <select value={role} onChange={(e) => setRole(e.target.value)} style={{ display: "block", width: "100%", textTransform: "capitalize" }}>
-                {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+              <select value={role} onChange={(e) => setRole(e.target.value)} style={{ display: "block", width: "100%" }}>
+                {ROLES.map((r) => <option key={r} value={r}>{roleLabel(r)}</option>)}
               </select>
             </label>
             <label style={{ fontSize: 12, flex: 1 }}>PIN (blank = auto)

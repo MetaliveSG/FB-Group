@@ -31,9 +31,11 @@ from app.models.org import OrgNode
 POS_KIND = "pos"
 _PIN_LEN = 6
 _PIN_RE = re.compile(r"^\d{4,6}$")
-# The auto-provisioned starter team for a brand-new storefront: 1 manager + 2 cashiers.
+# The only roles a POS operator may hold — Supervisor (on-floor lead) or Cashier.
+POS_ROLES = {RoleName.SUPERVISOR.value, RoleName.CASHIER.value}
+# The auto-provisioned starter team for a brand-new storefront: 1 supervisor + 2 cashiers.
 _DEFAULT_TEAM = [
-    (RoleName.MANAGER.value, "Manager"),
+    (RoleName.SUPERVISOR.value, "Supervisor"),
     (RoleName.CASHIER.value, "Cashier 1"),
     (RoleName.CASHIER.value, "Cashier 2"),
 ]
@@ -121,7 +123,7 @@ def _synthetic_email(db: Session, node_id: str) -> str:
 def create_pos_user(db: Session, *, node_id: str, full_name: str, role: str, pin: str | None = None) -> dict:
     """Create a kind='pos' operator at a storefront node with a PIN — a chosen one (validated/unique)
     or a fresh server-generated one. Returns the row incl. the (readable) PIN."""
-    if role not in {RoleName.MANAGER.value, RoleName.CASHIER.value, RoleName.STAFF.value, RoleName.FINANCE.value}:
+    if role not in POS_ROLES:
         raise ConflictError("Role cannot be granted", code="role_not_allowed")
     role_obj = db.scalar(select(Role).where(Role.name == role))
     if role_obj is None:

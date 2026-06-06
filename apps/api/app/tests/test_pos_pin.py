@@ -1,5 +1,5 @@
 """POS staff (kind='pos') — SEGREGATED from web logins:
-- a new Storefront auto-provisions a 3-person team (1 manager + 2 cashiers);
+- a new Storefront auto-provisions a 3-person team (1 supervisor + 2 cashiers);
 - PINs are READABLE (owner-viewable) and listed; the owner can set a chosen PIN or auto-generate;
 - PIN-login is scoped per storefront (the bound outlet) and suspend-aware;
 - POS users cannot web-login; web users are not resolvable by PIN.
@@ -35,7 +35,7 @@ def test_storefront_autoprovisions_pos_team(client, db):
     sf = _create_sf(client, t)
     team = sf["pos_team"]
     assert len(team) == 3
-    assert sorted(m["role"] for m in team) == ["cashier", "cashier", "manager"]
+    assert sorted(m["role"] for m in team) == ["cashier", "cashier", "supervisor"]
     pins = [m["pin"] for m in team]
     assert all(len(p) == 6 and p.isdigit() for p in pins)
     assert len(set(pins)) == 3                        # unique within the storefront
