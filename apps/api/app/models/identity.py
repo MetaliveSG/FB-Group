@@ -42,9 +42,12 @@ class User(PKMixin, TimestampMixin, Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     full_name: Mapped[str] = mapped_column(String(160), default="")
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    # Optional POS quick-login PIN (bcrypt hash). Set/reset at the console; unique per STOREFRONT so
-    # PIN-login resolves one till operator. See app/services/pos_staff.py + /auth/staff/pin-login.
+    # POS quick-login PIN. Legacy bcrypt hash (web set_pin, now dead) kept for back-compat.
     pin_hash: Mapped[str | None] = mapped_column(String(255))
+    # POS till PIN stored READABLY (owner choice — low-risk 6-digit shared-till credential the owner
+    # must be able to read back to staff). Unique per STOREFRONT; resolves one operator at the bound
+    # outlet. Only set for kind="pos" users. See app/services/pos_staff.py. (KIV: encrypt-at-rest.)
+    pin: Mapped[str | None] = mapped_column(String(8))
     # Account kind — the two login surfaces are SEGREGATED:
     #   "web" → email + password at /merchant (dashboard); cannot PIN-login.
     #   "pos" → PIN-only till operator at /pos; synthetic email + locked password → cannot web-login.

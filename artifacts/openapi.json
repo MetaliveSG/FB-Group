@@ -8043,7 +8043,7 @@
                     "org"
                 ],
                 "summary": "Create Pos Staff",
-                "description": "Add a till operator; returns the one-time PIN (show-once \u2014 PINs are hashed at rest).",
+                "description": "Add a POS operator with a chosen PIN (or auto-generated); returns the PIN.",
                 "operationId": "create_pos_staff_api_v1_org_nodes__node_id__pos_staff_post",
                 "parameters": [
                     {
@@ -8112,7 +8112,7 @@
                     "org"
                 ],
                 "summary": "Reset Pos Staff Pin",
-                "description": "Mint a fresh storefront-unique PIN; returns it once.",
+                "description": "Set a chosen PIN, or auto-generate a fresh storefront-unique one; returns it.",
                 "operationId": "reset_pos_staff_pin_api_v1_org_nodes__node_id__pos_staff__user_id__reset_pin_post",
                 "parameters": [
                     {
@@ -8150,6 +8150,23 @@
                         }
                     }
                 ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "anyOf": [
+                                    {
+                                        "$ref": "#/components/schemas/PosPinSetIn"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "title": "Body"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "Successful Response",
@@ -14136,6 +14153,25 @@
                 "title": "PlatformCapabilitiesOut",
                 "description": "The operator's platform-tier capabilities \u2014 drives operator-console section/action gating."
             },
+            "PosPinSetIn": {
+                "properties": {
+                    "pin": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "pattern": "^\\d{4,6}$"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Pin"
+                    }
+                },
+                "type": "object",
+                "title": "PosPinSetIn",
+                "description": "Set a chosen PIN, or None to auto-generate a fresh storefront-unique one."
+            },
             "PosStaffCreateIn": {
                 "properties": {
                     "full_name": {
@@ -14148,6 +14184,18 @@
                         "type": "string",
                         "pattern": "^(manager|cashier|staff|finance)$",
                         "title": "Role"
+                    },
+                    "pin": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "pattern": "^\\d{4,6}$"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Pin"
                     }
                 },
                 "type": "object",
@@ -14174,6 +14222,17 @@
                         "type": "boolean",
                         "title": "Is Active"
                     },
+                    "pin": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Pin"
+                    },
                     "pin_set": {
                         "type": "boolean",
                         "title": "Pin Set"
@@ -14188,7 +14247,7 @@
                     "pin_set"
                 ],
                 "title": "PosStaffOut",
-                "description": "A till operator at a storefront. No email/password is surfaced \u2014 POS users are PIN-only."
+                "description": "A POS operator at a storefront \u2014 PIN-only (no email/password). `pin` is the readable PIN the\nowner reveals via the eye (owner choice for low-risk storefront PINs)."
             },
             "PosStaffSecret": {
                 "properties": {
@@ -14217,7 +14276,7 @@
                     "pin"
                 ],
                 "title": "PosStaffSecret",
-                "description": "Show-once payload: the plaintext PIN is returned exactly once (PINs are bcrypt-hashed at rest)."
+                "description": "A POS operator + its (readable) PIN \u2014 returned on create/reset."
             },
             "PrizeOut": {
                 "properties": {

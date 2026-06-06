@@ -31,6 +31,7 @@ from app.schemas.org import (
     PinSetIn,
     OutletOut,
     OutletUpdateIn,
+    PosPinSetIn,
     PosStaffCreateIn,
     PosStaffOut,
     PosStaffSecret,
@@ -254,7 +255,7 @@ def revoke_node_account(node_id: str, assignment_id: str,
     db.commit()
 
 
-# --- POS staff (till operators) — PIN-only, segregated from web logins; storefront-scoped --------
+# --- POS staff (POS operators) — PIN-only, segregated from web logins; storefront-scoped --------
 @router.get("/nodes/{node_id}/pos-staff", response_model=list[PosStaffOut])
 def list_pos_staff(node_id: str, scope=Depends(get_scope), db: Session = Depends(get_db)):
     org_tree.get_managed_node(db, scope, node_id)            # 404 absent / 403 outside downline
@@ -264,9 +265,9 @@ def list_pos_staff(node_id: str, scope=Depends(get_scope), db: Session = Depends
 @router.post("/nodes/{node_id}/pos-staff", response_model=PosStaffSecret, status_code=201)
 def create_pos_staff(node_id: str, body: PosStaffCreateIn,
                      scope=Depends(get_scope), db: Session = Depends(get_db)):
-    """Add a till operator; returns the one-time PIN (show-once — PINs are hashed at rest)."""
+    """Add a POS operator with a chosen PIN (or auto-generated); returns the PIN."""
     org_tree.get_managed_node(db, scope, node_id)
-    row = pos_staff.create_pos_user(db, node_id=node_id, full_name=body.full_name, role=body.role)
+    row = pos_staff.create_pos_user(db, node_id=node_id, full_name=body.full_name, role=body.role, pin=body.pin)
     audit_record(db, action="org.pos_staff_create", actor_id=scope.user_id,
                  entity_type="org_node", entity_id=node_id, meta={"user_id": row["user_id"], "role": body.role})
     db.commit()
@@ -274,11 +275,11 @@ def create_pos_staff(node_id: str, body: PosStaffCreateIn,
 
 
 @router.post("/nodes/{node_id}/pos-staff/{user_id}/reset-pin", response_model=PosStaffSecret)
-def reset_pos_staff_pin(node_id: str, user_id: str,
+def reset_pos_staff_pin(node_id: str, user_id: str, body: PosPinSetIn | None = None,
                         scope=Depends(get_scope), db: Session = Depends(get_db)):
-    """Mint a fresh storefront-unique PIN; returns it once."""
+    """Set a chosen PIN, or auto-generate a fresh storefront-unique one; returns it."""
     org_tree.get_managed_node(db, scope, node_id)
-    row = pos_staff.reset_pin(db, user_id=user_id, node_id=node_id)
+    row = pos_staff.reset_pin(db, user_id=user_id, node_id=node_id, pin=(body.pin if body else None))
     audit_record(db, action="org.pos_staff_pin_reset", actor_id=scope.user_id,
                  entity_type="org_node", entity_id=node_id, meta={"user_id": user_id})
     db.commit()

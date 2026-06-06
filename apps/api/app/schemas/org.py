@@ -220,23 +220,31 @@ class PinSetIn(BaseModel):
     pin: str = Field(pattern=r"^\d{4,6}$")
 
 
-# --- POS staff (till operators) — kind="pos", PIN-only, segregated from web logins ----
+# --- POS staff (POS operators) — kind="pos", PIN-only, segregated from web logins ----
 class PosStaffOut(BaseModel):
-    """A till operator at a storefront. No email/password is surfaced — POS users are PIN-only."""
+    """A POS operator at a storefront — PIN-only (no email/password). `pin` is the readable PIN the
+    owner reveals via the eye (owner choice for low-risk storefront PINs)."""
     user_id: str
     full_name: str
     role: str                       # manager | cashier | staff | finance
     is_active: bool
+    pin: str | None = None
     pin_set: bool
 
 
 class PosStaffCreateIn(BaseModel):
     full_name: str = Field(default="", max_length=160)
     role: str = Field(pattern="^(manager|cashier|staff|finance)$")
+    pin: str | None = Field(default=None, pattern=r"^\d{4,6}$")   # chosen PIN; None = auto-generate
+
+
+class PosPinSetIn(BaseModel):
+    """Set a chosen PIN, or None to auto-generate a fresh storefront-unique one."""
+    pin: str | None = Field(default=None, pattern=r"^\d{4,6}$")
 
 
 class PosStaffSecret(BaseModel):
-    """Show-once payload: the plaintext PIN is returned exactly once (PINs are bcrypt-hashed at rest)."""
+    """A POS operator + its (readable) PIN — returned on create/reset."""
     user_id: str
     full_name: str
     role: str

@@ -256,7 +256,7 @@ export default function NodeDetailDrawer({
                       (r) => {
                         setAddName(""); setAddFee(""); setAddOpen(false);
                         const team = (r as OrgNodeCreated)?.pos_team;
-                        if (team && team.length) setPosReveal(team);   // show-once till PINs for the new storefront
+                        if (team && team.length) setPosReveal(team);   // starter POS team PINs for the new storefront
                       },
                     )}>Create</button>
                   <button className="btn btn-secondary btn-sm" onClick={() => setAddOpen(false)}>Cancel</button>
@@ -265,7 +265,7 @@ export default function NodeDetailDrawer({
               {posReveal && posReveal.length > 0 && (
                 <div style={{ border: "1px solid #bbf7d0", background: "#f0fdf4", borderRadius: 8, padding: 12 }}>
                   <div style={{ fontWeight: 600, fontSize: 13, color: "#166534" }}>
-                    Storefront created · POS team PINs — note them now, shown only once
+                    Storefront created · starter POS team (manage + reveal PINs in Settings → Staff &amp; PINs)
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
                     {posReveal.map((m) => (
@@ -341,7 +341,7 @@ export default function NodeDetailDrawer({
             </div>
           )}
 
-          {/* Web logins — dashboard accounts (email + password). POS till PINs live in Settings → Staff & PINs. */}
+          {/* Web logins — dashboard accounts (email + password). POS PINs live in Settings → Staff & PINs. */}
           {canManage && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--color-border,#e5e7eb)", paddingTop: 14 }}>
               <div style={{ display: "flex", alignItems: "center" }}>

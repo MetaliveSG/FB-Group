@@ -1,4 +1,4 @@
-"""POS staff (till operators) — SEGREGATED from web/dashboard users.
+"""POS staff (POS operators) — SEGREGATED from web/dashboard users.
 
 A POS operator is a `User` with `kind="pos"`: a synthetic email + a locked (random, unknowable)
 password so it can NEVER log into the web dashboard, and a bcrypt-hashed 6-digit **PIN** that is
@@ -9,19 +9,19 @@ references `user_id` everywhere — keeps working unchanged. The segregation is 
 the two login channels (see `auth/service.py`: `login_user` rejects `kind="pos"`; PIN-login only
 considers `kind="pos"`).
 
-PINs are bcrypt-hashed (one-way) — the server cannot read them back. So a PIN is **revealed exactly
-once**, at generation/reset; "reset" mints a fresh server-generated PIN (guaranteed unique at the
-storefront) and returns the plaintext one time.
+PINs are stored READABLY (owner choice — see User.pin): the owner can reveal any operator's current
+PIN and set a chosen one. PINs are unique per storefront. (KIV: encrypt-at-rest.)
 """
 from __future__ import annotations
 
+import re
 import secrets
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.errors import ConflictError, NotFoundError
-from app.core.security import hash_password, verify_password
+from app.core.errors import AppError, ConflictError, NotFoundError
+from app.core.security import hash_password
 from app.models.catalog import Menu
 from app.models.enums import RoleName, ScopeType
 from app.models.identity import Role, User, UserRoleAssignment
@@ -29,13 +29,12 @@ from app.models.org import OrgNode
 
 POS_KIND = "pos"
 _PIN_LEN = 6
-# The auto-provisioned starter team for a brand-new storefront: 1 manager + 4 cashiers.
+_PIN_RE = re.compile(r"^\d{4,6}$")
+# The auto-provisioned starter team for a brand-new storefront: 1 manager + 2 cashiers.
 _DEFAULT_TEAM = [
     (RoleName.MANAGER.value, "Manager"),
     (RoleName.CASHIER.value, "Cashier 1"),
     (RoleName.CASHIER.value, "Cashier 2"),
-    (RoleName.CASHIER.value, "Cashier 3"),
-    (RoleName.CASHIER.value, "Cashier 4"),
 ]
 
 
@@ -78,7 +77,7 @@ def _random_pin() -> str:
 
 def _pin_unique_at_node(db: Session, node_id: str, pin: str, *, exclude_user_id: str | None = None) -> bool:
     for u in _pos_users_at_node(db, node_id):
-        if u.id != exclude_user_id and u.pin_hash and verify_password(pin, u.pin_hash):
+        if u.id != exclude_user_id and u.pin and u.pin == pin:
             return False
     return True
 
@@ -91,14 +90,20 @@ def _fresh_pin_for_node(db: Session, node_id: str, *, exclude_user_id: str | Non
     raise ConflictError("Could not allocate a unique PIN for this storefront", code="pin_exhausted")
 
 
-def reset_pin(db: Session, *, user_id: str, node_id: str) -> dict:
-    """Mint a new server-generated, storefront-unique PIN for a POS user. Returns the row + the
-    plaintext PIN (show-once)."""
+def reset_pin(db: Session, *, user_id: str, node_id: str, pin: str | None = None) -> dict:
+    """Set a POS user's PIN — a chosen `pin` (validated, must be unique at the storefront) or, if None,
+    a fresh server-generated one. Returns the row incl. the (readable) PIN."""
     user = db.get(User, user_id)
     if user is None or user.kind != POS_KIND or _assignment_at(db, user_id=user_id, node_id=node_id) is None:
         raise NotFoundError("POS user not found at this storefront", code="pos_user_not_found")
-    pin = _fresh_pin_for_node(db, node_id, exclude_user_id=user_id)
-    user.pin_hash = hash_password(pin)
+    if pin is not None:
+        if not _PIN_RE.match(pin):
+            raise AppError("PIN must be 4–6 digits", code="bad_pin", status_code=422)
+        if not _pin_unique_at_node(db, node_id, pin, exclude_user_id=user_id):
+            raise ConflictError("Another operator at this storefront already uses that PIN", code="pin_taken")
+    else:
+        pin = _fresh_pin_for_node(db, node_id, exclude_user_id=user_id)
+    user.pin = pin
     db.flush()
     return {**_row(db, user, node_id), "pin": pin}
 
@@ -112,27 +117,32 @@ def _synthetic_email(db: Session, node_id: str) -> str:
     raise ConflictError("Could not allocate a POS account id", code="pos_email_exhausted")
 
 
-def create_pos_user(db: Session, *, node_id: str, full_name: str, role: str) -> dict:
-    """Create a kind='pos' till operator at a storefront node with a fresh PIN. Returns the row +
-    the plaintext PIN (show-once)."""
+def create_pos_user(db: Session, *, node_id: str, full_name: str, role: str, pin: str | None = None) -> dict:
+    """Create a kind='pos' operator at a storefront node with a PIN — a chosen one (validated/unique)
+    or a fresh server-generated one. Returns the row incl. the (readable) PIN."""
     if role not in {RoleName.MANAGER.value, RoleName.CASHIER.value, RoleName.STAFF.value, RoleName.FINANCE.value}:
         raise ConflictError("Role cannot be granted", code="role_not_allowed")
     role_obj = db.scalar(select(Role).where(Role.name == role))
     if role_obj is None:
         raise NotFoundError("Role not found", code="role_missing")
+    if pin is not None:
+        if not _PIN_RE.match(pin):
+            raise AppError("PIN must be 4–6 digits", code="bad_pin", status_code=422)
+        if not _pin_unique_at_node(db, node_id, pin):
+            raise ConflictError("Another operator at this storefront already uses that PIN", code="pin_taken")
+    else:
+        pin = _fresh_pin_for_node(db, node_id)
     user = User(
         email=_synthetic_email(db, node_id),
         full_name=full_name or role.capitalize(),
         password_hash=hash_password(secrets.token_urlsafe(32)),  # locked — unknowable, never used
         kind=POS_KIND,
+        pin=pin,
     )
     db.add(user)
     db.flush()
     db.add(UserRoleAssignment(user_id=user.id, role_id=role_obj.id,
                               scope_type=ScopeType.NODE.value, scope_id=node_id))
-    db.flush()
-    pin = _fresh_pin_for_node(db, node_id)
-    user.pin_hash = hash_password(pin)
     db.flush()
     return {**_row(db, user, node_id), "pin": pin}
 
@@ -171,17 +181,18 @@ def _row(db: Session, user: User, node_id: str) -> dict:
         "full_name": user.full_name,
         "role": role.name if role else "?",
         "is_active": user.is_active,
-        "pin_set": bool(user.pin_hash),
+        "pin": user.pin,                 # readable — the owner reveals it via the eye
+        "pin_set": bool(user.pin),
     }
 
 
 # --- PIN login resolution (per storefront) --------------------------------
 def resolve_pos_pin(db: Session, *, node_id: str, pin: str) -> User | None:
     """The active POS operator at this storefront whose PIN matches, else None."""
-    if not (pin or "").isdigit() or not (4 <= len(pin) <= 6):
+    if not _PIN_RE.match(pin or ""):
         return None
     for u in _pos_users_at_node(db, node_id):
-        if u.pin_hash and verify_password(pin, u.pin_hash):
+        if u.pin and u.pin == pin:
             return u
     return None
 

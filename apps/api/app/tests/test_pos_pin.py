@@ -1,8 +1,8 @@
 """POS staff (kind='pos') — SEGREGATED from web logins:
-- a new Storefront auto-provisions a 5-person team (1 manager + 4 cashiers) with one-time PINs;
+- a new Storefront auto-provisions a 3-person team (1 manager + 2 cashiers);
+- PINs are READABLE (owner-viewable) and listed; the owner can set a chosen PIN or auto-generate;
 - PIN-login is scoped per storefront (the bound outlet) and suspend-aware;
-- POS users cannot web-login; web users are not resolvable by PIN;
-- reset mints a fresh PIN (revealed once) and invalidates the old one.
+- POS users cannot web-login; web users are not resolvable by PIN.
 """
 from sqlalchemy import select
 
@@ -34,15 +34,43 @@ def test_storefront_autoprovisions_pos_team(client, db):
     t = _root(client, db)
     sf = _create_sf(client, t)
     team = sf["pos_team"]
-    assert len(team) == 5
-    assert sorted(m["role"] for m in team) == ["cashier", "cashier", "cashier", "cashier", "manager"]
+    assert len(team) == 3
+    assert sorted(m["role"] for m in team) == ["cashier", "cashier", "manager"]
     pins = [m["pin"] for m in team]
     assert all(len(p) == 6 and p.isdigit() for p in pins)
-    assert len(set(pins)) == 5                       # unique within the storefront
-    # PIN-login works with the bound outlet + a team PIN
+    assert len(set(pins)) == 3                        # unique within the storefront
     r = _pin_login(client, "m1", sf["outlet_id"], pins[0])
     assert r.status_code == 200 and r.json()["actor"] == "user"
-    assert _pin_login(client, "m1", sf["outlet_id"], "000000").status_code in (401,)  # wrong PIN
+    assert _pin_login(client, "m1", sf["outlet_id"], "000000").status_code == 401  # wrong PIN
+
+
+def test_pins_are_readable_in_list(client, db):
+    """The owner can reveal each operator's current PIN — list returns it, and it logs in."""
+    t = _root(client, db)
+    sf = _create_sf(client, t)
+    rows = client.get(f"/api/v1/org/nodes/{sf['id']}/pos-staff", headers=H(t)).json()
+    assert len(rows) == 3 and all(r["pin"] and r["pin_set"] for r in rows)
+    # the readable PIN actually authenticates
+    assert _pin_login(client, "m1", sf["outlet_id"], rows[0]["pin"]).status_code == 200
+
+
+def test_owner_can_set_a_chosen_pin(client, db):
+    t = _root(client, db)
+    sf = _create_sf(client, t)
+    base = f"/api/v1/org/nodes/{sf['id']}/pos-staff"
+    uid = sf["pos_team"][0]["user_id"]
+    # set a specific PIN
+    r = client.post(f"{base}/{uid}/reset-pin", json={"pin": "246813"}, headers=H(t))
+    assert r.status_code == 200 and r.json()["pin"] == "246813"
+    assert _pin_login(client, "m1", sf["outlet_id"], "246813").status_code == 200
+    # a duplicate PIN at the same storefront is rejected
+    other = sf["pos_team"][1]["user_id"]
+    dup = client.post(f"{base}/{other}/reset-pin", json={"pin": "246813"}, headers=H(t))
+    assert dup.status_code == 409 and dup.json()["error"]["code"] == "pin_taken"
+    # add an operator with a chosen PIN
+    add = client.post(base, json={"full_name": "Chosen", "role": "cashier", "pin": "135799"}, headers=H(t))
+    assert add.status_code == 201 and add.json()["pin"] == "135799"
+    assert _pin_login(client, "m1", sf["outlet_id"], "135799").status_code == 200
 
 
 def test_pin_is_scoped_per_storefront(client, db):
@@ -51,8 +79,7 @@ def test_pin_is_scoped_per_storefront(client, db):
     b = _create_sf(client, t, name="SF B")
     pin_a = a["pos_team"][0]["pin"]
     assert _pin_login(client, "m1", a["outlet_id"], pin_a).status_code == 200
-    # the SAME pin string must NOT authenticate at a different storefront's till
-    assert _pin_login(client, "m1", b["outlet_id"], pin_a).status_code == 401
+    assert _pin_login(client, "m1", b["outlet_id"], pin_a).status_code == 401   # not at another storefront
 
 
 def test_pos_user_cannot_web_login(client, db):
@@ -64,51 +91,50 @@ def test_pos_user_cannot_web_login(client, db):
     _create_sf(client, t)
     u = db.scalar(select(User).where(User.kind == "pos"))
     assert u is not None and u.email.endswith("@pos.local")
-    u.password_hash = hash_password("Known123!"); db.commit()   # give it a real password…
+    u.password_hash = hash_password("Known123!"); db.commit()
     try:
         auth_service.login_user(db, email=u.email, password="Known123!")
         assert False, "POS account must never web-login"
-    except Exception as e:                                       # …still rejected by the kind gate
+    except Exception as e:
         assert getattr(e, "code", "") == "invalid_credentials"
 
 
 def test_web_user_cannot_pin_login(client, db):
     t = _root(client, db)
     sf = _create_sf(client, t)
-    # a web node-account (kind='web') is never resolvable by PIN, even with a 6-digit guess
     client.post(f"/api/v1/org/nodes/{sf['id']}/accounts",
                 json={"email": "web@bt.sg", "password": "Password123!", "full_name": "Web",
                       "role": "manager"}, headers=H(t))
     web = db.scalar(select(User).where(User.email == "web@bt.sg"))
-    assert web.kind == "web" and web.pin_hash is None
+    assert web.kind == "web" and web.pin is None       # web users carry no POS PIN
 
 
-def test_reset_pin_reveals_new_and_invalidates_old(client, db):
+def test_reset_pin_autogenerate_invalidates_old(client, db):
     t = _root(client, db)
     sf = _create_sf(client, t)
     m = sf["pos_team"][1]
     old = m["pin"]
     r = client.post(f"/api/v1/org/nodes/{sf['id']}/pos-staff/{m['user_id']}/reset-pin", headers=H(t))
-    assert r.status_code == 200, r.text
+    assert r.status_code == 200
     new = r.json()["pin"]
     assert new != old and len(new) == 6
-    assert _pin_login(client, "m1", sf["outlet_id"], old).status_code == 401   # old killed
-    assert _pin_login(client, "m1", sf["outlet_id"], new).status_code == 200   # new works
+    assert _pin_login(client, "m1", sf["outlet_id"], old).status_code == 401
+    assert _pin_login(client, "m1", sf["outlet_id"], new).status_code == 200
 
 
 def test_add_and_delete_pos_staff(client, db):
     t = _root(client, db)
     sf = _create_sf(client, t)
     base = f"/api/v1/org/nodes/{sf['id']}/pos-staff"
-    assert len(client.get(base, headers=H(t)).json()) == 5
+    assert len(client.get(base, headers=H(t)).json()) == 3
     add = client.post(base, json={"full_name": "Extra Cashier", "role": "cashier"}, headers=H(t))
     assert add.status_code == 201
     new_pin, uid = add.json()["pin"], add.json()["user_id"]
-    assert len(client.get(base, headers=H(t)).json()) == 6
+    assert len(client.get(base, headers=H(t)).json()) == 4
     assert _pin_login(client, "m1", sf["outlet_id"], new_pin).status_code == 200
     assert client.delete(f"{base}/{uid}", headers=H(t)).status_code == 204
-    assert len(client.get(base, headers=H(t)).json()) == 5
-    assert _pin_login(client, "m1", sf["outlet_id"], new_pin).status_code == 401   # gone
+    assert len(client.get(base, headers=H(t)).json()) == 3
+    assert _pin_login(client, "m1", sf["outlet_id"], new_pin).status_code == 401
 
 
 def test_pin_login_blocked_when_suspended(client, db):

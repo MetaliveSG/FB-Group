@@ -983,16 +983,18 @@ export interface OrgTree {
   can_manage: boolean;
 }
 
-// A POS till operator (kind="pos") — PIN-only, segregated from web logins, scoped to a storefront.
+// A POS operator (kind="pos") — PIN-only, segregated from web logins, scoped to a storefront.
+// `pin` is the readable PIN the owner reveals via the eye (owner choice for low-risk storefront PINs).
 export interface PosStaffMember {
   user_id: string;
   full_name: string;
   role: string;            // manager | cashier | staff | finance
   is_active: boolean;
+  pin: string | null;
   pin_set: boolean;
 }
 
-// Show-once payload: the plaintext PIN is returned exactly once (PINs are bcrypt-hashed at rest).
+// A POS operator + its (readable) PIN — returned on create/reset.
 export interface PosStaffSecret {
   user_id: string;
   full_name: string;
@@ -2550,19 +2552,21 @@ export function createOrgNode(
   return request(baseUrl, `/org/nodes`, { method: "POST", body: JSON.stringify(data) }, token);
 }
 
-// --- POS staff (till operators) — PIN-only, per storefront -------------------
+// --- POS staff (POS operators) — PIN-only, per storefront -------------------
 export function listPosStaff(baseUrl: string, token: string, nodeId: string): Promise<PosStaffMember[]> {
   return request(baseUrl, `/org/nodes/${nodeId}/pos-staff`, {}, token);
 }
 
 export function createPosStaff(
-  baseUrl: string, token: string, nodeId: string, data: { full_name: string; role: string }
+  baseUrl: string, token: string, nodeId: string, data: { full_name: string; role: string; pin?: string }
 ): Promise<PosStaffSecret> {
   return request(baseUrl, `/org/nodes/${nodeId}/pos-staff`, { method: "POST", body: JSON.stringify(data) }, token);
 }
 
-export function resetPosStaffPin(baseUrl: string, token: string, nodeId: string, userId: string): Promise<PosStaffSecret> {
-  return request(baseUrl, `/org/nodes/${nodeId}/pos-staff/${userId}/reset-pin`, { method: "POST" }, token);
+// pin omitted/undefined → server auto-generates a fresh storefront-unique PIN.
+export function resetPosStaffPin(baseUrl: string, token: string, nodeId: string, userId: string, pin?: string): Promise<PosStaffSecret> {
+  return request(baseUrl, `/org/nodes/${nodeId}/pos-staff/${userId}/reset-pin`,
+    { method: "POST", body: JSON.stringify({ pin: pin ?? null }) }, token);
 }
 
 export function deletePosStaff(baseUrl: string, token: string, nodeId: string, userId: string): Promise<void> {
