@@ -226,7 +226,7 @@ def create_node_account(node_id: str, body: NodeAccountCreateIn,
     org_tree.get_managed_node(db, scope, node_id)
     acct = users_admin.create_node_account(db, node_id=node_id, email=body.email,
                                            password=body.password, full_name=body.full_name,
-                                           role=body.role, pin=body.pin)
+                                           role=body.role)
     audit_record(db, action="org.node_account_create", actor_id=scope.user_id,
                  entity_type="org_node", entity_id=node_id,
                  meta={"email": body.email, "role": body.role})

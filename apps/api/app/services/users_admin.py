@@ -22,8 +22,10 @@ GRANTABLE_ROLES = {
 }
 # The member-tree role palette — granted at a NODE (the caller's downline is enforced by the route
 # via org_tree.can_manage_node, so no merchant scope-id validation is needed here).
+# Roles grantable to a WEB/dashboard node login. "cashier" is excluded — it's a POS-only role
+# (PIN at the storefront, managed via app/services/pos_staff.py), not a dashboard account.
 NODE_GRANTABLE_ROLES = {
-    RoleName.MANAGER.value, RoleName.CASHIER.value, RoleName.STAFF.value, RoleName.FINANCE.value,
+    RoleName.MANAGER.value, RoleName.STAFF.value, RoleName.FINANCE.value,
 }
 
 
@@ -121,7 +123,9 @@ def list_node_accounts(db: Session, *, node_id: str) -> list[dict]:
 
 
 def create_node_account(db: Session, *, node_id: str, email: str, password: str,
-                        full_name: str, role: str, pin: str | None = None) -> dict:
+                        full_name: str, role: str) -> dict:
+    """Create a WEB/dashboard login (email + password) at a node. POS PINs are separate — see
+    app/services/pos_staff.py."""
     if role not in NODE_GRANTABLE_ROLES:
         raise ForbiddenError("Role cannot be granted", code="role_not_allowed")
     if db.scalar(select(User).where(User.email == email)):
@@ -136,8 +140,6 @@ def create_node_account(db: Session, *, node_id: str, email: str, password: str,
                            scope_type=ScopeType.NODE.value, scope_id=node_id)
     db.add(a)
     db.flush()
-    if pin:
-        set_pin(db, user_id=user.id, pin=pin, merchant_id=_node_merchant(db, node_id))
     return _account_row(db, a, user)
 
 

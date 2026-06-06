@@ -22,7 +22,9 @@ const ROLE_STYLE: Record<string, { bg: string; fg: string }> = {
   STOREFRONT: { bg: "#fef3c7", fg: "#92400e" },
 };
 const KIND_LABEL: Record<string, string> = { CHAIN: "Chain", STOREFRONT: "Storefront" };
-const ACCOUNT_ROLES = ["manager", "cashier", "staff", "finance"];
+// Web/dashboard logins only — "cashier" is a POS-only role (PIN at the storefront), managed in
+// Settings → Staff & PINs, so it's intentionally absent here.
+const ACCOUNT_ROLES = ["manager", "staff", "finance"];
 
 /**
  * Node Detail — the single management surface for a member-tree node (master–detail drawer).

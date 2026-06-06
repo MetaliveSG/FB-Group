@@ -12679,20 +12679,8 @@
                     },
                     "role": {
                         "type": "string",
-                        "pattern": "^(manager|cashier|staff|finance)$",
+                        "pattern": "^(manager|staff|finance)$",
                         "title": "Role"
-                    },
-                    "pin": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "pattern": "^\\d{4,6}$"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Pin"
                     }
                 },
                 "type": "object",
