@@ -20,7 +20,7 @@ const ROLES = ["cashier", "manager", "staff", "finance"];
  * Platform-Console node drawer, but lives in the merchant's own Settings. Uses the scope-aware
  * /org endpoints (the token's merchant context scopes the visible tree — no merchant_id needed).
  */
-export default function PosStaffCard({ base }: { base: string }) {
+export default function PosStaffCard({ base, merchantId }: { base: string; merchantId?: string }) {
   const [nodes, setNodes] = useState<OrgTreeNode[] | null>(null);
   const [nodeId, setNodeId] = useState<string>("");
   const [accounts, setAccounts] = useState<OrgNodeAccount[] | null>(null);
@@ -38,25 +38,44 @@ export default function PosStaffCard({ base }: { base: string }) {
 
   const tok = () => getStaffToken() || "";
 
+  // Restrict to the in-scope merchant's subtree. A normal merchant login already gets only its own
+  // tenant from /org/tree (visible_nodes is downline-only). But a super-admin operator gets the WHOLE
+  // forest — so when the page is scoped to one merchant (operator drilled in via getOperatorMerchant),
+  // walk parent_id from that tenant root and keep only its subtree. No merchantId → trust the server scope.
+  const scoped = useMemo(() => {
+    const all = nodes || [];
+    if (!merchantId) return all;
+    const keep = new Set<string>([merchantId]);
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const n of all) {
+        if (n.parent_id && keep.has(n.parent_id) && !keep.has(n.id)) { keep.add(n.id); grew = true; }
+      }
+    }
+    return all.filter((n) => keep.has(n.id));
+  }, [nodes, merchantId]);
+
   // Manageable nodes only (owner → their tenant tree). Sort sells-first so a storefront is the default.
   const manageable = useMemo(
-    () => (nodes || []).filter((n) => n.can_manage && n.is_active),
-    [nodes],
+    () => scoped.filter((n) => n.can_manage && n.is_active),
+    [scoped],
   );
 
   useEffect(() => {
     let live = true;
     orgTree(base, tok())
-      .then((t) => {
-        if (!live) return;
-        setNodes(t.nodes);
-        const pick = t.nodes.find((n) => n.can_manage && n.is_active && n.sells)
-          || t.nodes.find((n) => n.can_manage && n.is_active);
-        if (pick) setNodeId(pick.id);
-      })
+      .then((t) => { if (live) setNodes(t.nodes); })
       .catch(() => { if (live) setNodes([]); });
     return () => { live = false; };
   }, [base]);
+
+  // Default the picker to a storefront in scope (sells-first), once the scoped/manageable set is known.
+  useEffect(() => {
+    if (nodeId || manageable.length === 0) return;
+    const pick = manageable.find((n) => n.sells) || manageable[0];
+    setNodeId(pick.id);
+  }, [manageable, nodeId]);
 
   function reloadAccounts(id = nodeId) {
     if (!id) return;
