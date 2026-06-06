@@ -770,7 +770,7 @@ export default function OperatorConsolePage() {
                             QR Menu
                           </button>
                         )}
-                        {n.sells && n.pos_enabled && n.qr_path && (
+                        {n.sells && n.qr_path && (
                           <button
                             className="btn btn-secondary btn-sm"
                             style={{ padding: "4px 12px", fontWeight: 600 }}

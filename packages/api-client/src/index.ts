@@ -967,7 +967,6 @@ export interface OrgTreeNode {
   can_manage: boolean;     // may THIS caller grow the tree beneath this node?
   qr_path: string | null;  // customer-scan link: a Storefront → /t/{token}; a Chain → /t/node/{id}; null if unscannable
   outlet_id?: string | null; // a Storefront's typed Outlet — lets the console scope to it; null for a Chain
-  pos_enabled?: boolean;   // the tenant runs the Staff POS → show "Open POS" beside QR Menu
 }
 
 // A node-scoped customer browse (the "brand / group app" view): the orderable leaf stalls in a
