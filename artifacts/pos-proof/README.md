@@ -38,8 +38,11 @@ cashiers)**. Owners self-serve via **Settings → "Staff & PINs (POS)"** (list w
 add with optional chosen PIN · remove); the node drawer's web "Set PIN" was removed ("Logins" → "Web
 logins"). Endpoints: `GET/POST /org/nodes/{id}/pos-staff` (create accepts an optional `pin`),
 `POST …/{uid}/reset-pin` (body `{pin}` = chosen, or omit = auto), `DELETE …/{uid}`; pin-login takes
-`outlet_id`. Backend: `test_pos_pin.py` (9, rewritten) + `test_pos_receipt.py` (3) green.
-**Security note:** PINs readable at rest (low-risk 6-digit storefront credential) — KIV encrypt-at-rest.
+`outlet_id`. Backend: `test_pos_pin.py` (10) + `test_pos_receipt.py` (3) green.
+**Encrypted at rest (2026-06-07):** PINs are stored as **Fernet ciphertext** (`app/core/pin_crypto.py`,
+migration `z4a5pinenc`), key from env (`PIN_SECRET`→`JWT_SECRET` fallback; production = distinct key/KMS),
+decrypted only for the owner-reveal / PIN-login. A DB dump alone exposes no PINs. Verified: stored value
+is `gAAAAAB…` ciphertext, owner-reveal + login still return/accept the plaintext.
 
 **Proof — `segregation_proof.mjs` (live):**
 - [1] storefront created → team of **3**, **3 unique 6-digit PINs**, outlet provisioned.

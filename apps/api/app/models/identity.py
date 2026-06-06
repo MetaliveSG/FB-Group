@@ -44,10 +44,10 @@ class User(PKMixin, TimestampMixin, Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     # POS quick-login PIN. Legacy bcrypt hash (web set_pin, now dead) kept for back-compat.
     pin_hash: Mapped[str | None] = mapped_column(String(255))
-    # POS till PIN stored READABLY (owner choice — low-risk 6-digit shared-till credential the owner
-    # must be able to read back to staff). Unique per STOREFRONT; resolves one operator at the bound
-    # outlet. Only set for kind="pos" users. See app/services/pos_staff.py. (KIV: encrypt-at-rest.)
-    pin: Mapped[str | None] = mapped_column(String(8))
+    # POS storefront PIN, owner-revealable → encrypted at rest (Fernet ciphertext, not plaintext;
+    # key in env, see app/core/pin_crypto.py). Unique per STOREFRONT; resolves one operator at the
+    # bound outlet. Only set for kind="pos" users. String(255) holds the Fernet token.
+    pin: Mapped[str | None] = mapped_column(String(255))
     # Account kind — the two login surfaces are SEGREGATED:
     #   "web" → email + password at /merchant (dashboard); cannot PIN-login.
     #   "pos" → PIN-only till operator at /pos; synthetic email + locked password → cannot web-login.
