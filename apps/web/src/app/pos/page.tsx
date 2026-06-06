@@ -134,10 +134,13 @@ export default function PosPage() {
     finally { setBusy(false); }
   }
 
-  function newOrder() {
-    setLines([]); setDinerPhone(""); setVoucher(""); setOrder(null); setReceipt(null); setError(null); setStep("order");
+  function clearTicket() {
+    setLines([]); setDinerPhone(""); setVoucher(""); setOrder(null); setReceipt(null); setError(null);
   }
-  function lock() { clearStaffToken(); setStep("lock"); newOrder(); }
+  function newOrder() { clearTicket(); setStep("order"); }
+  // Exit = sign the cashier out → PIN lock (device stays bound). Clear the ticket, then set step LAST
+  // so it isn't clobbered by an "order" step.
+  function lock() { clearStaffToken(); clearTicket(); setStep("lock"); }
 
   // ── Render ──────────────────────────────────────────────────────────
   const shell: React.CSSProperties = { minHeight: "100vh", background: "#0f172a", color: "#e2e8f0", display: "flex", flexDirection: "column" };
@@ -228,7 +231,7 @@ export default function PosPage() {
         <div style={{ fontWeight: 800 }}>{binding?.outlet_name} <span style={{ color: "#64748b", fontWeight: 400 }}>· POS</span></div>
         <div style={{ display: "flex", gap: 12, alignItems: "center", fontSize: 14 }}>
           <span style={{ color: "#94a3b8" }}>{staffName}</span>
-          <button onClick={lock} style={{ background: "#334155", border: "none", color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer" }}>Lock</button>
+          <button onClick={lock} style={{ background: "#334155", border: "none", color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer" }}>Exit</button>
         </div>
       </div>
       {error && <div style={{ background: "#7f1d1d", color: "#fecaca", padding: "8px 16px", fontSize: 14 }}>{error}</div>}
