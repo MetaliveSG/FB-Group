@@ -27,6 +27,9 @@ services:
       DEBUG: "true"   # PoC demo: returns mock OTP as debug_code so the UI can auto-fill. Set false in prod.
       DATABASE_URL: postgresql+psycopg://fbgroup:fbgroup@db:5432/fbgroup
       JWT_SECRET: dev-only-change-me
+      # Distinct key for encrypting POS PINs at rest (Fernet) — separate from JWT_SECRET so rotating
+      # one doesn't touch the other. Dev value; set a strong unique secret (or KMS) in prod.
+      PIN_SECRET: dev-pin-secret-change-me
       CORS_ORIGINS: http://localhost:3000,http://localhost:3001
       ACCESS_TOKEN_EXPIRE_MINUTES: "480"   # demo: 8h so sessions don't age out mid-demo. Prod: 30 + refresh.
       # Demo seeding turned OFF — the DB is started clean so merchants are onboarded via the
