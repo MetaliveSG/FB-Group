@@ -54,6 +54,17 @@ def test_pins_are_readable_in_list(client, db):
     assert _pin_login(client, "m1", sf["outlet_id"], rows[0]["pin"]).status_code == 200
 
 
+def test_pin_encrypted_at_rest(client, db):
+    """The PIN column holds Fernet ciphertext (not the plaintext), yet the API reveals it + it logs in."""
+    t = _root(client, db)
+    sf = _create_sf(client, t)
+    shown = sf["pos_team"][0]["pin"]                       # plaintext the owner sees
+    uid = sf["pos_team"][0]["user_id"]
+    stored = db.scalar(select(User.pin).where(User.id == uid))   # what's actually in the DB
+    assert stored and stored != shown and len(stored) > 20       # ciphertext, not the 6-digit PIN
+    assert _pin_login(client, "m1", sf["outlet_id"], shown).status_code == 200
+
+
 def test_owner_can_set_a_chosen_pin(client, db):
     t = _root(client, db)
     sf = _create_sf(client, t)

@@ -21,6 +21,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError, ConflictError, NotFoundError
+from app.core.pin_crypto import encrypt_pin, reveal_pin
 from app.core.security import hash_password
 from app.models.catalog import Menu
 from app.models.enums import RoleName, ScopeType
@@ -77,7 +78,7 @@ def _random_pin() -> str:
 
 def _pin_unique_at_node(db: Session, node_id: str, pin: str, *, exclude_user_id: str | None = None) -> bool:
     for u in _pos_users_at_node(db, node_id):
-        if u.id != exclude_user_id and u.pin and u.pin == pin:
+        if u.id != exclude_user_id and u.pin and reveal_pin(u.pin) == pin:
             return False
     return True
 
@@ -103,7 +104,7 @@ def reset_pin(db: Session, *, user_id: str, node_id: str, pin: str | None = None
             raise ConflictError("Another operator at this storefront already uses that PIN", code="pin_taken")
     else:
         pin = _fresh_pin_for_node(db, node_id, exclude_user_id=user_id)
-    user.pin = pin
+    user.pin = encrypt_pin(pin)
     db.flush()
     return {**_row(db, user, node_id), "pin": pin}
 
@@ -137,7 +138,7 @@ def create_pos_user(db: Session, *, node_id: str, full_name: str, role: str, pin
         full_name=full_name or role.capitalize(),
         password_hash=hash_password(secrets.token_urlsafe(32)),  # locked — unknowable, never used
         kind=POS_KIND,
-        pin=pin,
+        pin=encrypt_pin(pin),
     )
     db.add(user)
     db.flush()
@@ -181,7 +182,7 @@ def _row(db: Session, user: User, node_id: str) -> dict:
         "full_name": user.full_name,
         "role": role.name if role else "?",
         "is_active": user.is_active,
-        "pin": user.pin,                 # readable — the owner reveals it via the eye
+        "pin": reveal_pin(user.pin),     # decrypted — the owner reveals it via the eye
         "pin_set": bool(user.pin),
     }
 
@@ -192,7 +193,7 @@ def resolve_pos_pin(db: Session, *, node_id: str, pin: str) -> User | None:
     if not _PIN_RE.match(pin or ""):
         return None
     for u in _pos_users_at_node(db, node_id):
-        if u.pin and u.pin == pin:
+        if u.pin and reveal_pin(u.pin) == pin:
             return u
     return None
 

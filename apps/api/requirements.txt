@@ -6,6 +6,8 @@ pydantic==2.10.4
 pydantic-settings==2.7.1
 PyJWT==2.10.1
 bcrypt==4.2.1
+# Symmetric encryption-at-rest for owner-revealable POS PINs (Fernet). See app/core/pin_crypto.py.
+cryptography==43.0.3
 alembic==1.14.0
 python-multipart==0.0.20
 email-validator==2.2.0
