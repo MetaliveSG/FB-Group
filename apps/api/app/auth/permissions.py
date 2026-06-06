@@ -100,6 +100,9 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
     ],
     RoleName.CASHIER.value: ["order.view", "order.manage", "payment.process"],
     RoleName.FINANCE.value: ["report.view", "audit.view", "crm.view"],   # read-only finance
+    # POS-only on-floor lead (Supervisor): cashier verbs + store reports. Deliberately NOT org/menu/
+    # staff/merchant management (those are web MANAGER/OWNER) — distinct from the web "Manager" role.
+    RoleName.SUPERVISOR.value: ["order.view", "order.manage", "payment.process", "report.view"],
     RoleName.CUSTOMER.value: [],
 }
 

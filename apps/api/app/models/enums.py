@@ -27,6 +27,9 @@ class RoleName(str, Enum):
     CASHIER = "cashier"                # till / payments at the storefront(s) in scope
     FINANCE = "finance"                # read-only: reports + audit across the subtree (CFO/accountant)
     STAFF = "staff"
+    # POS-only role (PIN operator at a storefront, NOT a web/dashboard login). The on-floor lead over
+    # cashiers: POS operations + store reports, but none of web MANAGER's org/menu/staff powers.
+    SUPERVISOR = "supervisor"
     CUSTOMER = "customer"
 
 

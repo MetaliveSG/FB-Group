@@ -234,7 +234,7 @@ class PosStaffOut(BaseModel):
 
 class PosStaffCreateIn(BaseModel):
     full_name: str = Field(default="", max_length=160)
-    role: str = Field(pattern="^(manager|cashier|staff|finance)$")
+    role: str = Field(pattern="^(supervisor|cashier)$")          # POS palette: Supervisor or Cashier
     pin: str | None = Field(default=None, pattern=r"^\d{4,6}$")   # chosen PIN; None = auto-generate
 
 
