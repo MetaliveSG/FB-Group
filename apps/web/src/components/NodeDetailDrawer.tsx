@@ -7,7 +7,6 @@ import {
   listNodeAccounts,
   createNodeAccount,
   revokeNodeAccount,
-  setStaffPin,
   listVenueLeases,
   createLease,
   updateLease,
@@ -16,7 +15,7 @@ import {
 } from "@/lib/api";
 import { getStaffToken } from "@/lib/auth";
 import { Toggle } from "@/components/ui";
-import type { OrgTreeNode, OrgNodeAccount, MerchantKpi, Lease } from "@fbgroup/api-client";
+import type { OrgTreeNode, OrgNodeAccount, MerchantKpi, Lease, OrgNodeCreated, PosStaffSecret } from "@fbgroup/api-client";
 
 const ROLE_STYLE: Record<string, { bg: string; fg: string }> = {
   CHAIN: { bg: "#dbeafe", fg: "#1e40af" },
@@ -71,6 +70,7 @@ export default function NodeDetailDrawer({
   const [addKind, setAddKind] = useState(node.chain_stopped ? "STOREFRONT" : "CHAIN");
   const [addName, setAddName] = useState("");
   const [addFee, setAddFee] = useState("");
+  const [posReveal, setPosReveal] = useState<PosStaffSecret[] | null>(null);  // show-once team PINs on SF create
 
   const [accounts, setAccounts] = useState<OrgNodeAccount[] | null>(null);
   const [acOpen, setAcOpen] = useState(false);
@@ -113,14 +113,14 @@ export default function NodeDetailDrawer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [node.id]);
 
-  async function run(fn: () => Promise<unknown>, after?: () => void) {
+  async function run(fn: () => Promise<unknown>, after?: (result: unknown) => void) {
     const tok = getStaffToken();
     if (!tok) return;
     setBusy(true);
     setErr(null);
     try {
-      await fn();
-      after?.();
+      const result = await fn();
+      after?.(result);
       onChanged();
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Action failed");
@@ -253,9 +253,29 @@ export default function NodeDetailDrawer({
                   <button className="btn btn-primary btn-sm" disabled={busy || !addName.trim()}
                     onClick={() => run(
                       () => createOrgNode(base, tok(), { parent_id: node.id, role: addKind, name: addName.trim(), subscription_fee: addFee.trim() || undefined }),
-                      () => { setAddName(""); setAddFee(""); setAddOpen(false); },
+                      (r) => {
+                        setAddName(""); setAddFee(""); setAddOpen(false);
+                        const team = (r as OrgNodeCreated)?.pos_team;
+                        if (team && team.length) setPosReveal(team);   // show-once till PINs for the new storefront
+                      },
                     )}>Create</button>
                   <button className="btn btn-secondary btn-sm" onClick={() => setAddOpen(false)}>Cancel</button>
+                </div>
+              )}
+              {posReveal && posReveal.length > 0 && (
+                <div style={{ border: "1px solid #bbf7d0", background: "#f0fdf4", borderRadius: 8, padding: 12 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: "#166534" }}>
+                    Storefront created · POS team PINs — note them now, shown only once
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                    {posReveal.map((m) => (
+                      <div key={m.user_id} style={{ background: "#fff", border: "1px solid #d1fae5", borderRadius: 6, padding: "6px 10px" }}>
+                        <span style={{ fontSize: 11, color: "var(--color-text-muted)", textTransform: "capitalize" }}>{m.role} · {m.full_name}</span>
+                        <div style={{ fontFamily: "monospace", fontSize: 18, fontWeight: 700, letterSpacing: 2 }}>{m.pin}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="btn btn-secondary btn-sm" style={{ marginTop: 10 }} onClick={() => setPosReveal(null)}>Done</button>
                 </div>
               )}
             </div>
@@ -321,11 +341,11 @@ export default function NodeDetailDrawer({
             </div>
           )}
 
-          {/* Logins */}
+          {/* Web logins — dashboard accounts (email + password). POS till PINs live in Settings → Staff & PINs. */}
           {canManage && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--color-border,#e5e7eb)", paddingTop: 14 }}>
               <div style={{ display: "flex", alignItems: "center" }}>
-                {label(`Logins${accounts ? ` (${accounts.length})` : ""}`)}
+                {label(`Web logins${accounts ? ` (${accounts.length})` : ""}`)}
                 <button className="btn btn-secondary btn-sm" style={{ marginLeft: "auto" }} onClick={() => setAcOpen((s) => !s)}>+ Add login</button>
               </div>
               {accounts === null ? (
@@ -337,16 +357,6 @@ export default function NodeDetailDrawer({
                   <div key={a.assignment_id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
                     <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.email}</span>
                     <span className="badge" style={{ background: "#eef2ff", color: "#3730a3", fontSize: 10, textTransform: "capitalize" }}>{a.role}</span>
-                    <button title={a.pin_set ? "PIN set — reset" : "Set POS PIN"} disabled={busy}
-                      onClick={() => {
-                        const pin = window.prompt(`Set POS PIN for ${a.email} (4–6 digits):`);
-                        if (pin === null) return;
-                        if (!/^\d{4,6}$/.test(pin)) { window.alert("PIN must be 4–6 digits"); return; }
-                        run(() => setStaffPin(base, tok(), node.id, a.user_id, pin), reloadAccounts);
-                      }}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: a.pin_set ? "#166534" : "#6b7280", fontSize: 11, fontWeight: 600 }}>
-                      {a.pin_set ? "PIN ✓" : "Set PIN"}
-                    </button>
                     <button aria-label="Revoke" title="Revoke login" disabled={busy}
                       onClick={() => run(() => revokeNodeAccount(base, tok(), node.id, a.assignment_id), reloadAccounts)}
                       style={{ background: "none", border: "none", cursor: "pointer", color: "#b91c1c", fontSize: 15 }}>×</button>

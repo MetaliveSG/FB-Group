@@ -131,12 +131,20 @@ def build_demo_merchants(db: Session) -> dict:
         db.flush()
         db.add(UserRoleAssignment(user_id=u.id, role_id=roles[RoleName.MANAGER.value].id,
                                   scope_type=ScopeType.NODE.value, scope_id=node_id))
+    db.flush()
+
+    # Every storefront gets a starter POS team (1 manager + 4 cashiers) so the till works out of the
+    # box. Idempotent (skips storefronts that already have POS staff). PINs are random — the owner
+    # reveals one via Settings → Staff & PINs → Reset PIN (they're hashed, never reproducible).
+    from app.services import pos_staff
+    pos = pos_staff.provision_teams_missing(db)
     db.commit()
     return {
         "nodes": len(NODES),
         "storefronts": sum(1 for _n, _p, k, _l in NODES if k == STOREFRONT),
         "tenants": len(SETTLEMENT_BOUNDARIES),
         "accounts": len(ACCOUNTS),
+        "pos_teams_seeded": pos["storefronts_seeded"],
     }
 
 

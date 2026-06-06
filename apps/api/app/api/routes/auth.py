@@ -143,8 +143,8 @@ def staff_login(body: StaffLoginRequest, request: Request, db: Session = Depends
 # --- Staff POS PIN login ----------------------------------------------
 @router.post("/staff/pin-login", response_model=TokenResponse)
 def staff_pin_login(body: PinLoginRequest, request: Request, db: Session = Depends(get_db)):
-    _rate_limit(f"pin:{_client_ip(request)}:{body.merchant_id}", settings.RATE_LIMIT_LOGIN_PER_MIN)
-    user = auth_service.pin_login(db, merchant_id=body.merchant_id, pin=body.pin)
+    _rate_limit(f"pin:{_client_ip(request)}:{body.outlet_id}", settings.RATE_LIMIT_LOGIN_PER_MIN)
+    user = auth_service.pin_login(db, merchant_id=body.merchant_id, outlet_id=body.outlet_id, pin=body.pin)
     toks = auth_service.issue_tokens(user.id, "user")
     return TokenResponse(actor="user", user=UserOut.model_validate(user), **toks)
 

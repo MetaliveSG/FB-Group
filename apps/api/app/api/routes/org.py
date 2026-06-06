@@ -23,6 +23,7 @@ from app.schemas.org import (
     NodeAccountCreateIn,
     NodeAccountOut,
     OrgNodeCreateIn,
+    OrgNodeCreateOut,
     OrgNodeOut,
     OrgNodeUpdateIn,
     OrgTreeOut,
@@ -30,6 +31,9 @@ from app.schemas.org import (
     PinSetIn,
     OutletOut,
     OutletUpdateIn,
+    PosStaffCreateIn,
+    PosStaffOut,
+    PosStaffSecret,
     SettingsOut,
     SettingsUpdateIn,
     TableCreateIn,
@@ -41,6 +45,7 @@ from app.services import (
     merchant_settings,
     org_admin,
     org_tree,
+    pos_staff,
     storefronts,
     users_admin,
 )
@@ -150,17 +155,23 @@ def get_org_tree(scope=Depends(get_scope), db: Session = Depends(get_db)):
     return OrgTreeOut(nodes=out, can_manage=any(n.can_manage for n in out))
 
 
-@router.post("/nodes", response_model=OrgNodeOut, status_code=201)
+@router.post("/nodes", response_model=OrgNodeCreateOut, status_code=201)
 def create_org_node(body: OrgNodeCreateIn, scope=Depends(get_scope), db: Session = Depends(get_db)):
     """Create a child node under a parent the caller manages — any depth (enterprise→stall)."""
     parent = org_tree.get_managed_node(db, scope, body.parent_id)  # 404 absent / 403 upline
     node = org_tree.create_child(db, parent=parent, role=body.role, name=body.name,
                                  chain_stopped=body.chain_stopped,
                                  subscription_fee=body.subscription_fee)
+    team: list[dict] = []
+    outlet_id: str | None = None
     # A Storefront sells — give it its typed backing (outlet + menu(id==node.id) + QR token) so it
-    # is immediately scannable/orderable and shows a "QR Menu" + a real outlet in the merchant console.
+    # is immediately scannable/orderable and shows a "QR Menu" + a real outlet in the merchant console,
+    # then auto-provision a starter POS team (1 manager + 4 cashiers) with one-time PINs.
     if node.sells:
+        from app.models.catalog import Menu
         storefronts.provision_storefront(db, node)
+        team = pos_staff.provision_team(db, node)
+        outlet_id = db.scalar(select(Menu.outlet_id).where(Menu.id == node.id))
     # merchant_id left unset: a node's settlement account may be a pure-spine id with no typed
     # Merchant row (the audit_logs FK requires a real merchant or NULL) — captured in meta.
     audit_record(db, action="org.node_create", actor_id=scope.user_id,
@@ -168,7 +179,10 @@ def create_org_node(body: OrgNodeCreateIn, scope=Depends(get_scope), db: Session
                  meta={"role": node.role, "name": node.name, "parent_id": parent.id,
                        "settlement_account_id": node.settlement_account_id})
     db.commit()
-    return _node_out(node, can_manage=True)
+    qr_path = _qr_paths_for(db, [node]).get(node.id) if node.sells else None
+    out = _node_out(node, can_manage=True, qr_path=qr_path, outlet_id=outlet_id)
+    return OrgNodeCreateOut(**out.model_dump(),
+                            pos_team=[PosStaffSecret(**t) for t in team])
 
 
 @router.patch("/nodes/{node_id}", response_model=OrgNodeOut)
@@ -237,6 +251,47 @@ def revoke_node_account(node_id: str, assignment_id: str,
     users_admin.revoke_node_account(db, node_id=node_id, assignment_id=assignment_id)
     audit_record(db, action="org.node_account_revoke", actor_id=scope.user_id,
                  entity_type="org_node", entity_id=node_id, meta={"assignment_id": assignment_id})
+    db.commit()
+
+
+# --- POS staff (till operators) — PIN-only, segregated from web logins; storefront-scoped --------
+@router.get("/nodes/{node_id}/pos-staff", response_model=list[PosStaffOut])
+def list_pos_staff(node_id: str, scope=Depends(get_scope), db: Session = Depends(get_db)):
+    org_tree.get_managed_node(db, scope, node_id)            # 404 absent / 403 outside downline
+    return pos_staff.list_pos_users(db, node_id=node_id)
+
+
+@router.post("/nodes/{node_id}/pos-staff", response_model=PosStaffSecret, status_code=201)
+def create_pos_staff(node_id: str, body: PosStaffCreateIn,
+                     scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """Add a till operator; returns the one-time PIN (show-once — PINs are hashed at rest)."""
+    org_tree.get_managed_node(db, scope, node_id)
+    row = pos_staff.create_pos_user(db, node_id=node_id, full_name=body.full_name, role=body.role)
+    audit_record(db, action="org.pos_staff_create", actor_id=scope.user_id,
+                 entity_type="org_node", entity_id=node_id, meta={"user_id": row["user_id"], "role": body.role})
+    db.commit()
+    return PosStaffSecret(**row)
+
+
+@router.post("/nodes/{node_id}/pos-staff/{user_id}/reset-pin", response_model=PosStaffSecret)
+def reset_pos_staff_pin(node_id: str, user_id: str,
+                        scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """Mint a fresh storefront-unique PIN; returns it once."""
+    org_tree.get_managed_node(db, scope, node_id)
+    row = pos_staff.reset_pin(db, user_id=user_id, node_id=node_id)
+    audit_record(db, action="org.pos_staff_pin_reset", actor_id=scope.user_id,
+                 entity_type="org_node", entity_id=node_id, meta={"user_id": user_id})
+    db.commit()
+    return PosStaffSecret(**row)
+
+
+@router.delete("/nodes/{node_id}/pos-staff/{user_id}", status_code=204)
+def delete_pos_staff(node_id: str, user_id: str,
+                     scope=Depends(get_scope), db: Session = Depends(get_db)):
+    org_tree.get_managed_node(db, scope, node_id)
+    pos_staff.delete_pos_user(db, node_id=node_id, user_id=user_id)
+    audit_record(db, action="org.pos_staff_delete", actor_id=scope.user_id,
+                 entity_type="org_node", entity_id=node_id, meta={"user_id": user_id})
     db.commit()
 
 
