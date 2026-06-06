@@ -30,5 +30,8 @@ export {
   Utensils,
   PartyPopper,
   Search,
+  Eye,
+  EyeOff,
+  RefreshCw,
 } from "lucide-react";
 export type { LucideIcon } from "lucide-react";
