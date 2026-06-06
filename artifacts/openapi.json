@@ -331,6 +331,47 @@
         }
       }
     },
+    "/api/v1/auth/staff/pin-login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Staff Pin Login",
+        "operationId": "staff_pin_login_api_v1_auth_staff_pin_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PinLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/refresh": {
       "post": {
         "tags": [
@@ -1077,6 +1118,65 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CheckoutResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{order_id}/receipt": {
+      "get": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Order Receipt",
+        "description": "Printable receipt payload \u2014 company header (console) + outlet/stall + lines + payment.",
+        "operationId": "order_receipt_api_v1_orders__order_id__receipt_get",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptOut"
                 }
               }
             }
@@ -7746,6 +7846,77 @@
         }
       }
     },
+    "/api/v1/org/nodes/{node_id}/accounts/{user_id}/pin": {
+      "post": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Set Node Account Pin",
+        "description": "Set/reset a staff member's POS PIN (manager of the node; unique within the merchant).",
+        "operationId": "set_node_account_pin_api_v1_org_nodes__node_id__accounts__user_id__pin_post",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PinSetIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/org/nodes/{node_id}/accounts/{assignment_id}": {
       "delete": {
         "tags": [
@@ -9075,6 +9246,85 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vouchers/diner/{customer_id}": {
+      "get": {
+        "tags": [
+          "vouchers"
+        ],
+        "summary": "Diner Vouchers",
+        "description": "Staff: an attached diner's UNUSED vouchers at this merchant \u2014 so the cashier can apply one\nwithout the diner's phone.",
+        "operationId": "diner_vouchers_api_v1_vouchers_diner__customer_id__get",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          },
+          {
+            "name": "merchant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Merchant Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MyVoucherOut"
+                  },
+                  "title": "Response Diner Vouchers Api V1 Vouchers Diner  Customer Id  Get"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -12157,6 +12407,18 @@
             "type": "string",
             "pattern": "^(manager|cashier|staff|finance)$",
             "title": "Role"
+          },
+          "pin": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4,6}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pin"
           }
         },
         "type": "object",
@@ -12193,6 +12455,11 @@
           "role": {
             "type": "string",
             "title": "Role"
+          },
+          "pin_set": {
+            "type": "boolean",
+            "title": "Pin Set",
+            "default": false
           }
         },
         "type": "object",
@@ -12909,6 +13176,11 @@
               }
             ],
             "title": "Outlet Id"
+          },
+          "pos_enabled": {
+            "type": "boolean",
+            "title": "Pos Enabled",
+            "default": false
           }
         },
         "type": "object",
@@ -13361,6 +13633,43 @@
         ],
         "title": "PaymentOut"
       },
+      "PinLoginRequest": {
+        "properties": {
+          "merchant_id": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Merchant Id"
+          },
+          "pin": {
+            "type": "string",
+            "maxLength": 6,
+            "minLength": 4,
+            "title": "Pin"
+          }
+        },
+        "type": "object",
+        "required": [
+          "merchant_id",
+          "pin"
+        ],
+        "title": "PinLoginRequest",
+        "description": "POS quick-login \u2014 resolves the staff member in `merchant_id` whose PIN matches."
+      },
+      "PinSetIn": {
+        "properties": {
+          "pin": {
+            "type": "string",
+            "pattern": "^\\d{4,6}$",
+            "title": "Pin"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pin"
+        ],
+        "title": "PinSetIn"
+      },
       "PipelineOut": {
         "properties": {
           "pipeline_type": {
@@ -13737,6 +14046,268 @@
         ],
         "title": "QrOrderCreate"
       },
+      "ReceiptCfg": {
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Company Name",
+            "default": ""
+          },
+          "uen": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Uen",
+            "default": ""
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Address",
+            "default": ""
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Phone",
+            "default": ""
+          },
+          "footer": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Footer",
+            "default": "Thank you!"
+          }
+        },
+        "type": "object",
+        "title": "ReceiptCfg",
+        "description": "Company header printed on POS receipts (configured at the console)."
+      },
+      "ReceiptCompany": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "uen": {
+            "type": "string",
+            "title": "Uen",
+            "default": ""
+          },
+          "address": {
+            "type": "string",
+            "title": "Address",
+            "default": ""
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ReceiptCompany"
+      },
+      "ReceiptItem": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "line_total": {
+            "type": "number",
+            "title": "Line Total"
+          },
+          "modifiers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Modifiers",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "quantity",
+          "line_total"
+        ],
+        "title": "ReceiptItem"
+      },
+      "ReceiptOut": {
+        "properties": {
+          "company": {
+            "$ref": "#/components/schemas/ReceiptCompany"
+          },
+          "outlet": {
+            "$ref": "#/components/schemas/ReceiptOutlet"
+          },
+          "stall": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stall"
+          },
+          "order_id": {
+            "type": "string",
+            "title": "Order Id"
+          },
+          "table_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Table Label"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReceiptItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "subtotal": {
+            "type": "number",
+            "title": "Subtotal"
+          },
+          "service_charge": {
+            "type": "number",
+            "title": "Service Charge"
+          },
+          "tax": {
+            "type": "number",
+            "title": "Tax"
+          },
+          "discount": {
+            "type": "number",
+            "title": "Discount"
+          },
+          "voucher_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voucher Code"
+          },
+          "total": {
+            "type": "number",
+            "title": "Total"
+          },
+          "payment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReceiptPayment"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "points_earned": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points Earned"
+          },
+          "footer": {
+            "type": "string",
+            "title": "Footer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "company",
+          "outlet",
+          "order_id",
+          "created_at",
+          "items",
+          "subtotal",
+          "service_charge",
+          "tax",
+          "discount",
+          "total",
+          "footer"
+        ],
+        "title": "ReceiptOut"
+      },
+      "ReceiptOutlet": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ReceiptOutlet"
+      },
+      "ReceiptPayment": {
+        "properties": {
+          "method": {
+            "type": "string",
+            "title": "Method"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "method",
+          "status"
+        ],
+        "title": "ReceiptPayment"
+      },
       "RecommendationOut": {
         "properties": {
           "title": {
@@ -14020,6 +14591,9 @@
           },
           "welcome_voucher": {
             "$ref": "#/components/schemas/WelcomeVoucherCfg"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/ReceiptCfg"
           }
         },
         "type": "object",
@@ -14117,6 +14691,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/WelcomeVoucherCfg"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReceiptCfg"
               },
               {
                 "type": "null"

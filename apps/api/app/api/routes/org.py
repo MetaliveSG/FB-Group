@@ -91,12 +91,12 @@ def my_permissions(merchant_id: str | None = Query(None), scope=Depends(get_scop
 # assignments (see Scope.node_ids / manage_node_ids), so an Enterprise account sees the whole
 # group while a Brand/Outlet manager sees only its own subtree — downline-only, never upline.
 def _node_out(node, can_manage: bool, qr_path: str | None = None,
-              outlet_id: str | None = None) -> OrgNodeOut:
+              outlet_id: str | None = None, pos_enabled: bool = False) -> OrgNodeOut:
     return OrgNodeOut(id=node.id, parent_id=node.parent_id, role=node.role, name=node.name,
                       depth=node.depth, sells=node.sells, chain_stopped=node.chain_stopped,
                       is_settlement_boundary=node.is_settlement_boundary,
                       subscription_fee=node.subscription_fee, is_active=node.is_active,
-                      can_manage=can_manage, qr_path=qr_path, outlet_id=outlet_id)
+                      can_manage=can_manage, qr_path=qr_path, outlet_id=outlet_id, pos_enabled=pos_enabled)
 
 
 def _qr_paths_for(db, nodes) -> dict[str, str]:
@@ -142,9 +142,16 @@ def get_org_tree(scope=Depends(get_scope), db: Session = Depends(get_db)):
     paths = _qr_paths_for(db, nodes)
     # A Storefront's typed Outlet (menu.id == node.id → menu.outlet_id) so the console can scope to it.
     menu_outlet = dict(db.execute(select(Menu.id, Menu.outlet_id)).all())
+    # Staff-POS flag per tenant (settlement boundary) — so the directory can show "Open POS" per storefront.
+    boundary_ids = {n.settlement_account_id for n in nodes if n.settlement_account_id}
+    pos_by_merchant = {
+        mid: bool((s or {}).get("pos_enabled", False))
+        for mid, s in db.execute(select(Merchant.id, Merchant.settings).where(Merchant.id.in_(boundary_ids))).all()
+    } if boundary_ids else {}
     out = [
         _node_out(n, org_tree.can_manage_node(db, scope, n), paths.get(n.id),
-                  menu_outlet.get(n.id) if n.sells else None)
+                  menu_outlet.get(n.id) if n.sells else None,
+                  pos_enabled=pos_by_merchant.get(n.settlement_account_id, False))
         for n in nodes
     ]
     return OrgTreeOut(nodes=out, can_manage=any(n.can_manage for n in out))

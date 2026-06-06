@@ -770,6 +770,16 @@ export default function OperatorConsolePage() {
                             QR Menu
                           </button>
                         )}
+                        {n.sells && n.pos_enabled && n.qr_path && (
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: "4px 12px", fontWeight: 600 }}
+                            onClick={() => window.open(`/pos?bind=${encodeURIComponent(n.qr_path!.replace("/t/", ""))}`, "_blank", "noopener,noreferrer")}
+                            title="Open the Staff POS for this storefront (binds the outlet)"
+                          >
+                            Open POS
+                          </button>
+                        )}
                         <button
                           className="btn btn-primary btn-sm"
                           style={{ padding: "4px 14px", fontWeight: 700 }}

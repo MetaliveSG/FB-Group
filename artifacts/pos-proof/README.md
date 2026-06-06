@@ -20,3 +20,10 @@ Pending UI: console PIN-mgmt + receipt-config screens (slice 6); diner/voucher r
 4. receipt w/ console company header ✅   5. console transactions/report/redemptions ✅ (Reports/Orders + payments split)
 6. tenant-scoped + suspend-aware + PDPA-consistent ✅ · tests green (276 backend + 58 frontend) · proof here.
 Payments = MOCK (provider integration later phase, per spec). **POS MVP = viable.**
+
+## Open-POS wiring (2026-06-06)
+Repurposed the cosmetic `pos_enabled` module flag → "Staff POS" (Settings relabel). Org tree now carries
+each storefront's tenant `pos_enabled`; the Platform directory shows an "Open POS" button beside "QR Menu"
+on STOREFRONT rows when enabled (not on chains) → `/pos?bind={token}` auto-binds that outlet. Verified:
+enabling Staff POS on Pepper Lunch surfaced Open POS on its 3 storefronts (screens/03_open_pos_button.png),
+zero errors.
