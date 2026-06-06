@@ -170,7 +170,9 @@ def sso_login(db: Session, *, provider: str, sub: str, email: str | None = None,
 # --- Staff / back-office user login ------------------------------------
 def login_user(db: Session, *, email: str, password: str) -> User:
     user = db.scalar(select(User).where(User.email == email))
-    if not user or not user.is_active or not verify_password(password, user.password_hash):
+    # POS accounts (kind="pos") are PIN-only till operators — they have a locked password and may
+    # NEVER use the web dashboard. Reject generically (no account-kind enumeration).
+    if not user or user.kind == "pos" or not user.is_active or not verify_password(password, user.password_hash):
         raise AuthError("Invalid email or password", code="invalid_credentials")
     # Suspend enforcement: a merchant-staff (non-operator) whose every merchant is suspended cannot log
     # in. Operators (super_admin / platform roles) are always allowed — they manage + un-suspend.
@@ -188,15 +190,19 @@ def login_user(db: Session, *, email: str, password: str) -> User:
     return user
 
 
-def pin_login(db: Session, *, merchant_id: str, pin: str) -> User:
-    """POS quick-login: resolve the staff member in `merchant_id` whose PIN matches. Suspend-aware."""
+def pin_login(db: Session, *, merchant_id: str, pin: str, outlet_id: str | None = None) -> User:
+    """POS quick-login: resolve the till operator whose PIN matches. PINs are unique **per storefront**,
+    so the bound outlet scopes resolution (and the bcrypt fan-out). Suspend-aware."""
     from app.models.tenancy import Merchant
-    from app.services.users_admin import resolve_pin
+    from app.services import pos_staff
 
     m = db.get(Merchant, merchant_id)
     if m is None or not m.is_active:
         raise ForbiddenError("This store is unavailable", code="account_suspended")
-    user = resolve_pin(db, merchant_id=merchant_id, pin=pin)
+    node = pos_staff.node_for_outlet(db, outlet_id) if outlet_id else None
+    if node is None:
+        raise AuthError("This till is not set up for PIN login", code="pos_not_provisioned")
+    user = pos_staff.resolve_pos_pin(db, node_id=node.id, pin=pin)
     if user is None:
         raise AuthError("Invalid PIN", code="invalid_pin")
     return user

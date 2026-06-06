@@ -72,8 +72,10 @@ class StaffLoginRequest(BaseModel):
 
 
 class PinLoginRequest(BaseModel):
-    """POS quick-login — resolves the staff member in `merchant_id` whose PIN matches."""
+    """POS quick-login — resolves the till operator at the bound storefront (`outlet_id`) whose PIN
+    matches. PINs are unique per storefront; `merchant_id` carries the suspend/availability check."""
     merchant_id: str = Field(min_length=1, max_length=32)
+    outlet_id: str = Field(min_length=1, max_length=32)
     pin: str = Field(min_length=4, max_length=6)
 
 
@@ -98,7 +100,10 @@ class ConsentUpdateRequest(BaseModel):
 
 class UserOut(ORMModel):
     id: str
-    email: EmailStr
+    # str, not EmailStr: POS accounts (kind="pos") carry a synthetic internal login id
+    # (pos-…@pos.local) that isn't a real/deliverable address. Web emails are validated at the
+    # creation boundary (NodeAccountCreateIn.email = EmailStr); this is output serialization only.
+    email: str
     full_name: str
 
 

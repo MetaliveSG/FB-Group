@@ -91,7 +91,7 @@ export default function PosPage() {
     if (!binding) return;
     setBusy(true); setError(null);
     try {
-      const res = await pinLogin(base, binding.merchant_id, pin);
+      const res = await pinLogin(base, binding.merchant_id, binding.outlet_id, pin);
       setStaffToken(res.access_token);
       setStaffName(res.user?.full_name || "Staff");
       setPin("");
