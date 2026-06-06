@@ -13176,11 +13176,6 @@
               }
             ],
             "title": "Outlet Id"
-          },
-          "pos_enabled": {
-            "type": "boolean",
-            "title": "Pos Enabled",
-            "default": false
           }
         },
         "type": "object",
