@@ -172,6 +172,7 @@ class OrgNodeOut(BaseModel):
     can_manage: bool = False
     qr_path: str | None = None      # customer-scan path: a Storefront → /t/{token}; a Chain → /t/node/{id}; None if unscannable
     outlet_id: str | None = None    # a Storefront's typed Outlet (menu.id==node.id → outlet) — lets the console scope to it; None for a Chain
+    pos_enabled: bool = False       # the node's tenant runs the Staff POS → show "Open POS" beside QR Menu
 
 
 class OrgTreeOut(BaseModel):

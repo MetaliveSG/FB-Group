@@ -15,7 +15,7 @@ type ModuleFlag = "rewards_enabled" | "qr_ordering_enabled" | "pos_enabled";
 const MODULES: { key: ModuleFlag; label: string; desc: string }[] = [
   { key: "rewards_enabled", label: "Rewards / loyalty", desc: "Earn & redeem coins. The core capture loop." },
   { key: "qr_ordering_enabled", label: "Table-QR ordering", desc: "Diners order from the menu by scanning the table QR." },
-  { key: "pos_enabled", label: "POS integration", desc: "Accept orders pushed from an external POS (coming soon)." },
+  { key: "pos_enabled", label: "Staff POS", desc: "A cashier app (PIN login, tap-to-pay) at /pos. Shows an “Open POS” button on each storefront." },
 ];
 
 export default function SettingsPage() {

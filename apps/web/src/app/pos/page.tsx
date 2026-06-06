@@ -56,9 +56,21 @@ export default function PosPage() {
         setBinding(b);
         loadMenu(b).catch(() => {});
         setStep(getStaffToken() ? "order" : "lock");
+        return;
       } catch { /* ignore */ }
     }
-  }, [loadMenu]);
+    // Deep-link bind: /pos?bind=<qr_token> (the "Open POS" button) → auto-connect the outlet.
+    const bindTok = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("bind") : null;
+    if (bindTok) {
+      resolveQr(base, bindTok).then((qr) => {
+        const b: Binding = { merchant_id: qr.merchant.id, outlet_id: qr.outlet.id, outlet_name: qr.outlet.name, qr_token: qr.qr_token };
+        localStorage.setItem(BIND_KEY, JSON.stringify(b));
+        setBinding(b); setMenu(qr.menu ?? null);
+        if (qr.menu?.categories?.[0]) setCat(qr.menu.categories[0].id);
+        setStep("lock");
+      }).catch(() => {});
+    }
+  }, [loadMenu, base]);
 
   async function doSetup(e: React.FormEvent) {
     e.preventDefault();
