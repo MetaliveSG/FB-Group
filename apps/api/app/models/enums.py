@@ -66,7 +66,8 @@ class OrderStatus(str, Enum):
     PREPARING = "preparing"
     READY = "ready"
     COMPLETED = "completed"
-    CANCELLED = "cancelled"
+    CANCELLED = "cancelled"            # abandoned before payment
+    VOIDED = "voided"                  # a COMPLETED (paid) sale reversed at the POS (supervisor)
 
 
 # Allowed forward transitions for the order lifecycle.
@@ -92,6 +93,7 @@ class PaymentStatus(str, Enum):
     PENDING = "pending"
     SUCCESS = "success"
     FAILED = "failed"
+    VOIDED = "voided"     # payment reversed by a POS void (supervisor)
 
 
 class RewardTxnType(str, Enum):

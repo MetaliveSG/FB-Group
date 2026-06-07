@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.auth.deps import get_current_customer, get_scope, require, resolve_merchant
 from app.core.errors import ForbiddenError, NotFoundError
 from app.db.session import get_db
-from app.models.enums import OrderChannel, PaymentMethod
+from app.models.enums import OrderChannel, OrderStatus, PaymentMethod
 from app.models.identity import Customer
 from app.models.orders import Order
 from app.models.tenancy import Outlet
@@ -21,6 +21,8 @@ from app.schemas.orders import (
     OrderStatusUpdate,
     PaymentOut,
     QrOrderCreate,
+    VoidOrderIn,
+    VoidResponse,
 )
 from app.schemas.pos import ReceiptOut
 from app.services import orders as orders_service
@@ -183,6 +185,28 @@ def cashier_checkout(
         points_earned=result.points_earned,
         order_id=order.id,
     )
+
+
+# --- Void a paid sale (POS, supervisor) --------------------------------
+@router.post("/{order_id}/void", response_model=VoidResponse)
+def void_order(order_id: str, body: VoidOrderIn, scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """Reverse a completed (paid) sale — requires `order.void` (Supervisor+). Undoes the transaction,
+    payment, loyalty points, and any voucher; sets the order to VOIDED."""
+    order = db.get(Order, order_id)
+    if not order:
+        raise NotFoundError("Order not found", code="order_not_found")
+    require(scope, "order.void", order.merchant_id)
+    if not scope.can_view_outlet(order.merchant_id, order.outlet_id):
+        raise ForbiddenError("Outside your outlet scope", code="outlet_scope")
+    result = orders_service.void_order(db, order=order, reason=body.reason)
+    audit_record(db, action="order.void", actor_id=scope.user_id, merchant_id=order.merchant_id,
+                 entity_type="order", entity_id=order.id,
+                 meta={"reason": body.reason, "amount": float(result.amount),
+                       "points_reversed": result.points_reversed,
+                       "voucher_restored": result.voucher_restored})
+    db.commit()
+    return VoidResponse(order_id=order.id, status=OrderStatus.VOIDED.value, amount=float(result.amount),
+                        points_reversed=result.points_reversed, voucher_restored=result.voucher_restored)
 
 
 # --- Receipt (POS) -----------------------------------------------------

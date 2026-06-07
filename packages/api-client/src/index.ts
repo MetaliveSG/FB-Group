@@ -1343,6 +1343,20 @@ export function getReceipt(baseUrl: string, token: string, orderId: string): Pro
   return request(baseUrl, `/orders/${orderId}/receipt`, {}, token);
 }
 
+export interface VoidResult {
+  order_id: string;
+  status: string;
+  amount: number;
+  points_reversed: number;
+  voucher_restored: string | null;
+}
+
+/** Void a paid sale. Requires an order.void-capable token (Supervisor+) — the POS passes a token
+ *  from a momentary supervisor PIN-login so a cashier can get manager authorization. */
+export function voidOrder(baseUrl: string, token: string, orderId: string, reason = ""): Promise<VoidResult> {
+  return request(baseUrl, `/orders/${orderId}/void`, { method: "POST", body: JSON.stringify({ reason }) }, token);
+}
+
 /** Staff: set/reset a node account's POS PIN. */
 export function setStaffPin(
   baseUrl: string, token: string, nodeId: string, userId: string, pin: string, merchantId?: string

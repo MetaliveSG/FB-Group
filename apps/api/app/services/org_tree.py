@@ -181,10 +181,12 @@ def grants_for_node(db: Session, node: OrgNode) -> list[tuple[str, set[str] | No
     boundaries = [n for n in subtree(db, node, active_only=False) if n.is_settlement_boundary]
     if boundaries:
         return [(b.id, None) for b in boundaries]
-    if node.sells:                                   # a Storefront scopes to itself
-        limit: set[str] = {node.id}
-    else:
-        limit = outlet_ids_under(db, node) or {n.id for n in sellable_under(db, node, active_only=False)}
+    # A Storefront scopes to its own typed outlet; a Chain to the outlets in its subtree. Orders are
+    # tagged by OUTLET id, so resolve the real outlet (provisioned: menu.id==node.id→outlet, separate
+    # uuid) via outlet_ids_under; fall back to node ids only for pure-spine/legacy (outlet.id==node.id).
+    limit: set[str] = outlet_ids_under(db, node)
+    if not limit:
+        limit = {node.id} if node.sells else {n.id for n in sellable_under(db, node, active_only=False)}
     return [(node.settlement_account_id, limit)]
 
 
@@ -197,7 +199,12 @@ def outlet_ids_under(db: Session, node: OrgNode) -> set[str]:
     Storefront node ids.
     """
     subtree_ids = select(OrgNode.id).where(_subtree_filter(node.path), OrgNode.is_active.is_(True))
-    return set(db.scalars(select(Outlet.id).where(Outlet.id.in_(subtree_ids))).all())
+    # Two node→outlet mappings coexist: legacy/collapsed where Outlet.id == node.id, and PROVISIONED
+    # storefronts where the link is Menu.id == node.id → Menu.outlet_id (a separate uuid outlet). Union
+    # both so node-scoped staff (POS operators, storefront managers) reach their real outlet.
+    ids = set(db.scalars(select(Outlet.id).where(Outlet.id.in_(subtree_ids))).all())
+    ids |= set(db.scalars(select(Menu.outlet_id).where(Menu.id.in_(subtree_ids))).all())
+    return ids
 
 
 # ---- org-tree management (build the member-tree, any depth) ----------------

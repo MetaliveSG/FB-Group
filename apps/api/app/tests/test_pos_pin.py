@@ -148,6 +148,17 @@ def test_add_and_delete_pos_staff(client, db):
     assert _pin_login(client, "m1", sf["outlet_id"], new_pin).status_code == 401
 
 
+def test_node_scope_resolves_provisioned_outlet(client, db):
+    """Regression: a node's RBAC outlet set must include its PROVISIONED outlet (menu.id==node.id,
+    separate outlet uuid) — else node-scoped POS staff get 403 outlet_scope when ringing a sale."""
+    from app.models.org import OrgNode
+    from app.services import org_tree
+    t = _root(client, db)
+    sf = _create_sf(client, t)
+    node = db.get(OrgNode, sf["id"])
+    assert sf["outlet_id"] in org_tree.outlet_ids_under(db, node)
+
+
 def test_pin_login_blocked_when_suspended(client, db):
     t = _root(client, db)
     sf = _create_sf(client, t)
