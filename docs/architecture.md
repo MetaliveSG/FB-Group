@@ -2,11 +2,12 @@
 
 ## Overview
 A modular-monolith FastAPI backend serves every client (customer web app, merchant
-CRM, operator console, and future POS/ordering apps) over one versioned REST API
+CRM, operator console, and the staff POS) over one versioned REST API
 (**137 endpoints, 43 tables**). State lives in PostgreSQL via SQLAlchemy 2.0; Alembic
-manages schema (24 migrations). The Next.js frontend (App Router, **27 routes**) serves
-three personas: **customer** (`/t/[token]`, rewards), **merchant** (CRM, AI insights,
-pipeline, campaigns, RFM, menu/team/org/settings admin), and **operator** (`/operator`).
+manages schema (24 migrations). The Next.js frontend (App Router, **28 routes**) serves
+four surfaces: **customer** (`/t/[token]`, rewards), **merchant** (CRM, AI insights,
+pipeline, campaigns, RFM, menu/team/tables/settings admin), **operator** (`/platform`),
+and the **staff POS** (`/pos`, PIN login).
 
 ```
                 ┌────────────────────────── apps/web (Next.js) ─────────────────────────┐
@@ -31,9 +32,10 @@ pipeline, campaigns, RFM, menu/team/org/settings admin), and **operator** (`/ope
 ## Why a modular monolith
 Single deployable, one transactional database, simplest possible operational
 surface for a 2-person team — while staying **domain-modular** so any module can be
-extracted into a service later if load demands. POS and a richer ordering app are
+extracted into a service later if load demands. The POS and richer ordering apps are
 *additional clients of the same API*, not rewrites: building the CRM correctly
-already lays ~70% of the POS backend (catalog, orders, payments, customers, loyalty).
+laid the POS backend (catalog, orders, payments, customers, loyalty), and the
+**staff POS (`/pos`) is now built** on exactly that foundation.
 
 ## Multi-tenancy
 The **canonical org model is the Chain/Storefront *member tree*** (`org_nodes` spine; engine keys off

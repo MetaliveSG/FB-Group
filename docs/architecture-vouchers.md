@@ -1,8 +1,9 @@
 # Vouchers & redemption — design (decided 2026-06-05)
 
-**Status:** agreed; build in progress. The decision: a **shared Voucher core** with **two issuers**
-(loyalty + campaign) and **one cashier redemption flow**. Grounded in BreadTalk / Ya Kun / Starbucks /
-Grab practice (see §5).
+**Status:** BUILT (verified 2026-06-07). The shared **Voucher core**, both issuers (loyalty + campaign),
+and the **one cashier redemption flow** are shipped — see §3 for the as-built map. Tiers 1–2 of campaign
+scope are built; tier 3 (coalition/cross-merchant) remains deferred. Grounded in BreadTalk / Ya Kun /
+Starbucks / Grab practice (see §5).
 
 ## 1. Campaign vs loyalty program — the distinction
 
@@ -35,17 +36,25 @@ for 1 point"** (earned = loyalty) live in the same app, redeemed identically at 
 register) that issues vouchers from the core, with the per-period cap as a voucher rule. The points-catalog
 **"$1 off for 100 coins"** is **loyalty**, redeemed through the *same* core.
 
-## 3. Current state (as-built, the gap)
+## 3. Current state (as-built 2026-06-07 — the gap is CLOSED)
 
-- ✅ **Issue**: `services/rewards.py::redeem_catalog_item`, `spin_wheel`, `jackpot.py::play_jackpot` all
-  create a `RewardRedemption` (`models/loyalty.py`) with a `voucher_code`. Customer lists via `GET /me/vouchers`.
-- ❌ **Redeem (the missing half)**: NO cashier validate/redeem endpoint; `status` never transitions to
-  "used"; vouchers are NOT applied to an order total (no `Order` voucher field); checkout ignores them.
-- ❌ **Rules**: no `value`-application, no validity window, **no per-day/week/month cap**, no single-use guard.
-- ⚠️ **Status inconsistency**: catalog/wheel write `status="redeemed"`, jackpot writes `"active"`.
-- ❌ **Issue-on-registration**: only a first-*visit* bonus in **points**, not vouchers on signup.
+- ✅ **Issue**: `services/vouchers.py::issue_vouchers` (+ `issue_welcome_pack`); loyalty issuers
+  (`services/rewards.py::redeem_catalog_item`, `spin_wheel`, `jackpot.py::play_jackpot`) create a
+  `RewardRedemption` (`models/loyalty.py`) with a `voucher_code`. Customer lists via `GET /me/vouchers`.
+- ✅ **Redeem**: `POST /vouchers/{code}/redeem` + `GET /vouchers/{code}` (dry-run preview) +
+  `GET /vouchers/diner/{customer_id}` (a diner's issued vouchers for the cashier). Logic in
+  `services/vouchers.py::redeem_voucher`/`validate_voucher`: status `issued → redeemed`
+  (`redeemed_at`, `redeemed_by_user_id`); applies `value` to the order (`Order.voucher_code`,
+  `discount_amount`, recomputed `total`). Works **with OR without** an order (manual / POS / checkout).
+- ✅ **Rules**: `value`, `valid_until`, `min_spend`, **per-period cap** (day/week/month via `_period_start`
+  + campaign-batch check), single-use + void/expired guards, tenant gate (wrong-tenant = not-found),
+  node-scope subtree check — all in `validate_voucher`.
+- ✅ **Status normalised**: `issued → redeemed` (+ `expired`/`void`) constants in `services/vouchers.py`.
+- ✅ **Issue-on-registration**: `issue_welcome_pack` (config `Merchant.settings["welcome_voucher"]`, e.g.
+  10×$1 one/day; idempotent per customer+merchant) fires on signup via `routes/auth.py::_issue_welcome`
+  (register/otp/sso when `consent_merchant_id` passed). Settings UI: `merchant/settings::saveWelcomeVoucher`.
 
-## 4. Build plan
+## 4. Build plan — DELIVERED (2026-06-07; see §3)
 
 1. **Voucher core + cashier redemption** (the real gap; Foundation-adjacent — settles on the
    checkout / future `record_sale()` path):

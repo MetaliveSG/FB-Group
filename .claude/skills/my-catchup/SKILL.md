@@ -16,6 +16,7 @@ Do ALL of these in parallel:
 1. **Auto-memory index**: Read the MEMORY.md index at
    `/Users/samuelgan/.claude/projects/-Volumes-Data-Drive-Coding-multi-agent-FB-Group/memory/MEMORY.md`
    then read every file it references — at minimum:
+   - `docs-index.md` (⭐ anti-hallucination map: which docs are AS-BUILT vs PLAN vs SUPERSEDED + ground-truth counts + clean-boot/real-credentials reality — trust this + code over stale doc prose)
    - `build-state.md` (canonical: what's been built, every Round entry, every KIV)
    - `project-fbgroup-crm.md` (scope, goals, demo loop)
    - `arch-decisions.md` (monorepo, polyglot, DB strategy, auth)
@@ -28,11 +29,10 @@ Do ALL of these in parallel:
    current state — counts (endpoints/tables/migrations/tests/web routes),
    demo credentials, feature checklist, known limitations, roadmap.
 
-4. **Git state**: Run `git rev-parse --is-inside-work-tree` first. If
-   it's a repo, run `git log --oneline -15`, `git status`, `git diff --stat`.
-   If NOT a repo (currently the case — verified 2026-05-29), note that
-   nothing is under version control; "save progress" means writing files
-   to disk + memory, not commits.
+4. **Git state**: This IS a git repo (origin `github.com/MetaliveSG/FB-Group`; branch+PR flow per
+   `CONTRIBUTING.md`, no direct commits to `main`). Run `git log --oneline -15`, `git status`,
+   `git branch --show-current`, `git diff --stat`. "Save progress" = commit on a feature branch
+   (+ memory for context not in code).
 
 5. **Docker stack state**: Run `docker-compose -f infra/docker-compose.yml ps`
    and `curl -s http://localhost:8000/health` to see if the live stack is
@@ -65,10 +65,10 @@ From everything gathered, produce a **concise briefing** with these sections:
   (e.g. "Round 14 hardened `app/seed.py::_ensure_kampong_jackpot` — read before touching seed sync")
 - Only suggest files that are recently modified or relevant to open items
 
-### Demo Quick-Start
-- Operator login: `http://localhost:3001/operator/login` → `superadmin@platform.sg` / `Password123!`
-- Merchant owner: `http://localhost:3001/merchant/login` → `owner@makan.sg` (or `owner@kampongeats.sg`) / `Password123!`
-- Customer QR: `http://localhost:3001/t/orchard-01` (or `kampong-bedok-01`) → OTP with `+6580000000` (or `+6581000000`)
+### Demo Quick-Start (stack boots CLEAN — `SEED_ON_START=0`; seed first: `python -m app.seed_demo_merchants`)
+- Operator login: `http://localhost:3001/platform/login` → `superadmin@platform.sg` / `Password123!`
+- Merchant owner: `http://localhost:3001/merchant/login` → `owner@breadtalk.sg` / `owner@pepperlunch.sg` / `manager@toastbox.sg` — all `Password123!`
+- Customer QR: scan a live Storefront's per-table QR (each Storefront's *Tables & QR* page) → OTP `+6580000000` (DEBUG returns the code). (Old static tokens like `orchard-01`/`kampong-bedok-01` are legacy `app/seed.py`-only — run `python -m app.seed_kampong` for the Kampong dataset.)
 
 ## Step 3: Ready prompt
 
@@ -84,7 +84,7 @@ Ready to continue. What would you like to work on?
 - Keep the briefing under 80 lines — dense, no fluff
 - If a file referenced in MEMORY.md doesn't exist, skip it and note it
 - If docker-compose isn't running, say so — don't assume the stack is up
-- If `git` returns "not a git repository", note it explicitly (the user previously asked about commits — this is relevant)
+- This IS a git repo (feature-branch + PR flow); report branch + uncommitted changes in the briefing
 - Prefer parallel tool calls to minimize latency
 - Do NOT regenerate openapi.json or rerun pytest as part of catchup — that's a `/my-wrapup` action, not catchup
 

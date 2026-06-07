@@ -1,10 +1,11 @@
 # Implementation Phases — Org Tree, Loyalty Ledger, POS & ERP-readiness
 
-> Status: **plan agreed, not yet built** (captured 2026-05-31).
-> The build sequence to fulfil the requirements in `architecture-org-tree.md` (structure) and
-> `roadmap-network-loyalty.md` (loyalty/FX economics). Sequenced by **irreversibility and
-> dependency** — cheap-but-irreversible seams first, heavy structure pulled by real demand.
-> Each phase keeps the current demo (single merchant = trivial tree) green throughout.
+> Status: **SUPERSEDED (historical, captured 2026-05-31).** Phases 0–2 are BUILT (org spine + path-cascade
+> RBAC + loyalty ledger + POS primitives + vouchers). The authoritative roadmap is now **CLAUDE.md** +
+> memory `roadmap-mvp-foundation`. Phases 3–4 (external-POS API / multi-domain FX rollup) remain future
+> work — and note CLAUDE.md **explicitly defers external-POS ingestion** for the MVP, so Phase 3 as written
+> is partly out of current direction. The "current-state scorecard" below is a 2026-05-31 pre-build snapshot
+> (org tree / RBAC / POS items it lists as missing are now built); kept as a build-sequence record only.
 
 ---
 

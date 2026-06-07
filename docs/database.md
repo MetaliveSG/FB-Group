@@ -16,17 +16,22 @@ see `artifacts/schema_tables.txt`.
 **Engagement** — `reward_catalog_items` (redeemable rewards), `wheel_segments` (spin-the-wheel), `jackpot_prizes` (3x3 slot reels, server-authoritative), `crm_tasks` (activities/to-dos), `opportunities` (pipeline; `pipeline_type` sales|winback), `customer_activities` (logged call/email/meeting/whatsapp)
 **CRM** — `customer_tags`, `customer_notes`, `customer_segments`
 **Campaigns** — `campaigns`, `campaign_audiences`, `campaign_messages`, `campaign_redemptions`
+**Venues / leasing** — `leases` (venue↔stall edge; `rent_type` FIXED|GTO drives visibility + settlement; migration `s6t7venuelease`)
 **Audit** — `audit_logs`
 
 ## Migrations (chain)
-`initial schema` → `rewards catalog/wheel/tasks/owner` → `redemption voucher_code` →
-`opportunities/customer_activities` → `pipeline_type + merchant settings` → `jackpot_prizes` →
-`customers.gender` → `menu_items.image_url` → `menus stall columns` →
-`ledger domain+idempotency` → `orders external ref` → `org_nodes spine` → `idempotency-key domain scope`.
+**24 migrations, single linear head (`z4a5pinenc`).** The chain self-documents in
+`apps/api/alembic/versions/` (`alembic history`) — not hand-maintained here (it drifts every migration).
+Recent additions (post org-spine): `p2q3settingsnn` (settings NOT NULL) → `q4r5orgnodename` →
+`r5s6chainfee` → `s6t7venuelease` (leases) → `t7u8consent` (PDPA) → `u8v9voucher` → `v0w1campaignid` →
+`w1x2staffpin` → `x2y3userkind` → `y3z4pospin` → `z4a5pinenc` (Fernet PIN widen).
 (Target Postgres; SQLite dev/test uses `Base.metadata.create_all`.)
 
 ## Key relationships
 ```
+OrgNode = the CANONICAL hierarchy (member-tree spine: parent_id + path + sells/boundary flags;
+          invariant menu.id == node.id). The typed tables below are FK-anchor PROFILES of the
+          spine (Merchant/Brand/Outlet now FK anchors, not a managed UI), NOT the source of truth:
 Merchant 1─* Brand 1─* Outlet 1─* Table 1─1 QRCode
 Outlet 1─* Menu 1─* MenuCategory 1─* MenuItem 1─* MenuModifier
 Customer 1─* CustomerAuthIdentity        (password / mobile_otp / google / apple)

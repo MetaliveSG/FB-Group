@@ -1,7 +1,7 @@
 """POS staff (POS operators) — SEGREGATED from web/dashboard users.
 
 A POS operator is a `User` with `kind="pos"`: a synthetic email + a locked (random, unknowable)
-password so it can NEVER log into the web dashboard, and a bcrypt-hashed 6-digit **PIN** that is
+password so it can NEVER log into the web dashboard, and an **encrypted-at-rest** 6-digit **PIN** that is
 unique **per storefront** (the node it's assigned at). It signs in only at `/pos` via the PIN.
 
 We keep them as `User` rows (not a separate table) so the order/payment/audit actor graph — which
@@ -9,8 +9,8 @@ references `user_id` everywhere — keeps working unchanged. The segregation is 
 the two login channels (see `auth/service.py`: `login_user` rejects `kind="pos"`; PIN-login only
 considers `kind="pos"`).
 
-PINs are stored READABLY (owner choice — see User.pin): the owner can reveal any operator's current
-PIN and set a chosen one. PINs are unique per storefront. (KIV: encrypt-at-rest.)
+PINs are **encrypted at rest** (Fernet, `app/core/pin_crypto.py`, key from `PIN_SECRET`→`JWT_SECRET`):
+the owner can reveal any operator's current PIN (eye) and set a chosen or auto PIN. Unique per storefront.
 """
 from __future__ import annotations
 

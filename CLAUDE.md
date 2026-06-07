@@ -6,7 +6,8 @@ capture-loop diagram live in `README.md`. This file is operating guidance for Cl
 ## Stack
 - **Backend** `apps/api` — FastAPI + SQLAlchemy 2.0 (typed `Mapped`/`mapped_column`) + Alembic.
   Own Python venv at `apps/api/.venv` (NOT in the JS workspace). PyJWT HS256, bcrypt direct.
-- **Frontend** `apps/web` — Next.js 14 App Router, `(customer)` + `(merchant)` route groups,
+- **Frontend** `apps/web` — Next.js 14 App Router, **flat route segments** (`t/` customer · `merchant/`
+  dashboard · `platform/` operator · `pos/` staff POS — NOT parenthesised route groups),
   SVG charts, **no Tailwind**. Vitest for tests.
 - **Shared** `packages/` — `api-client` (typed client, alias `@fbgroup/api-client`), `ui`, `types`, `config`.
 - **DB** — Postgres 16 in Docker for prod-like; **SQLite for pytest** (in-memory, StaticPool,

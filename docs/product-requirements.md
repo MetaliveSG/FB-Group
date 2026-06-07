@@ -9,8 +9,10 @@ Fast-food chains, cafés, food courts (multi-brand, multi-outlet).
 
 ## Personas / admin structure
 Platform Operator (Super Admin / Admin / Onboarding / Support) · Merchant Owner (tenant) ·
-**node-assignable roles** — Manager · Cashier · Staff · Finance (attached at any member-tree node;
-authority cascades down its subtree) · Customer.
+**two segregated login surfaces** (as-built R39): **web** node-assignable roles — Manager · Staff · Finance
+(email+password, dashboard) — and **POS operators** — Supervisor · Cashier (PIN-only, `/pos`; Supervisor
+adds void). Roles attach at any member-tree node; authority cascades down its subtree · Customer.
+("Cashier" was dropped from the web palette → POS-only.)
 
 ## Phase-1 product (hybrid model)
 QR ordering **and** cashier/manual checkout; loyalty works across both. Loyalty is
@@ -22,6 +24,10 @@ Scan QR → register/login (OTP/email/SSO) → browse menu → order → checkou
 (simulated payment) → earn points → **customer captured + profiled in merchant CRM**.
 
 ## Module status in this PoC
+> These 12 are the **requirements baseline**. The authoritative **as-built status + extensions** (incl.
+> the newer Staff POS, vouchers, PDPA consent, suspend enforcement) is **`delivery-report.md §5`** — the
+> single source of truth, to avoid two drifting checklists.
+
 | # | Module | Status |
 |---|---|---|
 | 1 | Multi-tenant merchant system | ✅ built + tested |
@@ -44,6 +50,9 @@ Scan QR → register/login (OTP/email/SSO) → browse menu → order → checkou
 - **RFM segmentation** (Champions/Loyal/At-Risk/Hibernating…).
 - **Win-back launcher** — RFM → win-back opportunities → WhatsApp campaign (retention loop).
 - **Self-service admin** — Menu management (CRUD, outlet/subtree-scoped), User management (invite/assign/revoke), **member-tree node management + Tables & QR** (per-table QR + print), per-merchant feature toggles.
+- **Staff POS** (`/pos`) — PIN login (segregated `kind="pos"`, encrypted PINs), tap→pay, receipt, diner attach + voucher redeem, **Supervisor void**.
+- **Vouchers** — shared core + 2 issuers (loyalty/campaign) + one cashier redeem flow; node-scoped; welcome-pack on signup.
+- **PDPA consent at capture** + **suspend enforcement** (login/order blocked for a suspended tenant).
 
 ## Out of scope (this round) / next steps
 - Real Google/Apple SSO token verification; real OTP/WhatsApp/payment providers (Stripe/NETS/PayNow), refunds.

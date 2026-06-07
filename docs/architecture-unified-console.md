@@ -1,7 +1,11 @@
-# Unified Tree-Scoped Console — design (FOR SIGN-OFF, not yet built)
+# Unified Tree-Scoped Console — design (Stage 1 BUILT; Stages 2–4 pending)
 
-**Status:** proposed 2026-06-04 · supersedes the split `/platform` (operator) + `/merchant/*`
-(tenant) consoles · MVP definition-of-done item. As-built spine reference: `architecture-org-tree.md §12`.
+**Status:** proposed 2026-06-04 · **Stage 1 BUILT** — the `Scope` abstraction (`apps/web/src/lib/scope.ts`,
+`useScope.ts`) + `NodeDirectory` (`components/NodeDirectory.tsx`) are shipped across the 11 per-tenant pages,
+fixing the operator "missing merchant id" bug. **NOT yet built:** the `<ScopedPage tier=…>` wrapper (tier
+logic lives ad-hoc per page today), the backend `409 scope_above_tenant_boundary` (UI-guarded only), and
+Stages 2–4 (shell merge / breadcrumb scope-switcher / route unification). The two front doors (`/platform`
++ `/merchant/*`) still exist. As-built spine reference: `architecture-org-tree.md §12`.
 
 ## 1. The principle
 

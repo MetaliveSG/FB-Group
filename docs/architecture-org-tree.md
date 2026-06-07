@@ -128,6 +128,13 @@ type-specific columns):
   *attributes* (address, timezone, cuisine, logo, settlement settings…), keyed 1:1 to a spine
   node. We do **not** throw these away or collapse everything into a JSON blob.
 
+> **Δ as-built (2026-06-07):** the shipped `org_nodes` table adds `name`, **`chain_stopped`**, and
+> **`subscription_fee`** Numeric(12,2) (migrations `q4r5orgnodename`/`r5s6chainfee`), and does **NOT** yet
+> carry the three module flags in the DDL below — `rewards_enabled`/`qr_ordering_enabled`/`pos_enabled`
+> live flat on `Merchant.settings` today (`services/boundaries.py::MODULE_FLAGS`). Moving them onto the
+> spine with the subtree cascade is the plan in `architecture-3-modules.md §7`. The `path`/`sells`/boundary
+> flags + boundary pointers below are as-built.
+
 ```sql
 -- The spine. One row per org node, any role, any depth.
 CREATE TABLE org_node (

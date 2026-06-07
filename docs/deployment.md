@@ -2,11 +2,12 @@
 
 ## Local (Docker Compose)
 ```bash
-docker compose -f infra/docker-compose.yml up --build
+docker-compose -f infra/docker-compose.yml up --build   # this machine uses docker-compose v1 (hyphenated)
 ```
-- `db` — Postgres 16 (healthcheck `pg_isready`, named volume `pgdata`)
-- `api` — FastAPI; entrypoint runs `alembic upgrade head` then (if `SEED_ON_START=1`) seeds, then `uvicorn`. Container `HEALTHCHECK` hits `/health`.
-- `web` — Next.js, `NEXT_PUBLIC_API_BASE=http://localhost:8000`
+- `db` — Postgres 16 (healthcheck `pg_isready`, named volume `pgdata`); host `:5432`
+- `api` — FastAPI; entrypoint runs `alembic upgrade head` then (if `SEED_ON_START=1`) seeds, then `uvicorn`. Container `HEALTHCHECK` hits `/health`. Host `:8000`.
+- `web` — Next.js, `NEXT_PUBLIC_API_BASE=http://localhost:8000`; mapped to host **`:3001`** (host 3000 was taken)
+- **Seeding is OFF by default** (`SEED_ON_START=0`): the DB boots clean; provision demo data with `python -m app.seed_demo_merchants` (Breadtalk/Pepper Lunch) or `python -m app.seed_kampong` (SG-local).
 
 Config is env-based (12-factor). Copy `apps/api/.env.example` → `.env` and set a real
 `JWT_SECRET` (`openssl rand -hex 32`).
@@ -17,16 +18,18 @@ alembic upgrade head            # apply
 alembic downgrade -1            # roll back one revision
 alembic revision --autogenerate -m "msg"   # new migration after model changes
 ```
-Migration chain: **24 revisions** (initial schema → rewards catalog/wheel/tasks/owner →
-redemption voucher_code → opportunities/activities → pipeline_type + merchant settings →
-jackpot_prizes → customers.gender → menu_items.image_url → menus stall columns →
-ledger domain+idempotency → orders external ref → org_nodes spine → idempotency-key domain scope),
-single head, verified to upgrade from empty (43 tables); migrations are roll-forward (CI checks upgrade + model-drift, no downgrade-to-base).
-On container start,
-`alembic upgrade head` runs, then the seed runs **idempotently** (only if the DB is empty,
-so restarts don't wipe data / invalidate tokens).
+Migration chain: **24 revisions**, single head (`z4a5pinenc`), verified to upgrade from empty (43 tables);
+migrations are **roll-forward** (CI checks upgrade-from-empty + model-drift, no downgrade-to-base). The
+chain self-documents in `apps/api/alembic/versions/` (`alembic history`) — not hand-listed here (it drifts).
+On container start `alembic upgrade head` runs; seeding is **off by default** (`SEED_ON_START=0` → clean DB,
+restarts don't wipe data / invalidate tokens; provision via the ensure-scripts).
 
-## AWS-ready blueprint (target production topology)
+## AWS-ready blueprint (target production topology — NOT built)
+> **Aspirational.** No IaC exists in the repo (no Terraform/CDK/CloudFormation; only
+> `infra/docker-compose.yml` + a single `.github/workflows/ci.yml`). Local-first per the roadmap;
+> cloud is deferred. This is the *target*, not a deployment guide you can run today. This doc is the
+> **single canonical home** for the AWS topology — `bc-dr.md` and `security.md` reference it rather than
+> restating it.
 ```
 Route53 ─ CloudFront(WAF) ─ ALB ─┬─ ECS Fargate: web (Next.js)
                                  └─ ECS Fargate: api (FastAPI)  ──► RDS PostgreSQL (Multi-AZ)
