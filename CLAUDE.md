@@ -13,8 +13,9 @@ capture-loop diagram live in `README.md`. This file is operating guidance for Cl
 - **DB** — Postgres 16 in Docker for prod-like; **SQLite for pytest** (in-memory, StaticPool,
   `Base.metadata.create_all` — tests do NOT run through Alembic). Same ORM code both ways.
 - **Infra** `infra/docker-compose.yml`. **Git repo** (origin `github.com/MetaliveSG/FB-Group`); branch +
-  PR flow per `CONTRIBUTING.md` (no direct commits to `main`, conventional commits, add a migration for
-  schema changes). "Save progress" = commit on a feature branch (+ memory for context not in code).
+  **commit directly to `main`** (no PR flow — user's call 2026-06-07; branch protection removed); conventional
+  commits, add a migration for schema changes. CI still runs on push (informational, non-blocking — watch
+  it). "Save progress" = commit on `main` (+ memory for context not in code).
 
 ## Run & test
 ```bash

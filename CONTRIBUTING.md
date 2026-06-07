@@ -3,23 +3,19 @@
 How we work now that the project is moving from PoC to a real development effort.
 The goal: anyone can make a change safely, CI proves it, and `main` is always releasable.
 
-## Branch & PR flow (no direct commits to `main`)
+## Commit flow (direct to `main`)
 
-`main` is protected — all changes land via pull request.
+`main` is **not** protected — commit straight to it (small 2-person team; speed first).
 
 ```bash
-git checkout main && git pull
-git checkout -b <type>/<short-topic>        # e.g. feat/referral-program, fix/checkout-race
+git pull
 # ... make the change + tests ...
-git push -u origin HEAD
-gh pr create --fill                          # or open the PR in GitHub
+git commit -m "<type>(<scope>): <summary>"
+git push
 ```
 
-A PR may merge when **all CI jobs are green** and it has one review approval.
-Prefer **squash-merge** so `main` stays one logical commit per change.
-
-> Enable branch protection on GitHub once: Settings → Branches → add a rule for `main`
-> requiring the `Backend`, `Frontend`, and `Migrations` checks + 1 approving review.
+**CI still runs on every push to `main`** (`.github/workflows/ci.yml`) — it does **not** block,
+but watch the ❌/✅ and fix-forward if a push goes red. PR flow is optional, only for something risky.
 
 ## Commit messages (Conventional Commits)
 
