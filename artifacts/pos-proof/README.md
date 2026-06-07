@@ -34,8 +34,9 @@ A POS user is PIN-only: synthetic `@pos.local` email + locked password → can't
 can't PIN-login. **PINs are stored READABLY (owner choice — migration `y3z4pospin`):** the owner reveals
 any operator's current PIN via an eye icon and can **set a chosen PIN** or auto-generate one; PINs are
 **unique per storefront**. Creating a Storefront auto-provisions a **3-person team (1 Supervisor + 2
-Cashiers)**. POS role palette = **Supervisor** (on-floor lead: POS ops + store reports) and **Cashier**
-— Supervisor is a DISTINCT role from the web "Manager" (no org/menu/staff powers); web logins drop
+Cashiers)**. POS role palette = **Supervisor** (on-floor lead: POS ops + store reports + **can VOID a
+transaction** = `order.void`, the differentiator; shown as an "Allow void" tag in the card) and
+**Cashier** — Supervisor is a DISTINCT role from the web "Manager" (no org/menu/staff powers); web logins drop
 "cashier" entirely (manager/staff/finance). Owners self-serve via **Settings → "Staff & PINs (POS)"**
 (list with eye-reveal · Change PIN · add with optional chosen PIN · remove); the node drawer's web "Set
 PIN" was removed ("Logins" → "Web logins"). Endpoints: `GET/POST /org/nodes/{id}/pos-staff` (create accepts an optional `pin`),

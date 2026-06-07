@@ -28,6 +28,7 @@ P = {
     "menu.manage": "Manage menus, items, modifiers",
     "order.view": "View orders",
     "order.manage": "Create/update orders + status",
+    "order.void": "Void/cancel a completed order or line (supervisor+)",
     "payment.process": "Process checkout/payments",
     "crm.view": "View CRM customers + analytics",
     "crm.manage": "Manage tags, notes, segments",
@@ -62,18 +63,18 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
     # Enterprise (group) tier — bundles assigned at an Enterprise node, cascading over the group.
     RoleName.GROUP_CEO.value: [
         "merchant.manage", "brand.manage", "outlet.manage", "org.manage", "menu.manage",
-        "order.view", "order.manage", "payment.process", "crm.view", "crm.manage",
+        "order.view", "order.manage", "order.void", "payment.process", "crm.view", "crm.manage",
         "campaign.manage", "report.view", "user.manage", "audit.view",
     ],
     RoleName.GROUP_COO.value: [
         "brand.manage", "outlet.manage", "org.manage", "menu.manage", "order.view", "order.manage",
-        "payment.process", "crm.view", "crm.manage", "campaign.manage", "report.view",
+        "order.void", "payment.process", "crm.view", "crm.manage", "campaign.manage", "report.view",
     ],
     RoleName.GROUP_CFO.value: ["report.view", "audit.view", "crm.view"],   # finance (read)
     RoleName.GROUP_ACCOUNTANT.value: ["report.view", "audit.view"],        # finance (read-only)
     RoleName.MERCHANT_OWNER.value: [
         "merchant.manage", "brand.manage", "outlet.manage", "org.manage", "menu.manage",
-        "order.view", "order.manage", "payment.process", "crm.view", "crm.manage",
+        "order.view", "order.manage", "order.void", "payment.process", "crm.view", "crm.manage",
         "campaign.manage", "report.view", "user.manage", "audit.view",
     ],
     RoleName.BRAND_MANAGER.value: [
@@ -95,14 +96,15 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
     # Member-tree role PALETTE (Chain/Storefront). Assigned at any node; node sets the reach.
     RoleName.MANAGER.value: [
         "merchant.manage", "brand.manage", "outlet.manage", "org.manage", "menu.manage",
-        "order.view", "order.manage", "payment.process", "crm.view", "crm.manage",
+        "order.view", "order.manage", "order.void", "payment.process", "crm.view", "crm.manage",
         "campaign.manage", "report.view", "user.manage", "audit.view",
     ],
     RoleName.CASHIER.value: ["order.view", "order.manage", "payment.process"],
     RoleName.FINANCE.value: ["report.view", "audit.view", "crm.view"],   # read-only finance
-    # POS-only on-floor lead (Supervisor): cashier verbs + store reports. Deliberately NOT org/menu/
-    # staff/merchant management (those are web MANAGER/OWNER) — distinct from the web "Manager" role.
-    RoleName.SUPERVISOR.value: ["order.view", "order.manage", "payment.process", "report.view"],
+    # POS-only on-floor lead (Supervisor): cashier verbs + store reports + the supervisor-only power
+    # to VOID a transaction (the key differentiator from Cashier). Deliberately NOT org/menu/staff/
+    # merchant management (those are web MANAGER/OWNER) — distinct from the web "Manager" role.
+    RoleName.SUPERVISOR.value: ["order.view", "order.manage", "order.void", "payment.process", "report.view"],
     RoleName.CUSTOMER.value: [],
 }
 
