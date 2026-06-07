@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  resolveQr, pinLogin, createManualOrder, cashierCheckout, getReceipt, redeemVoucher,
+  resolveQr, pinLogin, createManualOrder, cashierCheckout, getReceipt, redeemVoucher, voidOrder,
   getApiBase,
 } from "@/lib/api";
 import { setStaffToken, getStaffToken, clearStaffToken } from "@/lib/auth";
@@ -40,6 +40,10 @@ export default function PosPage() {
   const [receipt, setReceipt] = useState<ReceiptPayload | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Void flow (supervisor-authorized): a PIN modal on the receipt screen.
+  const [voidOpen, setVoidOpen] = useState(false);
+  const [voidPin, setVoidPin] = useState("");
+  const [voided, setVoided] = useState<string | null>(null);
 
   // Restore the outlet binding (device is bound once, then PIN-only).
   const loadMenu = useCallback(async (b: Binding) => {
@@ -136,8 +140,33 @@ export default function PosPage() {
 
   function clearTicket() {
     setLines([]); setDinerPhone(""); setVoucher(""); setOrder(null); setReceipt(null); setError(null);
+    setVoidOpen(false); setVoidPin(""); setVoided(null);
   }
   function newOrder() { clearTicket(); setStep("order"); }
+
+  // Void the just-completed sale. A cashier can't void (no order.void) — so we take a SUPERVISOR PIN
+  // and momentarily PIN-login as them to get an authorized token, then call void with it.
+  async function doVoid() {
+    if (!binding || !order) return;
+    setBusy(true); setError(null);
+    try {
+      const auth = await pinLogin(base, binding.merchant_id, binding.outlet_id, voidPin);
+      const res = await voidOrder(base, auth.access_token, order.id, "POS void");
+      setVoidOpen(false); setVoidPin("");
+      setVoided(
+        `Sale voided · ${money(res.amount)} reversed`
+        + (res.points_reversed ? ` · ${res.points_reversed} coins clawed back` : "")
+        + (res.voucher_restored ? ` · voucher ${res.voucher_restored} restored` : ""),
+      );
+    } catch (e) {
+      const m = e instanceof Error ? e.message : "Void failed";
+      if (m.includes("invalid_pin")) setError("Invalid PIN.");
+      else if (m.includes("403") || m.includes("order.void") || m.includes("permission") || m.includes("Forbidden"))
+        setError("That PIN can't authorize voids — use a Supervisor PIN.");
+      else if (m.includes("already_voided")) setError("This sale is already voided.");
+      else setError(m);
+    } finally { setBusy(false); }
+  }
   // Exit = sign the cashier out → PIN lock (device stays bound). Clear the ticket, then set step LAST
   // so it isn't clobbered by an "order" step.
   function lock() { clearStaffToken(); clearTicket(); setStep("lock"); }
@@ -214,10 +243,41 @@ export default function PosPage() {
           {receipt.points_earned ? <div>Coins earned: +{receipt.points_earned}</div> : null}
           <div style={{ textAlign: "center", marginTop: 10 }}>{receipt.footer}</div>
         </div>
+        {voided && (
+          <div style={{ marginTop: 16, color: "#fca5a5", background: "#7f1d1d", padding: "10px 14px", borderRadius: 8, fontWeight: 600, maxWidth: 360, textAlign: "center" }}>
+            ⊘ {voided}
+          </div>
+        )}
         <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
-          <button onClick={() => window.print()} style={{ ...primaryBtn, width: 150 }}>Print</button>
-          <button onClick={newOrder} style={{ ...primaryBtn, width: 150, background: "#334155" }}>New order</button>
+          <button onClick={() => window.print()} style={{ ...primaryBtn, width: 130 }}>Print</button>
+          {!voided && (
+            <button data-testid="pos-void" onClick={() => { setVoidOpen(true); setError(null); }}
+              style={{ ...primaryBtn, width: 130, background: "#7f1d1d" }}>Void sale</button>
+          )}
+          <button onClick={newOrder} style={{ ...primaryBtn, width: 130, background: "#334155" }}>New order</button>
         </div>
+
+        {/* Supervisor PIN modal — only a Supervisor PIN can authorize a void */}
+        {voidOpen && (
+          <div onClick={() => setVoidOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ background: "#1e293b", padding: 24, borderRadius: 12, width: 300, textAlign: "center" }}>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>Void sale</div>
+              <div style={{ color: "#94a3b8", fontSize: 13, marginBottom: 14 }}>Enter a <b>Supervisor</b> PIN to authorize</div>
+              <input autoFocus type="password" inputMode="numeric" value={voidPin}
+                onChange={(e) => setVoidPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                onKeyDown={(e) => { if (e.key === "Enter" && voidPin.length >= 4) doVoid(); }}
+                placeholder="••••••"
+                style={{ width: "100%", textAlign: "center", fontSize: 24, letterSpacing: 8, fontFamily: "monospace", padding: "8px 0", borderRadius: 8, border: "none" }} />
+              {error && <div style={{ color: "#fca5a5", fontSize: 12, marginTop: 8 }}>{error}</div>}
+              <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                <button onClick={() => { setVoidOpen(false); setVoidPin(""); setError(null); }} style={{ ...primaryBtn, flex: 1, background: "#334155" }}>Cancel</button>
+                <button disabled={busy || voidPin.length < 4} onClick={doVoid} style={{ ...primaryBtn, flex: 1, background: "#b91c1c", opacity: busy || voidPin.length < 4 ? 0.5 : 1 }}>
+                  {busy ? "…" : "Void"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

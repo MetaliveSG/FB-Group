@@ -94,3 +94,15 @@ class CheckoutResponse(BaseModel):
     transaction_id: str | None = None
     points_earned: int = 0
     order_id: str
+
+
+class VoidOrderIn(BaseModel):
+    reason: str = Field(default="", max_length=200)
+
+
+class VoidResponse(BaseModel):
+    order_id: str
+    status: str
+    amount: float
+    points_reversed: int = 0          # merchant coins clawed back from the diner
+    voucher_restored: str | None = None  # a voucher code made reusable again, if any

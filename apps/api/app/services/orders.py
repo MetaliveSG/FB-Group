@@ -227,6 +227,79 @@ def checkout(
     return CheckoutResult(payment=payment, transaction=txn, points_earned=points)
 
 
+@dataclass
+class VoidResult:
+    amount: Decimal
+    points_reversed: int = 0
+    voucher_restored: str | None = None
+
+
+def void_order(db: Session, *, order: Order, reason: str = "") -> VoidResult:
+    """Reverse a COMPLETED (paid) sale at the POS — supervisor action (`order.void`). Undoes every
+    side-effect of checkout: removes the sales transaction (so it leaves all reports), voids the
+    payment, reverses loyalty points earned (merchant + any coalition), and restores a voucher that
+    was redeemed onto the order. Sets the order status to VOIDED. Idempotent-guarded."""
+    from app.loyalty.engine import record_reward_txn
+    from app.models.enums import RewardScope, RewardTxnType
+    from app.models.loyalty import LoyaltyAccount, RewardRedemption, RewardTransaction
+
+    if order.status == OrderStatus.VOIDED.value:
+        raise ConflictError("Order already voided", code="already_voided")
+    if order.status != OrderStatus.COMPLETED.value:
+        raise ConflictError("Only a completed (paid) sale can be voided", code="not_voidable")
+
+    amount = money(order.total)
+
+    # 1) Reverse every loyalty EARN posted for this order (merchant + coalition), append-only:
+    #    a negative ADJUST entry mirrors each earn and the cached balance is decremented.
+    points_reversed = 0
+    earns = db.scalars(
+        select(RewardTransaction).where(
+            RewardTransaction.order_id == order.id,
+            RewardTransaction.txn_type == RewardTxnType.EARN.value,
+        )
+    ).all()
+    for e in earns:
+        acct = db.get(LoyaltyAccount, e.account_id)
+        if acct is None or not e.points:
+            continue
+        record_reward_txn(db, account=acct, txn_type=RewardTxnType.ADJUST.value,
+                          points=-e.points, reason=f"Void of order {order.id}", order_id=order.id)
+        acct.points_balance -= e.points
+        if acct.scope_type == RewardScope.MERCHANT.value and acct.scope_id == order.merchant_id:
+            points_reversed += e.points
+
+    # 2) Restore a voucher that was applied to this order (back to issued → reusable).
+    voucher_restored: str | None = None
+    if order.voucher_code:
+        v = db.scalar(
+            select(RewardRedemption).where(
+                RewardRedemption.order_id == order.id,
+                RewardRedemption.voucher_code == order.voucher_code,
+                RewardRedemption.status == "redeemed",
+            )
+        )
+        if v is not None:
+            v.status = "issued"
+            v.redeemed_at = None
+            v.redeemed_by_user_id = None
+            v.order_id = None
+            voucher_restored = order.voucher_code
+
+    # 3) Void the payment + remove the sales transaction so it drops out of revenue/RFM/reports.
+    txn = db.scalar(select(Transaction).where(Transaction.order_id == order.id))
+    if txn is not None:
+        pay = db.get(Payment, txn.payment_id)
+        if pay is not None:
+            pay.status = PaymentStatus.VOIDED.value
+        db.delete(txn)
+
+    # 4) Mark the order voided (terminal). `reason` is captured by the caller's audit record.
+    order.status = OrderStatus.VOIDED.value
+    db.flush()
+    return VoidResult(amount=amount, points_reversed=points_reversed, voucher_restored=voucher_restored)
+
+
 def list_merchant_orders(
     db: Session,
     *,

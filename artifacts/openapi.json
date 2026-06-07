@@ -1135,6 +1135,75 @@
                 }
             }
         },
+        "/api/v1/orders/{order_id}/void": {
+            "post": {
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Void Order",
+                "description": "Reverse a completed (paid) sale \u2014 requires `order.void` (Supervisor+). Undoes the transaction,\npayment, loyalty points, and any voucher; sets the order to VOIDED.",
+                "operationId": "void_order_api_v1_orders__order_id__void_post",
+                "parameters": [
+                    {
+                        "name": "order_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Order Id"
+                        }
+                    },
+                    {
+                        "name": "authorization",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Authorization"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VoidOrderIn"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VoidResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/orders/{order_id}/receipt": {
             "get": {
                 "tags": [
@@ -13276,7 +13345,8 @@
                     "preparing",
                     "ready",
                     "completed",
-                    "cancelled"
+                    "cancelled",
+                    "voided"
                 ],
                 "title": "OrderStatus"
             },
@@ -15786,6 +15856,57 @@
                     "type"
                 ],
                 "title": "ValidationError"
+            },
+            "VoidOrderIn": {
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "title": "Reason",
+                        "default": ""
+                    }
+                },
+                "type": "object",
+                "title": "VoidOrderIn"
+            },
+            "VoidResponse": {
+                "properties": {
+                    "order_id": {
+                        "type": "string",
+                        "title": "Order Id"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "title": "Amount"
+                    },
+                    "points_reversed": {
+                        "type": "integer",
+                        "title": "Points Reversed",
+                        "default": 0
+                    },
+                    "voucher_restored": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Voucher Restored"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "order_id",
+                    "status",
+                    "amount"
+                ],
+                "title": "VoidResponse"
             },
             "VoucherConfigIn": {
                 "properties": {

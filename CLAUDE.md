@@ -63,8 +63,12 @@ child · node logins · enter). Endpoints: `GET /org/tree`, `POST/PATCH /org/nod
   roles only: **Cashier** (ring sales · take payment cash/card/PayNow · attach diner · redeem voucher) and
   **Supervisor** = a Cashier **+ can VOID a transaction** (`order.void`, the key differentiator) + store
   `report.view`. Supervisor is a DISTINCT role from web **Manager** (no org/menu/staff/merchant powers).
-  `order.void` is the seam (granted Supervisor/Manager/Owner/Group-CEO/COO, NOT Cashier/Staff) — **the
-  cashier-facing void flow itself is not built yet.** PINs: bcrypt? NO — **encrypted at rest** (Fernet,
+  **Void flow BUILT** (`order.void`, granted Supervisor/Manager/Owner/Group-CEO/COO, NOT Cashier/Staff):
+  `POST /orders/{id}/void` (`orders.void_order`) reverses a COMPLETED sale — drops the Transaction (out
+  of reports), voids the Payment, claws back loyalty (merchant+coalition EARN → reversing ADJUST),
+  restores a redeemed voucher; status → `voided`. POS receipt has a **"Void sale"** button → a
+  **Supervisor-PIN modal** (a cashier momentarily PIN-logs-in a supervisor to authorize). PINs: bcrypt?
+  NO — **encrypted at rest** (Fernet,
   `app/core/pin_crypto.py`, key from `PIN_SECRET`→`JWT_SECRET`), owner-revealable (eye) + chosen/auto,
   **unique per storefront**. New Storefront auto-provisions **1 Supervisor + 2 Cashiers**. Owners self-
   serve in **Settings → "Staff & PINs (POS)"**; endpoints `GET/POST /org/nodes/{id}/pos-staff`,
