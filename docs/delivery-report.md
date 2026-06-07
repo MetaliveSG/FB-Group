@@ -28,28 +28,35 @@ self-service admin (Menu, Users, **Tables & QR**, per-merchant feature toggles) 
 ## 3. How to run locally
 **Docker (full stack on Postgres):**
 ```bash
-docker compose -f infra/docker-compose.yml up --build   # api :8000  web :3001
+docker-compose -f infra/docker-compose.yml up --build   # api :8000  web :3001 (host 3000 was taken)
 ```
-The API container auto-applies migrations and seeds demo data (idempotently).
+The API container auto-applies migrations. **Seeding is OFF by default** (`SEED_ON_START=0`) — the DB
+boots clean and merchants are onboarded via the Platform Console UI, or provisioned with the idempotent
+ensure-script `python -m app.seed_demo_merchants` (see §4).
 **Backend only (SQLite, fastest for tests):**
 ```bash
 cd apps/api && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-.venv/bin/python -m app.seed && .venv/bin/python -m pytest      # 95 tests
+.venv/bin/python -m app.seed && .venv/bin/python -m pytest      # 287 backend tests
 .venv/bin/uvicorn app.main:app --reload                          # :8000/docs
 ```
 **Frontend dev:** `cd apps/web && npm install && npm run dev`
 
-## 4. Demo credentials (password `Password123!` staff · `Customer123!` customer)
+## 4. Demo credentials (all merchant/operator logins `Password123!`)
+The Docker stack boots **clean** (`SEED_ON_START=0`). Provision the demo merchants with the idempotent
+ensure-script `python -m app.seed_demo_merchants` (rebuilds both groups + storefronts + the 3 logins with
+fixed node ids → stable QR tokens; run after a data wipe). The old `owner@makan.sg` / `kampongeats.sg`
+logins were **cleared** — they exist only in the legacy `app/seed.py`, which is **not** run on startup.
+
 | Persona | URL | Login |
 |---|---|---|
 | Operator | http://localhost:3001/platform/login | superadmin@platform.sg |
-| Merchant Owner | http://localhost:3001/merchant/login | owner@makan.sg |
-| Outlet Manager | (merchant login) | manager.orchard@makan.sg |
-| Staff/Cashier | (merchant login) | staff.orchard@makan.sg |
-| Other owners | (merchant login) | owner@kopiculture.sg, owner@hawkerhub.sg, owner@kampongeats.sg |
-| Customer | http://localhost:3001/t/orchard-01 | OTP with phone `+6580000000` |
+| Merchant — **Breadtalk Group** (+ Bakery, Toast Box, Toast Box @ Taka/Orchard) | http://localhost:3001/merchant/login | owner@breadtalk.sg |
+| Merchant — **Pepper Lunch Group** (+ all Pepper Lunch outlets) | (merchant login) | owner@pepperlunch.sg |
+| Manager — **Toast Box @ Orchard** (single-storefront scope) | (merchant login) | manager@toastbox.sg |
+| Customer | scan a live Storefront's table QR (see its *Tables & QR* page) | OTP phone `+6580000000` (DEBUG returns the code) |
 
-Stable QR tokens: `orchard-01`, `tampines-01`, `holland-01`, `hawker-maxwell-01`, `hawker-chinatown-01`, `kampong-bedok-01`, `kampong-toapayoh-01`.
+Merchant logins are role = node-scoped **Manager** (owner-equivalent). Customer QR tokens are the live
+storefronts' per-table QR codes (found in each Storefront's *Tables & QR* page), not static seed tokens.
 
 ## 5. Feature checklist
 | # | Module | Status |
@@ -82,7 +89,7 @@ Stable QR tokens: `orchard-01`, `tampines-01`, `holland-01`, `hawker-maxwell-01`
 - **Backend: 287 passed** (pytest, 48 files) — `artifacts/pytest_results.txt`. Covers auth, QR, ordering, checkout+loyalty (incl. order marked completed on payment), rewards/wheel, CRM + isolation, permissions, reports/forecast, the golden capture-loop e2e, operator, pipeline (modes)/activities/bulk/win-back, campaigns, menu/user/org admin, RFM, AI insights (heuristic path + permission/tenant gating), Kampong Eats merchant-4 seed (idempotency + menu shape), the 888 jackpot (grid/payline invariants, spin-cost deducted / insufficient-coins blocked, voucher mint), the customer **My Account** endpoints (order history + customer isolation, vouchers, profile get/update with phone required+unique), **per-merchant spin costs**, the **foodcourt** stall directory (`test_foodcourt.py`), the **loyalty posting ledger** (`test_loyalty_ledger.py`: domain stamp, balance==SUM(ledger) reconciliation, idempotent accrual, per-domain idempotency-key scoping), **POS order primitives** (`test_order_external_ref.py`), **module flags + boundary indirection** (`test_module_flags_boundaries.py`), the **org spine** (`test_org_tree.py`: parent/depth/path, sellable_under, network scope, two-world isolation), **RBAC node-cascade** (`test_rbac_node_cascade.py`: brand-scope cascade + cross-tenant isolation), **module gating** (`test_module_gating.py`: rewards_enabled off → 0 coins, qr_ordering_enabled off → 409, per-merchant), **loyalty-program admin** (`test_loyalty_admin.py`: get/update earn-welcome-birthday rules, earn=0 disables, staff/cross-tenant 403, module flags via settings, birthday bonus only in birthday month), **multiplier promotions** (`test_promotions.py`: engine applies in-window / skips expired+deactivated, **best-wins not stacked**, RBAC, cross-tenant 403/404), the **merchant orders feed** (`test_merchant_orders.py`: items+labels, status filter, outlet-scoped isolation, cross-merchant 403), and **logging behaviour** (`test_logging.py`).
   Plus this stretch: **PDPA consent** (`test_pdpa_consent.py`), **suspend enforcement** (`test_suspend_enforcement.py`), **vouchers** (core + cashier redeem + node scope + welcome pack), the **staff POS** (`test_pos_pin.py` — web/POS segregation, readable+encrypted per-storefront PINs, Supervisor/Cashier; `test_pos_receipt.py`; `test_pos_void.py` — supervisor void reverses sale/payment/loyalty/voucher), and the node→provisioned-outlet scope regression.
 - **Frontend: 58 passed** (Vitest) — `artifacts/frontend_test_results.txt`.
-- **Live HTTP** golden loop verified (`artifacts/live_demo.txt`); all 27 web routes return 200; Alembic up/down verified.
+- **Live HTTP** golden loop verified (`artifacts/live_demo.txt`); all 28 web routes return 200; Alembic up verified (roll-forward; CI checks upgrade-from-empty + drift, no downgrade-to-base).
 
 ## 7. Security checklist
 Input validation (Pydantic) · ORM bound params (no SQLi) · bcrypt hashing · JWT
@@ -129,4 +136,5 @@ live adversarial proof — see §7); operator, pipeline (sales+win-back),
 campaigns, menu/user/org admin, RFM, the win-back launcher, and the AI Insights advisor
 all verified live.**
 All 12 modules are met (plus extensions), with mocks for external providers as designed
-for a PoC (explicitly listed in §10). Verified 2026-06-03.
+for a PoC (explicitly listed in §10). Verified 2026-06-07 (counts + credentials current as of R39 —
+POS MVP, web/POS login segregation, encrypted PINs, Supervisor/void, vouchers, PDPA/suspend).

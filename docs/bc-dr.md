@@ -11,7 +11,7 @@
 - **Error handling** — domain errors → safe responses; global handler for unexpected errors (no leakage).
 - **DB backup script** — `apps/api/scripts/backup_db.sh` (pg_dump custom format, or SQLite copy).
 - **Seed script** — `python -m app.seed` for reproducible demo/test data.
-- **Migration rollback** — Alembic up/down (verified).
+- **Migration rollback** — Alembic **roll-forward** (verified upgrade-from-empty; CI checks model-drift; no downgrade-to-base — see `deployment.md`).
 - **Environment-based config** — 12-factor; no hardcoded secrets.
 - **Graceful failure + retry hooks** — WhatsApp/OTP behind a provider abstraction with a `attempts` field on `campaign_messages` for retry; simulated payment failure path issues no rewards (no partial state).
 
@@ -29,14 +29,12 @@ double-credit. `campaign_messages.status` (`queued→sent→delivered→failed`)
 | Production (target) | ≤ 5 min (PITR) | ≤ 30 min (Multi-AZ failover + redeploy) |
 
 ## Production BC/DR — what would be needed
-- **Multi-AZ RDS** with automatic failover.
-- **Automated backups + Point-In-Time Recovery** (35-day retention) + periodic restore drills.
-- **Load balancer (ALB)** + **autoscaling** ECS services across AZs.
-- **WAF** in front of CloudFront.
-- **Secrets Manager** with rotation.
-- **CloudWatch / OpenTelemetry** dashboards + alarms (error rate, latency, saturation, per-tenant anomalies).
-- **Blue/green deployment** (CodeDeploy) with automatic rollback on alarm.
-- **Disaster recovery runbook** (below).
+The infra topology (Multi-AZ RDS, ALB + autoscaling, WAF, Secrets Manager, CloudWatch/OTel, blue/green
+with auto-rollback) is the **target production stack documented in `deployment.md`** — not restated here.
+The BC/DR-specific additions on top of that topology:
+- **Automated backups + Point-In-Time Recovery** (35-day retention) + periodic **restore drills**.
+- **Per-tenant anomaly alarms** (error rate / latency / saturation) feeding the runbook.
+- **Disaster recovery runbook** (below), exercised on a schedule.
 
 ## DR runbook (outline)
 1. **Detect** — alarm (health checks failing, error-rate/latency breach) pages on-call.

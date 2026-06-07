@@ -1,4 +1,9 @@
-# POS MVP — spec & build plan (started 2026-06-05)
+# POS MVP — spec & build plan (BUILT 2026-06-07)
+
+**Status:** BUILT — all slices shipped (R39). `/pos` PIN app (segregated `User.kind="pos"`, Fernet-encrypted
+PINs), tap→pay (cash/card/PayNow mock), printable receipt with console-configured header, diner attach +
+voucher redeem, and **Supervisor void** (`POST /orders/{id}/void` via a supervisor-PIN modal). POS staff
+self-serve in Settings → "Staff & PINs (POS)". As-built grounding: CLAUDE.md POS-roles bullet + `artifacts/pos-proof/`.
 
 A staff-facing Point-of-Sale layer for an outlet/stall, on top of the existing order/payment/loyalty
 /voucher engine. **Payment provider integration is a LATER phase — all payments are mock/simulated now**
@@ -61,4 +66,12 @@ stall + items/totals/payment/ref + Print. POS at `/pos`, device bound to an outl
 6. **Console** — PIN mgmt (Team) + receipt-header config (Settings) + transactions/redemptions view (reuse Reports/Orders).
 7. **Wire + e2e + proof** in artifacts/pos-proof/.
 
-## Status: BUILDING — slice 1 (PIN auth)
+## Status: BUILT — all 7 slices shipped (R39, 2026-06-07)
+As-built deltas from the slice plan above:
+- Slice 1 PIN auth → POS users are a **segregated identity** (`User.kind="pos"`, synthetic `@pos.local`
+  email + locked password) with **Fernet-encrypted PINs** (`core/pin_crypto.py`) — more than the original
+  "add `User.pin_hash`" plan; PIN-login takes `outlet_id` (`POST /auth/staff/pin-login`).
+- Slice 3 was **not** built as `POST /rewards/redeem-for`; the cashier path is `GET /vouchers/diner/{customer_id}`
+  (a diner's issued vouchers) + the voucher redeem flow. Reward-catalog redeem stays customer-only.
+- Added beyond plan: **Supervisor void** (`POST /orders/{id}/void`) + supervisor-PIN modal; POS staff
+  self-serve in Settings → "Staff & PINs (POS)".

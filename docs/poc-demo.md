@@ -15,7 +15,11 @@ ready for win-back campaigns. One platform, three tiers: **Operator → Merchant
 - Built mobile-first; **architected to ship as a native app** next phase (shared design tokens + typed API + Lucide icons).
 
 ## 2. Live demo flow (the money path) — ~6 min
-Open on a **phone-width** viewport. Two merchants are seeded; use **Kampong Eats**.
+Open on a **phone-width** viewport.
+> **Prerequisite (the stack boots clean — `SEED_ON_START=0`):** first run `python -m app.seed_kampong`
+> so the Kampong Eats merchant + token/login below resolve. (For the Breadtalk/Pepper Lunch demo instead,
+> run `python -m app.seed_demo_merchants` and use `owner@breadtalk.sg` / `owner@pepperlunch.sg` with that
+> storefront's live QR token from its *Tables & QR* page.) This walk-through uses **Kampong Eats**.
 
 1. **Scan → order** — `http://localhost:3001/t/kampong-bedok-01`
    - Browse the warm, mobile-first menu → set quantity → **Add to cart** → sticky cart bar → **View cart** (bottom sheet).

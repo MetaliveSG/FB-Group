@@ -1,9 +1,9 @@
 # Roadmap — Menu redesign, Foodcourt, and Network Loyalty (universal coin + FX)
 
-> Status: **design agreed, not yet built** (captured 2026-05-30, before implementation).
-> This is the canonical record of the architecture/product discussion across the menu
-> redesign, multi-stall foodcourt support, and the platform loyalty/monetization model.
-> Build proceeds phase-by-phase (see §6); nothing here is coded yet.
+> Status: **Phases 1–2 BUILT** (menu redesign + multi-stall foodcourt); **Phase 3 DEFERRED** (universal
+> coin + FX + coalition-as-ring, behind the payments-rail gate §5b). Captured 2026-05-30.
+> This remains the canonical record of the architecture/product discussion + the funded-vs-unfunded
+> economics. Build proceeds phase-by-phase (see §6); Phases 1–2 are coded, Phase 3 is not.
 
 ## 1. Vision / one-line
 

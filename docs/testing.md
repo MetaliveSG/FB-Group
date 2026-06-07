@@ -9,7 +9,7 @@ session and the FastAPI `TestClient`, with RBAC seeded and rate-limiter/OTP rese
 test (`app/tests/conftest.py`). Latest run: **287 passed** (see
 `artifacts/pytest_results.txt`). Frontend: **58 Vitest tests**.
 
-## Coverage by file (287 backend tests)
+## Coverage by file (287 backend tests across 48 files)
 | File | Module(s) | What it proves |
 |---|---|---|
 | `test_health.py` | 12 | health endpoint + secure headers |
@@ -51,6 +51,13 @@ test (`app/tests/conftest.py`). Latest run: **287 passed** (see
 | `test_pos_pin.py` | POS/RBAC | **web/POS segregation** (`User.kind`): POS can't web-login, web can't PIN-login; **readable per-storefront PINs** (encrypted at rest — stored ciphertext, reveal+login work) + chosen/auto PIN, uniqueness; auto-team (1 Supervisor + 2 Cashiers); **node→provisioned-outlet scope regression** |
 | `test_pos_receipt.py` | POS | receipt payload (company header + outlet/stall + lines + payment); staff lists a diner's vouchers |
 | `test_pos_void.py` | POS | **supervisor void** (`order.void`): reverses sale (transaction dropped), payment→voided, loyalty clawed back, voucher restored; idempotent-guarded; **cashier/staff 403** |
+| `test_vouchers.py` | vouchers | **voucher core**: issue/validate/redeem (with AND without order), per-period cap, min-spend, single-use, tenant gate, node-scope subtree, welcome-pack issuance |
+| `test_reports_timezone.py` | 9 | **tenant report tz** (Phase 2): explicit `?tz` → `Merchant.settings` tz → platform default; strict-validate 422; summary echoes timezone; DST-correct bucketing |
+| `test_reports_scope.py` | 9 | report scope resolution (single tz threaded through drill-down; parent↔child reconciliation) |
+| `test_rewards_system.py` | 6 | rewards system happy + negative paths, multi-tenant isolation, grand-jackpot grow/persist/reset, voucher survives prize deletion |
+| `test_phone.py` | auth | E.164 phone normalisation/validation (country code, uniqueness) |
+| `test_logging.py` | infra | structured JSON logging behaviour |
+| `test_serialization.py` | infra | schema/serialization contracts |
 | `test_permissions.py` | 1, 10 | super admin all, **merchant can't see another**, **outlet manager scoped**, staff lacks CRM, **audit log** |
 | `test_e2e_capture_loop.py` | 1-11 | golden flow end-to-end (below) |
 
@@ -72,7 +79,7 @@ test (`app/tests/conftest.py`). Latest run: **287 passed** (see
 
 ## Regression checklist (run before any release)
 - [ ] `pytest` green
-- [ ] `alembic upgrade head` + `downgrade base` succeed on a scratch DB
+- [ ] `alembic upgrade head` succeeds on a scratch DB (roll-forward; CI checks upgrade-from-empty + model-drift, **not** downgrade-to-base)
 - [ ] `python -m app.seed` populates all 8 segments
-- [ ] `docker compose up` brings db+api+web healthy
+- [ ] `docker-compose up` brings db+api+web healthy
 - [ ] Golden capture loop works in the browser
