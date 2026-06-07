@@ -39,7 +39,9 @@ The org tree has **two node kinds** (engine keys off the `sells` flag; `role` is
 **Chain** (structural — nests Chain/Storefront children; optional *stop-chain* → storefronts-only)
 and **Storefront** (`sells=true` — the leaf that has the menu / takes orders). Boundary flags
 (`is_settlement_boundary` + `is_loyalty_domain`) mark the **tenant** ("merchant"). Authority =
-tree position × cascade; node-assignable role palette **Manager/Cashier/Staff/Finance**. Managed
+tree position × cascade. **Two SEGREGATED login surfaces / role palettes** (see POS roles bullet
+below): **Web logins** (email+password, dashboard) = **Manager / Staff / Finance**; **POS operators**
+(PIN-only, `/pos`) = **Supervisor / Cashier**. Managed
 from the **Platform Console** (`/platform`) directory drill-down: rows are clean (`badge · name ·
 ⋯`); the **⋯ opens a NodeDetailDrawer** (rename · status · subscription fee · stop-chain · add
 child · node logins · enter). Endpoints: `GET /org/tree`, `POST/PATCH /org/nodes`,
@@ -56,6 +58,17 @@ child · node logins · enter). Endpoints: `GET /org/tree`, `POST/PATCH /org/nod
   leased). `node_scope_stalls` (whole subtree) is for menu-reachability validation only.
 - **Tables & QR** (`/merchant/tables`): per-table QR via `qrcode.react` (encodes `{origin}/t/{token}`) +
   Print/Print-all; add-table = fixed `T` prefix + number stepper (auto-next, padded `T01`…).
+- **POS roles & PINs (`app/services/pos_staff.py`)** — POS operators are `User.kind="pos"`, **PIN-only**
+  (synthetic `@pos.local` email + locked password → CANNOT web-login; web users CANNOT PIN-login). Two
+  roles only: **Cashier** (ring sales · take payment cash/card/PayNow · attach diner · redeem voucher) and
+  **Supervisor** = a Cashier **+ can VOID a transaction** (`order.void`, the key differentiator) + store
+  `report.view`. Supervisor is a DISTINCT role from web **Manager** (no org/menu/staff/merchant powers).
+  `order.void` is the seam (granted Supervisor/Manager/Owner/Group-CEO/COO, NOT Cashier/Staff) — **the
+  cashier-facing void flow itself is not built yet.** PINs: bcrypt? NO — **encrypted at rest** (Fernet,
+  `app/core/pin_crypto.py`, key from `PIN_SECRET`→`JWT_SECRET`), owner-revealable (eye) + chosen/auto,
+  **unique per storefront**. New Storefront auto-provisions **1 Supervisor + 2 Cashiers**. Owners self-
+  serve in **Settings → "Staff & PINs (POS)"**; endpoints `GET/POST /org/nodes/{id}/pos-staff`,
+  `POST …/{uid}/reset-pin`, `DELETE …/{uid}`; `/auth/staff/pin-login` takes `outlet_id`. Proof: `artifacts/pos-proof/`.
 - **Enter scopes by the node** (`OperatorMerchant {id=tenant, nodeId, outletId?}`): Storefront → locked
   to 1 outlet; **any sub-chain → its subtree** (`menu-admin/outlets?node_id=`); tenant → all. Menu +
   Tables & QR sub-scope; **CRM/Orders/Settings stay tenant-wide** (loyalty ring = the tenant). Full nav

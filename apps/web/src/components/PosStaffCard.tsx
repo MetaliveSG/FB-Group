@@ -16,6 +16,8 @@ import type { OrgTreeNode, PosStaffMember } from "@fbgroup/api-client";
 const ROLES = ["cashier", "supervisor"];
 const ROLE_LABEL: Record<string, string> = { cashier: "Cashier", supervisor: "Supervisor" };
 const roleLabel = (r: string) => ROLE_LABEL[r] ?? r.replace(/_/g, " ");
+// Roles allowed to void/cancel a transaction (the Supervisor differentiator). Surfaced as a tag.
+const CAN_VOID = new Set(["supervisor"]);
 
 /**
  * "Staff & PINs (POS)" — merchant-owner self-serve for POS operators.
@@ -149,6 +151,9 @@ export default function PosStaffCard({ base, merchantId }: { base: string; merch
           staff.map((m) => (
             <div key={m.user_id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, borderBottom: "1px solid var(--color-border,#eef0f3)", paddingBottom: 8 }}>
               <span style={{ flex: 1, fontWeight: 500 }}>{m.full_name || "(unnamed)"}</span>
+              {CAN_VOID.has(m.role) && (
+                <span title="Can void/cancel a transaction" style={{ fontSize: 10, fontWeight: 600, color: "#166534", background: "#dcfce7", borderRadius: 4, padding: "1px 6px" }}>Allow void</span>
+              )}
               <span className="badge" style={{ background: "#eef2ff", color: "#3730a3", fontSize: 10 }}>{roleLabel(m.role)}</span>
               {editing === m.user_id ? (
                 <>
