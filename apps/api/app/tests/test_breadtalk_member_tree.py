@@ -55,7 +55,8 @@ def test_finance_is_read_only_group_wide(client, db):
     build_breadtalk(db)
     s = _scope(db, "cfo@breadtalk.sg")                            # Finance @ the group Chain
     assert s.accessible_merchant_ids == {"m1", "m2", "t_mb"}      # +t_mb turnover (GTO foodcourt tenant)
-    assert s.can("report.view", "m1") and s.can("audit.view", "m2")
+    assert s.can("report.view", "m1") and s.can("report.view", "m2")          # reports across the group
+    assert not s.can("audit.view", "m1") and not s.can("crm.view", "m1")      # finance = REPORTS ONLY now
     assert not s.can("order.manage", "m1") and not s.can("org.manage", "m1")   # read-only
 
 
@@ -178,11 +179,11 @@ def test_node_accounts_crud_and_scoping(client, db):
     # List existing logins at a storefront (seeded mgr + cashier).
     got = client.get("/api/v1/org/nodes/o_bt_ion/accounts", headers=ceo)
     assert got.status_code == 200 and {a["email"] for a in got.json()} >= {"mgr.ion@breadtalk.sg", "cashier.ion@breadtalk.sg"}
-    # Add a new Staff login at a storefront.
+    # Add a new Viewer (read-only) login at a storefront.
     created = client.post("/api/v1/org/nodes/o_bt_ion/accounts", headers=ceo,
                           json={"email": "new.staff@breadtalk.sg", "password": "Password123!",
-                                "full_name": "New Staff", "role": "staff"})
-    assert created.status_code == 201 and created.json()["role"] == "staff"
+                                "full_name": "New Viewer", "role": "viewer"})
+    assert created.status_code == 201 and created.json()["role"] == "viewer"
     aid = created.json()["assignment_id"]
     # The new login can authenticate and is scoped to that one storefront.
     assert staff_token(client, "new.staff@breadtalk.sg")
@@ -202,4 +203,4 @@ def test_node_accounts_require_manage_rights(client, db):
     # Finance (read-only, no org.manage) cannot add a login anywhere.
     cfo = _auth(client, "cfo@breadtalk.sg")
     assert client.post("/api/v1/org/nodes/o_bt_ion/accounts", headers=cfo,
-                       json={"email": "x@y.sg", "password": "Password123!", "role": "staff"}).status_code == 403
+                       json={"email": "x@y.sg", "password": "Password123!", "role": "viewer"}).status_code == 403

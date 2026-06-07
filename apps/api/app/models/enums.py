@@ -25,8 +25,9 @@ class RoleName(str, Enum):
     # AREA_MANAGER/STALL_OPERATOR bundles (those stay only for the legacy demo seed).
     MANAGER = "manager"                # run everything in the subtree (structure/menu/staff/orders/reports)
     CASHIER = "cashier"                # till / payments at the storefront(s) in scope
-    FINANCE = "finance"                # read-only: reports + audit across the subtree (CFO/accountant)
-    STAFF = "staff"
+    FINANCE = "finance"                # web read-only: REPORTS ONLY (the financials view)
+    VIEWER = "viewer"                  # web read-only: view everything in scope EXCEPT reports
+    STAFF = "staff"                    # legacy operational web role (order ops); superseded by VIEWER on the node palette
     # POS-only role (PIN operator at a storefront, NOT a web/dashboard login). The on-floor lead over
     # cashiers: POS operations + store reports, but none of web MANAGER's org/menu/staff powers.
     SUPERVISOR = "supervisor"

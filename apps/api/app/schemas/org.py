@@ -211,7 +211,7 @@ class NodeAccountCreateIn(BaseModel):
     password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(default="", max_length=160)
     # Web/dashboard roles only — no "cashier" (that's a POS-only PIN role, see PosStaffCreateIn).
-    role: str = Field(pattern="^(manager|staff|finance)$")
+    role: str = Field(pattern="^(manager|viewer|finance)$")
 
     _pw = field_validator("password")(validate_password_strength)
 

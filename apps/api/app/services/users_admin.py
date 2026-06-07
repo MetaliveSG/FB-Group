@@ -22,10 +22,10 @@ GRANTABLE_ROLES = {
 }
 # The member-tree role palette — granted at a NODE (the caller's downline is enforced by the route
 # via org_tree.can_manage_node, so no merchant scope-id validation is needed here).
-# Roles grantable to a WEB/dashboard node login. "cashier" is excluded — it's a POS-only role
-# (PIN at the storefront, managed via app/services/pos_staff.py), not a dashboard account.
+# Roles grantable to a WEB/dashboard node login: Manager (full), Viewer (read all except reports),
+# Finance (reports only). "cashier"/"supervisor" are excluded — POS-only PIN roles (see pos_staff.py).
 NODE_GRANTABLE_ROLES = {
-    RoleName.MANAGER.value, RoleName.STAFF.value, RoleName.FINANCE.value,
+    RoleName.MANAGER.value, RoleName.VIEWER.value, RoleName.FINANCE.value,
 }
 
 
