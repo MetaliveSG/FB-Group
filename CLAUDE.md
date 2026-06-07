@@ -32,7 +32,7 @@ docker-compose -f infra/docker-compose.yml up --build
 cd apps/web && npm install && npm run dev      # dev
 cd apps/web && npm run test                    # Vitest
 ```
-Baseline: **230 backend + 45 frontend tests pass** · ~120 endpoints · 42 tables · 17 migrations.
+Baseline: **287 backend + 58 frontend tests pass** · 137 endpoints · 43 tables · 24 migrations.
 
 ## Member tree (org spine) — Chain / Storefront
 The org tree has **two node kinds** (engine keys off the `sells` flag; `role` is a display label):

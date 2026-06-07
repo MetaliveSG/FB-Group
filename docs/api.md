@@ -20,7 +20,9 @@ Auth: `Authorization: Bearer <access_token>`. Errors:
 | POST | `/api/v1/auth/customer/otp/request` | – | `{phone}` → `{message, debug_code}` (dev only) |
 | POST | `/api/v1/auth/customer/otp/verify` | – | `{phone,code,full_name?}` (register-or-login) |
 | POST | `/api/v1/auth/customer/sso` | – | `{provider:"google"\|"apple", sub, email?, full_name?}` (mock) |
-| POST | `/api/v1/auth/staff/login` | – | `{email,password}` → token resp `actor:"user"` |
+| POST | `/api/v1/auth/staff/login` | – | `{email,password}` → token resp `actor:"user"` (suspend-aware; rejects POS-only accounts) |
+| POST | `/api/v1/auth/staff/pin-login` | – | POS PIN login: `{merchant_id, outlet_id, pin}` → token resp. Resolves the `kind="pos"` operator at the bound storefront; suspend-aware |
+| POST | `/api/v1/auth/customer/consent` | customer | `{purpose:"terms"\|"marketing", granted, version?}` — PDPA consent capture |
 | POST | `/api/v1/auth/refresh` | – | `{refresh_token}` → new access token |
 
 Token response: `{access_token, refresh_token, token_type, actor, customer?, user?}`.
@@ -42,9 +44,11 @@ Token response: `{access_token, refresh_token, token_type, actor, customer?, use
 | PATCH | `/api/v1/orders/{id}/status` | staff `order.manage` | `{status}` — validated lifecycle |
 | POST | `/api/v1/orders/{id}/checkout` | customer (own) | `{method, force_outcome?}` → payment + points |
 | POST | `/api/v1/orders/{id}/cashier-checkout` | staff `payment.process` | walk-in checkout |
+| POST | `/api/v1/orders/{id}/void` | staff `order.void` (Supervisor+) | reverse a COMPLETED sale: drops the transaction, voids the payment, claws back loyalty, restores a redeemed voucher → status `voided`. `{reason?}` |
+| GET | `/api/v1/orders/{id}/receipt` | staff `order.view` | printable receipt payload (company header + outlet/stall + lines + payment) |
 
 Payment methods: `cash` `card` `nets` `paywave` `paynow`.
-Order lifecycle: `pending → accepted → preparing → ready → completed` (`cancelled` from any non-terminal).
+Order lifecycle: `pending → accepted → preparing → ready → completed`; `cancelled` (pre-payment) or `voided` (supervisor reversal of a paid sale) terminal.
 
 ## CRM (Module 7) — staff, tenant-isolated
 | Method | Path | Auth | Notes |
@@ -178,5 +182,15 @@ Configurable modes: **sales** (prospecting→qualified→proposal→negotiation�
 | GET/PUT | `/api/v1/org/loyalty` | loyalty program (standing earn rules): `{points_per_dollar, welcome_bonus, birthday_bonus}` — 0 disables a rule; **owner-only** (GET **and** PUT need `merchant.manage`, audited) |
 | GET | `/api/v1/org/tree` | the caller's visible slice of the **member tree** (Chain/Storefront nodes, flat — client assembles via `parent_id`); each node has `can_manage`. Scope-aware (no `merchant_id`): a node-assigned user sees its subtree, a platform operator sees the whole forest. Drives the **Platform Console** directory drill-down |
 | POST/PATCH | `/api/v1/org/nodes[/{id}]` | create a child node (`{parent_id, role:CHAIN\|STOREFRONT, name, chain_stopped?, subscription_fee?}`) / rename·(de)activate·set fee·stop-chain. Downline-gated (`org.manage`); a child only attaches under a Chain; a chain-stopped node takes Storefronts only; suspending a tenant mirrors `Merchant.is_active` |
-| GET/POST/DELETE | `/api/v1/org/nodes/{id}/accounts[/{assignment_id}]` | **node logins** — list / create (`{email, password, full_name?, role:manager\|cashier\|staff\|finance}`) / revoke staff assigned at the node; cascade-gated (caller must manage the node) |
+| GET/POST/DELETE | `/api/v1/org/nodes/{id}/accounts[/{assignment_id}]` | **web logins** (dashboard, email+password) — list / create (`{email, password, full_name?, role:manager\|staff\|finance}`) / revoke staff at the node; cascade-gated. "cashier" excluded (POS-only) |
+| GET/POST/DELETE | `/api/v1/org/nodes/{id}/pos-staff[/{user_id}]` | **POS operators** (PIN-only, `kind="pos"`) — list (incl. the readable `pin`) / create (`{full_name, role:supervisor\|cashier, pin?}` → returns the PIN) / remove. PINs encrypted at rest, unique per storefront |
+| POST | `/api/v1/org/nodes/{id}/pos-staff/{user_id}/reset-pin` | set a chosen PIN (`{pin}`) or auto-generate; returns it. Cascade-gated |
 | GET/POST/DELETE | `/api/v1/promotions[/{id}]` | point-multiplier promos (time-bound `CAMPAIGN_MULTIPLIER`): `{label, multiplier, starts_on, ends_on, is_active}` — engine applies an active in-window multiplier to every earn (`campaign.manage`, audited) |
+
+## Vouchers (shared core — loyalty-earned or campaign-granted; one cashier redeem flow)
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| GET | `/api/v1/vouchers/{code}` | staff `order.view` | preview a voucher (value, validity, min-spend, status) |
+| POST | `/api/v1/vouchers/{code}/redeem` | staff `payment.process` | redeem at the counter: validate (active, window, per-period cap, min-spend, redeeming storefront ∈ scope subtree) → apply `value` to `{order_id}` |
+| GET | `/api/v1/vouchers/diner/{customer_id}` | staff | the attached diner's unused vouchers at this merchant |
+| POST | `/api/v1/campaigns/{id}/issue-vouchers` | `campaign.manage` | grant vouchers from a campaign to its audience |

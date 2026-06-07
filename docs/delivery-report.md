@@ -11,9 +11,9 @@ Modular-monolith FastAPI backend (one API for all clients), Next.js frontend,
 PostgreSQL, fully Dockerised and AWS-ready by design.
 
 ## 2. What was built
-- **Backend** (`apps/api`): FastAPI + SQLAlchemy 2.0, **42 tables**, **~120 API endpoints**, 17 Alembic migrations.
+- **Backend** (`apps/api`): FastAPI + SQLAlchemy 2.0, **43 tables**, **137 API endpoints**, 24 Alembic migrations.
 - **Member tree / Platform Console** (`/platform`): a single Chain/Storefront org spine you onboard + manage via UI — drill-down directory + `NodeDetailDrawer`; storefronts auto-provision their Outlet/Menu/QR; **Enter** any node to operate it scoped to its subtree. As-built spec: `docs/architecture-org-tree.md §12`.
-- **Frontend** (`apps/web`): Next.js 14 App Router, **22 routes** (+ a `/showcase` UI-kit gallery), typed API client in `packages/api-client`. Customer app redesigned mobile-first on a shared **design system** (`packages/ui` tokens + component kit, Lucide icons).
+- **Frontend** (`apps/web`): Next.js 14 App Router, **27 routes** (+ a `/showcase` UI-kit gallery), typed API client in `packages/api-client`. Customer app redesigned mobile-first on a shared **design system** (`packages/ui` tokens + component kit, Lucide icons). Includes the **staff POS** (`/pos`, PIN login, tap→pay, receipt, void).
 - **Infra** (`infra/`): docker-compose (Postgres + API + web), Dockerfiles, healthchecks, backup script.
 - **Docs** (`docs/`): architecture, api, security, testing, deployment, bc-dr, database, PRD, this report.
 - **Proof** (`artifacts/`): pytest output + OpenAPI + sample JSON (CRM, segments, RFM, pipeline, campaigns…).
@@ -73,11 +73,16 @@ Stable QR tokens: `orchard-01`, `tampines-01`, `holland-01`, `hawker-maxwell-01`
 | + | **AI Insights advisor**: executive summary + ranked next-best actions (Claude when keyed, deterministic heuristic otherwise) | ✅ |
 | + | **888 Jackpot game**: server-authoritative match-3; 5 coins/spin; **persistent progressive grand-jackpot pot** (grows over time, resets on win); mints food vouchers | ✅ |
 | + | **Customer app redesign**: mobile-first design system (`packages/ui` tokens + Lucide kit), 4-tab nav (Menu·Rewards·Orders·Me), order history, profile editor (mobile/birthday/gender), **dedicated full-screen game pages + win celebration (fireworks/confetti)** | ✅ |
+| + | **Staff POS** (`/pos`): PIN login → tap→pay (cash/card/PayNow mock) → printable receipt; diner attach + voucher redeem at the counter; **Supervisor void** (reverse a paid sale → reports/payment/loyalty/voucher) | ✅ |
+| + | **Web/POS login segregation**: `User.kind` — web logins (Manager/Staff/Finance, email+pw) vs **POS operators** (Supervisor/Cashier, PIN-only); PINs **encrypted at rest** (Fernet), owner-revealable, unique per storefront; auto-provisioned starter team (1 Supervisor + 2 Cashiers) | ✅ |
+| + | **Vouchers**: shared core + 2 issuers (loyalty-earned / campaign-granted) + one cashier redeem flow (QR/code → discount), node-scoped, per-period cap, welcome-pack on signup | ✅ |
+| + | **PDPA consent at capture** + **suspend enforcement** (login/order blocked for a suspended tenant) | ✅ |
 
 ## 6. Test results
-- **Backend: 230 passed** (pytest, 40 files) — `artifacts/pytest_results.txt`. Covers auth, QR, ordering, checkout+loyalty (incl. order marked completed on payment), rewards/wheel, CRM + isolation, permissions, reports/forecast, the golden capture-loop e2e, operator, pipeline (modes)/activities/bulk/win-back, campaigns, menu/user/org admin, RFM, AI insights (heuristic path + permission/tenant gating), Kampong Eats merchant-4 seed (idempotency + menu shape), the 888 jackpot (grid/payline invariants, spin-cost deducted / insufficient-coins blocked, voucher mint), the customer **My Account** endpoints (order history + customer isolation, vouchers, profile get/update with phone required+unique), **per-merchant spin costs**, the **foodcourt** stall directory (`test_foodcourt.py`), the **loyalty posting ledger** (`test_loyalty_ledger.py`: domain stamp, balance==SUM(ledger) reconciliation, idempotent accrual, per-domain idempotency-key scoping), **POS order primitives** (`test_order_external_ref.py`), **module flags + boundary indirection** (`test_module_flags_boundaries.py`), the **org spine** (`test_org_tree.py`: parent/depth/path, sellable_under, network scope, two-world isolation), **RBAC node-cascade** (`test_rbac_node_cascade.py`: brand-scope cascade + cross-tenant isolation), **module gating** (`test_module_gating.py`: rewards_enabled off → 0 coins, qr_ordering_enabled off → 409, per-merchant), **loyalty-program admin** (`test_loyalty_admin.py`: get/update earn-welcome-birthday rules, earn=0 disables, staff/cross-tenant 403, module flags via settings, birthday bonus only in birthday month), **multiplier promotions** (`test_promotions.py`: engine applies in-window / skips expired+deactivated, **best-wins not stacked**, RBAC, cross-tenant 403/404), the **merchant orders feed** (`test_merchant_orders.py`: items+labels, status filter, outlet-scoped isolation, cross-merchant 403), and **logging behaviour** (`test_logging.py`).
-- **Frontend: 45 passed** (Vitest) — `artifacts/frontend_test_results.txt`.
-- **Live HTTP** golden loop verified (`artifacts/live_demo.txt`); all 22 web routes return 200; Alembic up/down verified.
+- **Backend: 287 passed** (pytest, 48 files) — `artifacts/pytest_results.txt`. Covers auth, QR, ordering, checkout+loyalty (incl. order marked completed on payment), rewards/wheel, CRM + isolation, permissions, reports/forecast, the golden capture-loop e2e, operator, pipeline (modes)/activities/bulk/win-back, campaigns, menu/user/org admin, RFM, AI insights (heuristic path + permission/tenant gating), Kampong Eats merchant-4 seed (idempotency + menu shape), the 888 jackpot (grid/payline invariants, spin-cost deducted / insufficient-coins blocked, voucher mint), the customer **My Account** endpoints (order history + customer isolation, vouchers, profile get/update with phone required+unique), **per-merchant spin costs**, the **foodcourt** stall directory (`test_foodcourt.py`), the **loyalty posting ledger** (`test_loyalty_ledger.py`: domain stamp, balance==SUM(ledger) reconciliation, idempotent accrual, per-domain idempotency-key scoping), **POS order primitives** (`test_order_external_ref.py`), **module flags + boundary indirection** (`test_module_flags_boundaries.py`), the **org spine** (`test_org_tree.py`: parent/depth/path, sellable_under, network scope, two-world isolation), **RBAC node-cascade** (`test_rbac_node_cascade.py`: brand-scope cascade + cross-tenant isolation), **module gating** (`test_module_gating.py`: rewards_enabled off → 0 coins, qr_ordering_enabled off → 409, per-merchant), **loyalty-program admin** (`test_loyalty_admin.py`: get/update earn-welcome-birthday rules, earn=0 disables, staff/cross-tenant 403, module flags via settings, birthday bonus only in birthday month), **multiplier promotions** (`test_promotions.py`: engine applies in-window / skips expired+deactivated, **best-wins not stacked**, RBAC, cross-tenant 403/404), the **merchant orders feed** (`test_merchant_orders.py`: items+labels, status filter, outlet-scoped isolation, cross-merchant 403), and **logging behaviour** (`test_logging.py`).
+  Plus this stretch: **PDPA consent** (`test_pdpa_consent.py`), **suspend enforcement** (`test_suspend_enforcement.py`), **vouchers** (core + cashier redeem + node scope + welcome pack), the **staff POS** (`test_pos_pin.py` — web/POS segregation, readable+encrypted per-storefront PINs, Supervisor/Cashier; `test_pos_receipt.py`; `test_pos_void.py` — supervisor void reverses sale/payment/loyalty/voucher), and the node→provisioned-outlet scope regression.
+- **Frontend: 58 passed** (Vitest) — `artifacts/frontend_test_results.txt`.
+- **Live HTTP** golden loop verified (`artifacts/live_demo.txt`); all 27 web routes return 200; Alembic up/down verified.
 
 ## 7. Security checklist
 Input validation (Pydantic) · ORM bound params (no SQLi) · bcrypt hashing · JWT
@@ -87,10 +92,10 @@ secure headers (HSTS/CSP/XFO/nosniff) · audit logs · env secrets / no hardcode
 server-side pricing · safe error responses. Full threat model + PoC limits: `docs/security.md`.
 
 ## 8. API documentation
-Swagger `/docs`, ReDoc `/redoc`, machine spec `artifacts/openapi.json` (~120 endpoints),
+Swagger `/docs`, ReDoc `/redoc`, machine spec `artifacts/openapi.json` (137 endpoints),
 human reference `docs/api.md`.
 
-## 9. Database schema (42 tables)
+## 9. Database schema (43 tables)
 Tenancy, identity/RBAC, catalog, orders, payments, loyalty (+coalition), CRM
 (tags/notes/segments), engagement (reward catalog, wheel, **jackpot**, tasks, opportunities,
 activities), campaigns, audit. Diagram + grouping: `docs/database.md`;
@@ -117,7 +122,7 @@ RPO ≤5m / RTO ≤30m per `docs/bc-dr.md`.
 
 ## 12. Lead Verifier confirmation
 All claims are backed by re-run tests + live HTTP verification against the Dockerised
-Postgres stack. **The app runs; 230 backend + 45 frontend tests pass; the QR→order→
+Postgres stack. **The app runs; 287 backend + 58 frontend tests pass; the QR→order→
 checkout→rewards→CRM capture loop works live; role/permission boundaries and
 cross-merchant isolation are enforced and test-proven (22 dedicated isolation tests +
 live adversarial proof — see §7); operator, pipeline (sales+win-back),

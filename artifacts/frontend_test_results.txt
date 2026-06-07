@@ -1,4 +1,2 @@
-      Tests  45 passed (45)
-   Start at  11:59:38
-   Duration  736ms (transform 137ms, setup 0ms, collect 288ms, tests 30ms, environment 2.70s, prepare 399ms)
-
+Test Files  7 passed (7)
+     Tests  58 passed (58)
