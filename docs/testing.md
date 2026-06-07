@@ -6,10 +6,10 @@ cd apps/api && .venv/bin/python -m pytest -v      # full backend suite
 ```
 Tests use an isolated in-memory SQLite DB (StaticPool) shared between the test
 session and the FastAPI `TestClient`, with RBAC seeded and rate-limiter/OTP reset per
-test (`app/tests/conftest.py`). Latest run: **208 passed** (see
-`artifacts/pytest_results.txt`). Frontend: **45 Vitest tests**.
+test (`app/tests/conftest.py`). Latest run: **287 passed** (see
+`artifacts/pytest_results.txt`). Frontend: **58 Vitest tests**.
 
-## Coverage by file (230 backend tests)
+## Coverage by file (287 backend tests)
 | File | Module(s) | What it proves |
 |---|---|---|
 | `test_health.py` | 12 | health endpoint + secure headers |
@@ -46,6 +46,11 @@ test (`app/tests/conftest.py`). Latest run: **208 passed** (see
 | `test_tenant_isolation_adversarial.py` | isolation | **adversarial probes**: operator **positive control** (super-admin CAN cross → 200, proves 403s are scope-based not deny-all), **customer-JWT replay** on staff/operator routes → 403, **symmetry** (B→A blocked), operator mutators reject garbage/foreign ids (404/400) leaving the owner assignment intact |
 | `test_breadtalk_member_tree.py` | org-tree | **unlimited member-tree + node-RBAC proof** (BreadTalk Group: a top **Chain** over 2 tenant **Chains**, depth 0–4): spine holds arbitrary depth (`sellable_under`/`outlet_ids_under` path-prefix); a role at any node cascades DOWN its subtree (Manager@top Chain→both tenants, all storefronts; a sub-Chain manager→its branch only; a Storefront's Cashier/Staff→that storefront); sibling + upline + cross-tenant isolation; every tier account logs in |
 | `test_leasing.py` | org-tree | **foodcourt vs coffeeshop leasing** (`leases` edge, FIXED/GTO): rent-type gates landlord visibility; shared-QR resolver = house ∪ leased; **QR Menu = direct stalls only** (`direct_storefronts`); independent tenants see only themselves |
+| `test_pdpa_consent.py` | auth/PDPA | consent capture at register/OTP/SSO + `/auth/customer/consent` (terms/marketing, versioned) |
+| `test_suspend_enforcement.py` | auth | a suspended tenant's staff blocked at login/order; operator still allowed (un-suspends) |
+| `test_pos_pin.py` | POS/RBAC | **web/POS segregation** (`User.kind`): POS can't web-login, web can't PIN-login; **readable per-storefront PINs** (encrypted at rest — stored ciphertext, reveal+login work) + chosen/auto PIN, uniqueness; auto-team (1 Supervisor + 2 Cashiers); **node→provisioned-outlet scope regression** |
+| `test_pos_receipt.py` | POS | receipt payload (company header + outlet/stall + lines + payment); staff lists a diner's vouchers |
+| `test_pos_void.py` | POS | **supervisor void** (`order.void`): reverses sale (transaction dropped), payment→voided, loyalty clawed back, voucher restored; idempotent-guarded; **cashier/staff 403** |
 | `test_permissions.py` | 1, 10 | super admin all, **merchant can't see another**, **outlet manager scoped**, staff lacks CRM, **audit log** |
 | `test_e2e_capture_loop.py` | 1-11 | golden flow end-to-end (below) |
 
@@ -63,7 +68,7 @@ test (`app/tests/conftest.py`). Latest run: **208 passed** (see
 11. Permission boundaries → `test_e2e`, `test_permissions`, `test_platform`
 
 ## Frontend tests
-`apps/web` — **45 Vitest tests** (format helpers, auth-resilience, stage/role/campaign-type contracts, wheel math, menu filtering). Run `npm test` in `apps/web`.
+`apps/web` — **58 Vitest tests** (format helpers, auth-resilience, stage/role/campaign-type contracts, wheel math, menu filtering). Run `npm test` in `apps/web`.
 
 ## Regression checklist (run before any release)
 - [ ] `pytest` green

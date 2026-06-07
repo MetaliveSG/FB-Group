@@ -9,11 +9,13 @@ coalitions
 crm_tasks
 customer_activities
 customer_auth_identities
+customer_consents
 customer_notes
 customer_segments
 customer_tags
 customers
 jackpot_prizes
+leases
 loyalty_accounts
 menu_categories
 menu_items

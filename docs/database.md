@@ -1,14 +1,14 @@
 # Database Schema
 
-SQLAlchemy 2.0 models (`apps/api/app/models/`), Alembic-managed (**17 migrations**, single
-head). **41 application tables** (+ `alembic_version`). String UUID PKs (`uuid4().hex`),
+SQLAlchemy 2.0 models (`apps/api/app/models/`), Alembic-managed (**24 migrations**, single
+head). **43 application tables** (+ `alembic_version`). String UUID PKs (`uuid4().hex`),
 naive-UTC timestamps, money as `Numeric(12,2)`. Full DDL: run `alembic upgrade head` or
 see `artifacts/schema_tables.txt`.
 
 ## Tables by domain
 **Tenancy** — `merchants` (+`settings` JSON feature-toggles incl. module flags rewards/qr_ordering/pos), `brands`, `outlets`, `tables`, `qr_codes`
 **Org spine** — `org_nodes` (the member-tree-map: one node per Merchant/Brand/Outlet/Menu; adjacency `parent_id` + materialised `path` + `sells`/boundary flags + `loyalty_domain_id`/`settlement_account_id`; typed tables are its profiles). Standardised to two display kinds — **CHAIN** (structural) + **STOREFRONT** (`sells`); cols `name`, `chain_stopped`, `subscription_fee` Numeric(12,2) (migrations `q4r5orgnodename`, `r5s6chainfee`)
-**Identity / RBAC** — `users`, `roles`, `permissions`, `role_permissions`, `user_roles`, `customers`, `customer_auth_identities`
+**Identity / RBAC** — `users` (+`kind` web/pos, +`pin` encrypted-at-rest POS PIN), `roles`, `permissions`, `role_permissions`, `user_roles`, `customers`, `customer_auth_identities`, `customer_consents` (PDPA terms/marketing, versioned)
 **Catalog** — `menus` (a Menu = a stall; foodcourt cols `stall_name`/`cuisine`/`logo`/`sort_order`/`is_open`), `menu_categories`, `menu_items` (incl. `image_url` for real food photos), `menu_modifiers`
 **Orders** — `orders` (+`source`/`external_id` for POS integration, `OrderChannel.pos`), `order_items`
 **Payments** — `payments`, `transactions`
