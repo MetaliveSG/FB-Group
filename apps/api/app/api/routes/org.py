@@ -22,6 +22,8 @@ from app.schemas.org import (
     NavFlagsOut,
     NodeAccountCreateIn,
     NodeAccountOut,
+    NodeModulesIn,
+    NodeModulesOut,
     OrgNodeCreateIn,
     OrgNodeCreateOut,
     OrgNodeOut,
@@ -41,6 +43,7 @@ from app.schemas.org import (
     TableOut,
 )
 from app.services import (
+    boundaries,
     leasing,
     loyalty_admin,
     merchant_settings,
@@ -214,6 +217,25 @@ def update_org_node(node_id: str, body: OrgNodeUpdateIn, scope=Depends(get_scope
 
 
 # --- Node logins — staff assigned at a member-tree node (manager/cashier/staff/finance) ----
+@router.get("/nodes/{node_id}/modules", response_model=NodeModulesOut)
+def read_node_modules(node_id: str, scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """The node's own per-module tri-state (inherit/on/off) + the resolved effective values."""
+    node = org_tree.get_managed_node(db, scope, node_id)
+    return boundaries.get_node_modules(db, node)
+
+
+@router.put("/nodes/{node_id}/modules", response_model=NodeModulesOut)
+def update_node_modules(node_id: str, body: NodeModulesIn,
+                        scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """Toggle the 3 modules at a node (inherit/on/off); cascades to the subtree (resolve_modules)."""
+    node = org_tree.get_managed_node(db, scope, node_id)
+    out = boundaries.set_node_modules(db, node, **body.model_dump(exclude_unset=True))
+    audit_record(db, action="org.node_modules_set", actor_id=scope.user_id,
+                 entity_type="org_node", entity_id=node_id, meta=body.model_dump(exclude_unset=True))
+    db.commit()
+    return out
+
+
 @router.get("/nodes/{node_id}/accounts", response_model=list[NodeAccountOut])
 def list_node_accounts(node_id: str, subtree: bool = Query(False),
                        scope=Depends(get_scope), db: Session = Depends(get_db)):

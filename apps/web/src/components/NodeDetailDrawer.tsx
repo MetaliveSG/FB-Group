@@ -7,6 +7,8 @@ import {
   listNodeAccounts,
   createNodeAccount,
   revokeNodeAccount,
+  getNodeModules,
+  setNodeModules,
   listVenueLeases,
   createLease,
   updateLease,
@@ -15,7 +17,7 @@ import {
 } from "@/lib/api";
 import { getStaffToken } from "@/lib/auth";
 import { Toggle } from "@/components/ui";
-import type { OrgTreeNode, OrgNodeAccount, MerchantKpi, Lease, OrgNodeCreated, PosStaffSecret } from "@fbgroup/api-client";
+import type { OrgTreeNode, OrgNodeAccount, MerchantKpi, Lease, OrgNodeCreated, PosStaffSecret, OrgNodeModules, ModuleState, ModuleKey } from "@fbgroup/api-client";
 
 const ROLE_STYLE: Record<string, { bg: string; fg: string }> = {
   CHAIN: { bg: "#dbeafe", fg: "#1e40af" },
@@ -74,6 +76,7 @@ export default function NodeDetailDrawer({
   const [addFee, setAddFee] = useState("");
   const [posReveal, setPosReveal] = useState<PosStaffSecret[] | null>(null);  // show-once team PINs on SF create
 
+  const [modules, setModules] = useState<OrgNodeModules | null>(null);
   const [accounts, setAccounts] = useState<OrgNodeAccount[] | null>(null);
   const [acOpen, setAcOpen] = useState(false);
   const [acEmail, setAcEmail] = useState("");
@@ -97,6 +100,7 @@ export default function NodeDetailDrawer({
     setAddKind(node.chain_stopped ? "STOREFRONT" : "CHAIN");
     setAcOpen(false);
     setErr(null);
+    setModules(null);
     setAccounts(null);
     setLeases(null);
     setLsOpen(false);
@@ -105,6 +109,7 @@ export default function NodeDetailDrawer({
     setLsRate("");
     const tok = getStaffToken();
     if (tok && canManage) {
+      getNodeModules(base, tok, node.id).then(setModules).catch(() => setModules(null));
       listNodeAccounts(base, tok, node.id).then(setAccounts).catch(() => setAccounts([]));
       if (!node.sells) {
         listVenueLeases(base, tok, node.id)
@@ -135,6 +140,9 @@ export default function NodeDetailDrawer({
   const reloadLeases = () => listVenueLeases(base, tok(), node.id)
     .then((ls) => { setLeases(ls); setRateEdit(Object.fromEntries(ls.map((l) => [l.id, l.rate]))); })
     .catch(() => {});
+  const changeModule = (key: ModuleKey, val: ModuleState) =>
+    run(() => setNodeModules(base, tok(), node.id, { [key]: val } as Partial<Record<ModuleKey, ModuleState>>),
+        (m) => setModules(m as OrgNodeModules));
 
   // Candidate stalls to lease in: any Storefront not under THIS venue (those are house stalls,
   // no lease needed) and not already leased here.
@@ -340,6 +348,34 @@ export default function NodeDetailDrawer({
                   <button className="btn btn-secondary btn-sm" onClick={() => setLsOpen(false)}>Cancel</button>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Modules — toggle Table QR / Customer Engagement / POS at this node (cascades to the subtree). */}
+          {canManage && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--color-border,#e5e7eb)", paddingTop: 14 }}>
+              {label("Modules")}
+              {modules === null ? (
+                <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>Loading…</span>
+              ) : (
+                ([["qr_ordering", "Table QR", "qr_ordering_enabled"],
+                  ["rewards", "Customer Engagement", "rewards_enabled"],
+                  ["pos", "POS", "pos_enabled"]] as [ModuleKey, string, keyof OrgNodeModules["resolved"]][]).map(([key, lbl, rk]) => (
+                  <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                    <span style={{ flex: 1 }}>{lbl}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, minWidth: 30, textAlign: "right", color: modules.resolved[rk] ? "#166534" : "#b91c1c" }}>
+                      {modules.resolved[rk] ? "ON" : "OFF"}
+                    </span>
+                    <select value={modules[key]} disabled={busy}
+                      onChange={(e) => changeModule(key, e.target.value as ModuleState)} style={{ fontSize: 12 }}>
+                      <option value="inherit">Inherit</option>
+                      <option value="on">On</option>
+                      <option value="off">Off</option>
+                    </select>
+                  </div>
+                ))
+              )}
+              <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>Inherit follows the parent (default on). Changes cascade to this node&apos;s subtree.</span>
             </div>
           )}
 

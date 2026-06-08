@@ -208,6 +208,24 @@ class NodeAccountOut(BaseModel):
     node_name: str | None = None
 
 
+# --- Per-node module toggles (Table QR / Customer Engagement / POS) ----
+_MODULE_STATE = Literal["inherit", "on", "off"]
+
+
+class NodeModulesIn(BaseModel):
+    """Set a node's per-module tri-state. Omitted fields are left unchanged."""
+    rewards: _MODULE_STATE | None = None        # Customer Engagement
+    qr_ordering: _MODULE_STATE | None = None     # Table QR
+    pos: _MODULE_STATE | None = None             # POS
+
+
+class NodeModulesOut(BaseModel):
+    rewards: _MODULE_STATE                        # the node's OWN setting (inherit/on/off)
+    qr_ordering: _MODULE_STATE
+    pos: _MODULE_STATE
+    resolved: dict                               # effective after cascade: {rewards_enabled, qr_ordering_enabled, pos_enabled}
+
+
 class NodeAccountCreateIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)

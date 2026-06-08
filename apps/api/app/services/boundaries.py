@@ -92,3 +92,31 @@ def node_for_outlet(db: Session, outlet_id: str | None) -> OrgNode | None:
 def resolve_modules_for_outlet(db: Session, *, outlet_id: str | None, merchant_id: str) -> dict:
     """Convenience: resolve the 3 module flags for the node an outlet maps to (cascade + fallback)."""
     return resolve_modules(db, node=node_for_outlet(db, outlet_id), merchant_id=merchant_id)
+
+
+# --- per-node toggle get/set (the NodeDetailDrawer "Modules" section) ---------------------------
+_STATE_TO_VAL = {"inherit": None, "on": True, "off": False}
+_VAL_TO_STATE = {None: "inherit", True: "on", False: "off"}
+
+
+def get_node_modules(db: Session, node: OrgNode) -> dict:
+    """The node's OWN (explicit) tri-state per module + the RESOLVED effective values (after cascade)."""
+    return {
+        "rewards": _VAL_TO_STATE[node.mod_rewards],
+        "qr_ordering": _VAL_TO_STATE[node.mod_qr_ordering],
+        "pos": _VAL_TO_STATE[node.mod_pos],
+        "resolved": resolve_modules(db, node=node, merchant_id=node.settlement_account_id),
+    }
+
+
+def set_node_modules(db: Session, node: OrgNode, *, rewards: str | None = None,
+                     qr_ordering: str | None = None, pos: str | None = None) -> dict:
+    """Set a node's per-module tri-state (inherit/on/off). Omitted fields are left unchanged."""
+    if rewards is not None:
+        node.mod_rewards = _STATE_TO_VAL[rewards]
+    if qr_ordering is not None:
+        node.mod_qr_ordering = _STATE_TO_VAL[qr_ordering]
+    if pos is not None:
+        node.mod_pos = _STATE_TO_VAL[pos]
+    db.flush()
+    return get_node_modules(db, node)

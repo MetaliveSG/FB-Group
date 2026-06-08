@@ -4,7 +4,7 @@ from app.models.org import OrgNode
 from app.seed_breadtalk import build_breadtalk
 from app.services import boundaries
 from app.tests.factories import make_world
-from app.tests.helpers import H, checkout, place_order, register_customer
+from app.tests.helpers import H, checkout, place_order, register_customer, staff_token
 
 
 def _attach_node(db, w, **flags):
@@ -67,3 +67,20 @@ def test_node_override_disables_qr_ordering(client, db):
                     json={"qr_token": w.qr_token, "items": [{"menu_item_id": w.burger_id, "quantity": 1}]},
                     headers=H(cust["access_token"]))
     assert r.status_code == 409 and r.json()["error"]["code"] == "ordering_disabled"
+
+
+# --- A3: the per-node toggle endpoint (GET own tri-state + resolved; PUT to change) -------------
+def test_node_modules_endpoint(client, db):
+    build_breadtalk(db)
+    ceo = H(staff_token(client, "ceo@breadtalk.sg"))
+    # default: own=inherit, resolved=on
+    r = client.get("/api/v1/org/nodes/o_bt_ion/modules", headers=ceo)
+    assert r.status_code == 200
+    assert r.json()["pos"] == "inherit" and r.json()["resolved"]["pos_enabled"] is True
+    # toggle POS off at the storefront
+    s = client.put("/api/v1/org/nodes/o_bt_ion/modules", json={"pos": "off"}, headers=ceo)
+    assert s.status_code == 200
+    assert s.json()["pos"] == "off" and s.json()["resolved"]["pos_enabled"] is False
+    # GET reflects the change; other modules untouched (still inherit→on)
+    g = client.get("/api/v1/org/nodes/o_bt_ion/modules", headers=ceo).json()
+    assert g["pos"] == "off" and g["rewards"] == "inherit" and g["resolved"]["rewards_enabled"] is True
