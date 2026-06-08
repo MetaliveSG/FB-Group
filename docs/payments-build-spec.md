@@ -38,7 +38,9 @@ PAID → voided → refunded            (supervisor void → HitPay refund)
 
 ## E. Wallet (FSG-scoped) — build on the existing ledger pattern
 Reuse the loyalty posting-ledger shape (append-only, balance = SUM, idempotent, domain-stamped):
-- **`WalletAccount`** `{id, customer_id, tenant_id (=FSG settlement boundary), balance_cached, currency}`.
+- **`WalletAccount`** `{id, customer_id, loyalty_domain_id (the enterprise ring — FS Wallet / Tasty Wallet),
+  balance_cached, currency}`. Scoped to the **loyalty domain** (same boundary as coins; for the FSG pilot the
+  group node carries both flags so it == the settlement boundary). One branded wallet per enterprise.
 - **`WalletLedger`** (append-only) `{id, wallet_account_id, type, amount, balance_after, source_ref, idempotency_key, created_at}`
   where `type ∈ {topup, spend, reload, bonus, refund, adjust}`.
 - **Operations:**

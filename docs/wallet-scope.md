@@ -9,11 +9,17 @@ regulatory lead time; **wallet is the fast-follow lock-in amplifier.** Status: P
 ## Ownership (decided 2026-06-09): **FSG's wallet, CIP = white-label rails**
 - The wallet is **FSG-issued / FSG-held** (top-ups land in **FSG's** HitPay account → FSG holds the float +
   owes the balance; FSG is the stored-value issuer). **CIP provides the ledger + app/UX + auto-reload tech.**
-- Spendable **only at FSG's foodcourt** → **single-purpose** → light MAS-PSA lane.
-- **Scoped to the tenant** (FSG's settlement boundary) — exactly like coins are scoped to the loyalty domain;
-  a diner may later hold separate per-tenant wallets.
-- A **CIP cross-merchant *universal* wallet** (spend anywhere on the network) = the **SG-Eats-Rewards coalition
-  vision (M1/M2) — DEFERRED** (multi-merchant stored value = heavy e-money licensing + cross-settlement).
+- **One branded wallet per enterprise** — **FS Wallet** (FSG), **Tasty Wallet** (Tasty Wok Group), … each
+  spendable **within that group only**.
+- **Scoped to the loyalty-domain ring** (`loyalty_domain_id`) — the **same boundary as coins**, so **wallet +
+  coins share one account** per customer per enterprise. (Per the CLAUDE.md glossary, "enterprise" = a top
+  node carrying `is_loyalty_domain`; for FSG the group node carries **both** flags → loyalty-domain ==
+  settlement-boundary == enterprise coincide. Scoping to `loyalty_domain_id` is correct + future-proof.)
+- **Light/single-purpose holds while the enterprise = ONE settlement boundary** (one legal merchant-of-record
+  — true for the FSG pilot). If an enterprise later spans **multiple settlement boundaries**, wallet money
+  across them = **multi-merchant stored value (heavier MAS) + cross-settlement (M2)** — flag then.
+- **Cross-enterprise** (FS Wallet at a Tasty outlet) = the **universal/coalition wallet → DEFERRED**
+  (different loyalty domains → cross-clearing; the SG-Eats-Rewards vision, M1/M2).
 
 ## Model (the decisions, locked)
 - **Closed-loop, deposit-only** — spendable only at FSG's foodcourt; **no withdrawal/cash-out** → lightest
