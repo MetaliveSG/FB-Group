@@ -148,6 +148,21 @@ def test_add_and_delete_pos_staff(client, db):
     assert _pin_login(client, "m1", sf["outlet_id"], new_pin).status_code == 401
 
 
+def test_node_account_listing_excludes_pos_operators(client, db):
+    """The WEB Team listing must skip POS operators (kind="pos", synthetic @pos.local emails) — they
+    are managed via Settings → Staff & PINs, and their reserved-domain emails would also fail EmailStr."""
+    t = _root(client, db)
+    sf = _create_sf(client, t)                         # auto-provisions 3 POS staff at this storefront node
+    # node-only (the NodeDetailDrawer "Logins" drawer)
+    r = client.get(f"/api/v1/org/nodes/{sf['id']}/accounts", headers=H(t))
+    assert r.status_code == 200
+    assert all(not a["email"].endswith("@pos.local") for a in r.json())
+    # subtree (the merchant Team page)
+    r2 = client.get(f"/api/v1/org/nodes/{sf['id']}/accounts?subtree=true", headers=H(t))
+    assert r2.status_code == 200
+    assert all(not a["email"].endswith("@pos.local") for a in r2.json())
+
+
 def test_node_scope_resolves_provisioned_outlet(client, db):
     """Regression: a node's RBAC outlet set must include its PROVISIONED outlet (menu.id==node.id,
     separate outlet uuid) — else node-scoped POS staff get 403 outlet_scope when ringing a sale."""

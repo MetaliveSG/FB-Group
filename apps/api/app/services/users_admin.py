@@ -49,7 +49,10 @@ def list_node_accounts(db: Session, *, node_id: str, subtree: bool = False) -> l
         UserRoleAssignment.scope_type == ScopeType.NODE.value,
         UserRoleAssignment.scope_id.in_(node_ids),
     )).all()
-    rows = [_account_row(db, a, u, names.get(a.scope_id)) for a in asgs if (u := db.get(User, a.user_id))]
+    # WEB logins only — POS operators (kind="pos", synthetic @pos.local emails) are managed separately
+    # (Settings → Staff & PINs); their reserved-domain emails would also fail NodeAccountOut.email (EmailStr).
+    rows = [_account_row(db, a, u, names.get(a.scope_id)) for a in asgs
+            if (u := db.get(User, a.user_id)) and u.kind != "pos"]
     rows.sort(key=lambda x: (x["node_name"], x["email"]))
     return rows
 
