@@ -211,6 +211,13 @@ export default function RewardsPage() {
                 <div style={{ fontSize: "var(--text-xs)", textTransform: "uppercase", letterSpacing: 1, color: "var(--color-text-muted)", fontWeight: 700 }}>Coins Balance</div>
                 <div style={{ fontSize: "var(--text-5xl)", fontWeight: 900, color: "var(--color-primary)", lineHeight: 1 }}>{loyalty.points_balance.toLocaleString()}</div>
                 <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginTop: 4 }}>Lifetime {loyalty.lifetime_points.toLocaleString()} · {loyalty.visit_count} visits</div>
+                {/* Stored-value wallet (money) alongside coins — FS Wallet / Tasty Wallet. */}
+                <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-2)", marginTop: "var(--space-3)", paddingTop: "var(--space-3)", borderTop: "1px solid var(--color-border)" }}>
+                  <span style={{ fontSize: "var(--text-xs)", textTransform: "uppercase", letterSpacing: 1, color: "var(--color-text-muted)", fontWeight: 700 }}>Wallet</span>
+                  <span style={{ fontSize: "var(--text-2xl)", fontWeight: 900, color: "var(--color-accent)", lineHeight: 1 }}>
+                    {(loyalty.wallet_currency ?? "SGD")} {(loyalty.wallet_balance ?? 0).toFixed(2)}
+                  </span>
+                </div>
               </div>
               <Badge tone={TIER_TONE[loyalty.tier] ?? "warning"}>{loyalty.tier.charAt(0).toUpperCase() + loyalty.tier.slice(1)} Tier</Badge>
             </div>

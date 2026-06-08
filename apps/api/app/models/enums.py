@@ -104,6 +104,17 @@ class RewardTxnType(str, Enum):
     EXPIRE = "expire"
 
 
+class WalletEntryType(str, Enum):
+    """Append-only stored-value wallet postings (signed amount). Credits: topup/reload/bonus/refund;
+    debit: spend; adjust = caller-signed."""
+    TOPUP = "topup"      # manual top-up (any PSP method)
+    RELOAD = "reload"    # auto-reload (off-session saved card)
+    BONUS = "bonus"      # top-up bonus ("load $50 get $5")
+    SPEND = "spend"      # debit at order-ahead checkout
+    REFUND = "refund"    # void/refund credited back
+    ADJUST = "adjust"    # manual correction
+
+
 class RewardScope(str, Enum):
     MERCHANT = "merchant"
     COALITION = "coalition"

@@ -58,6 +58,12 @@ def loyalty_summary(db: Session, *, customer_id: str, merchant_id: str) -> dict:
         select(RewardTransaction).where(RewardTransaction.account_id == acct.id)
         .order_by(RewardTransaction.created_at.desc()).limit(20)
     ).all()
+    # Stored-value wallet (money) alongside coins — same loyalty-domain ring (FS Wallet / Tasty Wallet).
+    from app.services import wallet as wallet_service
+    from app.services.boundaries import loyalty_domain_id
+    w = wallet_service.summary(
+        db, customer_id=customer_id, loyalty_domain_id=loyalty_domain_id(merchant_id)
+    )
     return {
         "points_balance": acct.points_balance,
         "lifetime_points": acct.lifetime_points,
@@ -66,6 +72,8 @@ def loyalty_summary(db: Session, *, customer_id: str, merchant_id: str) -> dict:
         "points_to_next_tier": points_to_next,
         "visit_count": acct.visit_count,
         "recent": recent,
+        "wallet_balance": float(w["balance"]),
+        "wallet_currency": w["currency"],
     }
 
 

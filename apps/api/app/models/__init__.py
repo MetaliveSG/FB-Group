@@ -40,5 +40,6 @@ from app.models.orders import Order, OrderItem  # noqa: F401
 from app.models.org import OrgNode  # noqa: F401
 from app.models.payments import Payment, Transaction  # noqa: F401
 from app.models.tenancy import Brand, DiningTable, Merchant, Outlet, QRCode  # noqa: F401
+from app.models.wallet import WalletAccount, WalletLedger  # noqa: F401
 
 __all__ = ["Base"]

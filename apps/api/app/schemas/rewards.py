@@ -62,6 +62,9 @@ class LoyaltySummaryOut(BaseModel):
     points_to_next_tier: int
     visit_count: int
     recent: list[RewardTxnOut] = []
+    # Stored-value wallet (money) shown alongside coins — FS Wallet / Tasty Wallet (loyalty-domain ring).
+    wallet_balance: float = 0.0
+    wallet_currency: str = "SGD"
 
 
 class CatalogItemOut(BaseModel):

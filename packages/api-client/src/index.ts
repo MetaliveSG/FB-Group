@@ -304,6 +304,9 @@ export interface LoyaltySummary {
   points_to_next_tier: number;
   visit_count: number;
   recent: LoyaltyRecentTxn[];
+  // Stored-value wallet (money) shown alongside coins — FS Wallet / Tasty Wallet (loyalty-domain ring).
+  wallet_balance?: number;
+  wallet_currency?: string;
 }
 
 export interface CatalogItem {
