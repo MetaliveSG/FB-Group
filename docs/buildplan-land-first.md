@@ -8,7 +8,7 @@ counter-QR product (no POS, no table-ordering) — the "LAND" tier of the 3-modu
 A merchant with **no POS and no table-ordering** runs a rewards program: hang a **counter join-QR** →
 customer enrolls (OTP) → **the existing 10×$1 welcome voucher is issued on signup** → customer redeems a
 voucher at the counter via a **web Redemption Centre** (staff enters/scans the voucher code → validate →
-mark used; merchant applies the discount on their own till). Console shows **only Customer Engagement**;
+mark used; merchant applies the discount on their own till). Console shows **only Intelligence**;
 customer app shows **only Rewards**. Demoable end-to-end, tests green, verified on Postgres.
 
 ## Grounding — verified against code (2026-06-07)

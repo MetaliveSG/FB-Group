@@ -27,7 +27,7 @@ MODULE_FLAGS = ("rewards_enabled", "qr_ordering_enabled", "pos_enabled")
 
 # Module flag → its 3-state org_node column (NULL = inherit).
 _MODULE_COL = {
-    "rewards_enabled": "mod_rewards",        # Customer Engagement
+    "rewards_enabled": "mod_rewards",        # Intelligence
     "qr_ordering_enabled": "mod_qr_ordering",  # Table QR
     "pos_enabled": "mod_pos",                # POS
 }

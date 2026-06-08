@@ -63,7 +63,7 @@ class OrgNode(PKMixin, TimestampMixin, Base):
     # module adoption (Phase A) — per-node toggles for the 3 modules, 3-state:
     # NULL = inherit (fall back up-tree → Merchant.settings → default); True/False = explicit on/off.
     # Resolved by boundaries.resolve_modules (nearest explicit ancestor wins; cascades down the subtree).
-    mod_rewards: Mapped[bool | None] = mapped_column(Boolean)        # Customer Engagement
+    mod_rewards: Mapped[bool | None] = mapped_column(Boolean)        # Intelligence
     mod_qr_ordering: Mapped[bool | None] = mapped_column(Boolean)    # Table QR
     mod_pos: Mapped[bool | None] = mapped_column(Boolean)            # POS
 

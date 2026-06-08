@@ -351,29 +351,49 @@ export default function NodeDetailDrawer({
             </div>
           )}
 
-          {/* Modules — toggle Table QR / Customer Engagement / POS at this node (cascades to the subtree). */}
+          {/* Modules — toggle Table QR / Intelligence / POS at this node (cascades to the subtree). */}
           {canManage && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--color-border,#e5e7eb)", paddingTop: 14 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, borderTop: "1px solid var(--color-border,#e5e7eb)", paddingTop: 14 }}>
               {label("Modules")}
               {modules === null ? (
                 <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>Loading…</span>
               ) : (
                 ([["qr_ordering", "Table QR", "qr_ordering_enabled"],
-                  ["rewards", "Customer Engagement", "rewards_enabled"],
-                  ["pos", "POS", "pos_enabled"]] as [ModuleKey, string, keyof OrgNodeModules["resolved"]][]).map(([key, lbl, rk]) => (
-                  <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-                    <span style={{ flex: 1 }}>{lbl}</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, minWidth: 30, textAlign: "right", color: modules.resolved[rk] ? "#166534" : "#b91c1c" }}>
-                      {modules.resolved[rk] ? "ON" : "OFF"}
-                    </span>
-                    <select value={modules[key]} disabled={busy}
-                      onChange={(e) => changeModule(key, e.target.value as ModuleState)} style={{ fontSize: 12 }}>
-                      <option value="inherit">Inherit</option>
-                      <option value="on">On</option>
-                      <option value="off">Off</option>
-                    </select>
-                  </div>
-                ))
+                  ["rewards", "Intelligence", "rewards_enabled"],
+                  ["pos", "POS", "pos_enabled"]] as [ModuleKey, string, keyof OrgNodeModules["resolved"]][]).map(([key, lbl, rk]) => {
+                  const on = modules.resolved[rk];
+                  const inherited = modules[key] === "inherit";
+                  return (
+                    <div key={key} style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>{lbl}</span>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: on ? "#15803d" : "#b91c1c" }}>
+                          <span style={{ width: 7, height: 7, borderRadius: 99, background: on ? "#16a34a" : "#dc2626" }} />
+                          {on ? "ON" : "OFF"}
+                          {inherited && <span style={{ fontWeight: 500, color: "var(--color-text-muted)" }}>· inherited</span>}
+                        </span>
+                      </div>
+                      <div role="radiogroup" aria-label={lbl} style={{ display: "flex", border: "1px solid var(--color-border,#e5e7eb)", borderRadius: 8, overflow: "hidden" }}>
+                        {(["inherit", "on", "off"] as ModuleState[]).map((opt, i) => {
+                          const sel = modules[key] === opt;
+                          return (
+                            <button key={opt} type="button" role="radio" aria-checked={sel} disabled={busy}
+                              onClick={() => changeModule(key, opt)}
+                              style={{
+                                flex: 1, padding: "6px 0", fontSize: 12, fontWeight: sel ? 700 : 500,
+                                border: "none", borderLeft: i ? "1px solid var(--color-border,#e5e7eb)" : "none",
+                                background: sel ? "var(--color-primary,#dc2626)" : "#fff",
+                                color: sel ? "#fff" : "var(--color-text,#334155)",
+                                cursor: busy ? "default" : "pointer", textTransform: "capitalize",
+                              }}>
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })
               )}
               <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>Inherit follows the parent (default on). Changes cascade to this node&apos;s subtree.</span>
             </div>

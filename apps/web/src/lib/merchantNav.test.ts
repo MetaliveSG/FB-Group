@@ -28,6 +28,11 @@ describe("merchant nav — menu reacts to module toggles", () => {
     expect(isNavItemVisible(item("crm"), ctx(m))).toBe(true);
   });
 
+  it("POS off → Staff & PINs hidden; on → visible", () => {
+    expect(isNavItemVisible(item("pos_staff"), ctx({ ...ALL_ON, pos: false }))).toBe(false);
+    expect(isNavItemVisible(item("pos_staff"), ctx({ ...ALL_ON, pos: true }))).toBe(true);
+  });
+
   it("core (Settings/Team) always visible regardless of modules", () => {
     const off: NavModuleSet = { engagement: false, table_qr: false, pos: false };
     expect(isNavItemVisible(item("settings"), ctx(off))).toBe(true);

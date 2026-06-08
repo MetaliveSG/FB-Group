@@ -208,13 +208,13 @@ class NodeAccountOut(BaseModel):
     node_name: str | None = None
 
 
-# --- Per-node module toggles (Table QR / Customer Engagement / POS) ----
+# --- Per-node module toggles (Table QR / Intelligence / POS) ----
 _MODULE_STATE = Literal["inherit", "on", "off"]
 
 
 class NodeModulesIn(BaseModel):
     """Set a node's per-module tri-state. Omitted fields are left unchanged."""
-    rewards: _MODULE_STATE | None = None        # Customer Engagement
+    rewards: _MODULE_STATE | None = None        # Intelligence
     qr_ordering: _MODULE_STATE | None = None     # Table QR
     pos: _MODULE_STATE | None = None             # POS
 

@@ -1,7 +1,7 @@
 # Three modules on one core — architecture decision (decided 2026-06-07)
 
 **Status:** AGREED, plan-first. The decision: split the product into **three independently toggleable
-modules — Table QR · Customer Engagement · POS — sitting on one always-on shared core**, communicating
+modules — Table QR · Intelligence · POS — sitting on one always-on shared core**, communicating
 through a single sale-event seam so each module enables, disables, and functions independently. Grounded in
 the observed SG market reality (rewards run *decoupled* from the POS — counter-QR sign-up of a different
 brand) and Foundation Contract #6 (one `record_sale()` core) + #7 (everything behind capability flags).
@@ -63,27 +63,27 @@ on top. The core is never a toggle.
 | Module | Customer-facing | Merchant-facing | Role on the seam |
 |---|---|---|---|
 | **Table QR** | scan-to-order, menu browse, cart, checkout | KDS / order-display (fulfil) | **sale producer** + rule consumer |
-| **Customer Engagement** (was "Rewards") | join QR, earn (stamp/points), redeem, vouchers, coalition, games | **CRM** (profiles, RFM, segments, tags, notes, churn) · **campaigns/marketing** (WhatsApp, audiences, ROI) · **win-back** · AI insights · loyalty/earn config | **sale consumer** + **rule publisher** |
+| **Intelligence** (was "Rewards") | join QR, earn (stamp/points), redeem, vouchers, coalition, games | **CRM** (profiles, RFM, segments, tags, notes, churn) · **campaigns/marketing** (WhatsApp, audiences, ROI) · **win-back** · AI insights · loyalty/earn config | **sale consumer** + **rule publisher** |
 | **POS** | — | cashier ring, payment, receipt, void, diner-attach, voucher redeem | **sale producer** + rule consumer |
 
-> **Naming:** the module formerly called "Rewards" is renamed **Customer Engagement** — "Rewards" undersold
+> **Naming:** the module formerly called "Rewards" is renamed **Intelligence** — "Rewards" undersold
 > its merchant-facing half (CRM + campaigns + marketing), which is where most of the SaaS value and pricing
 > sits. Loyalty is the *capture hook*; CRM/campaign/marketing is the *monetisation of the captured asset*.
 > They are one module with two faces (see §4).
 
 ## 3. The principle that makes modules independent — producers vs. consumer
 
-**Table QR and POS are sale _producers_; Customer Engagement is a sale _consumer_. Modules never call each
+**Table QR and POS are sale _producers_; Intelligence is a sale _consumer_. Modules never call each
 other directly — they communicate only through the `record_sale()` event seam.**
 
 - A producer rings a sale → `record_sale()` → records a `Transaction` **and emits a sale event**.
-- Customer Engagement **subscribes** to sale events (earn on verified spend) — but **also has its own
+- Intelligence **subscribes** to sale events (earn on verified spend) — but **also has its own
   inputs** (join, check-in/stamp, manual redeem, receipt), so it runs with **zero producers enabled**.
 
 The seam is **bidirectional** — Engagement also *publishes rules* that producers consume at sale time:
 
 ```
-Customer Engagement  ──publishes──►  earn rules · vouchers · promotions · audiences
+Intelligence  ──publishes──►  earn rules · vouchers · promotions · audiences
         ▲                                          │
         │ consumes                                 ▼  consumed at checkout by
  sale events + check-ins   ◄──────emits──────  Table QR / POS
@@ -95,7 +95,7 @@ the rules the seam returns.
 
 ## 4. Where CRM / campaigns / marketing live (and why not a 4th module)
 
-**Inside Customer Engagement** — they are its merchant-facing half. They are **not** a separate module
+**Inside Intelligence** — they are its merchant-facing half. They are **not** a separate module
 because they cannot function or be sold without the customer database that loyalty/capture creates:
 
 - a loyalty program with no merchant dashboard is useless;
@@ -199,7 +199,7 @@ Module flag is the *new* filter layered on top of the existing RBAC × node-tier
 | Dashboard · Settings · Team/Logins · Org tree | **Core (always)** | always (Org tree only at chain/operator scope) |
 | Menu · Tables & QR | **Table QR** | Table QR on |
 | Orders (live feed / KDS) | Table QR **or** POS | ≥1 producer on |
-| CRM · Campaigns/Marketing · Loyalty config · Voucher authoring · AI Insights | **Customer Engagement** | Engagement on |
+| CRM · Campaigns/Marketing · Loyalty config · Voucher authoring · AI Insights | **Intelligence** | Engagement on |
 | Reports | any producer | ≥1 producer on (Engagement adds loyalty/campaign analytics) |
 | POS Staff & PINs · Transactions / day-end · the `/pos` PIN app | **POS** | POS on |
 
@@ -286,7 +286,7 @@ small builds, not a rebuild.
 |---|---|---|
 | **Table QR** | ✅ full capture loop (`api/routes/qr.py`, `orders.py`, `catalog.py`) | **KDS / order-display screen** so it can fulfil when POS is off (backend order feed `list_orders` exists; no dedicated UI) |
 | **POS** | ✅ built (`/pos`, PIN auth, pay, receipt, void — `services/pos_staff.py`, `orders.void_order`) | already fairly standalone; gate behind a POS module flag |
-| **Customer Engagement** | ✅ loyalty/coalition/vouchers/CRM/RFM/win-back/campaigns/AI all built (`loyalty/engine.py`, `models/loyalty.py::Coalition`, `analytics/rfm.py`, `crm.py`, `vouchers.py`) — **but earn is welded to a sale** | **break the weld** (§8): the `loyalty event` abstraction + **counter-QR join flow** + **check-in/stamp earn** + **member identity QR** |
+| **Intelligence** | ✅ loyalty/coalition/vouchers/CRM/RFM/win-back/campaigns/AI all built (`loyalty/engine.py`, `models/loyalty.py::Coalition`, `analytics/rfm.py`, `crm.py`, `vouchers.py`) — **but earn is welded to a sale** | **break the weld** (§8): the `loyalty event` abstraction + **counter-QR join flow** + **check-in/stamp earn** + **member identity QR** |
 | **Shared Customer Directory** | ✅ implicit (customers + orders) | formalise as the always-on raw slice beneath Engagement |
 | **Module flags** | 🟡 partial (`qr_ordering_enabled`, `rewards_enabled`; `test_module_gating.py`, `test_module_flags_boundaries.py`) — flat on `Merchant.settings`, not tree-cascaded | **rationalise into 3 tree-cascaded module flags on `org_nodes`** (+ add POS), resolve per §7, enforce the §5 degradation rules, drive adaptive nav |
 | **record_sale() hub** | 🟡 the 3 channels (QR/POS/manual) exist but don't yet funnel through one core (Foundation #6, [[ingestion-seam]]) | make it the single seam that records the txn **and emits the sale event** |

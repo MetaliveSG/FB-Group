@@ -11,7 +11,7 @@ from app.services.rewards import WHEEL_SPIN_COST
 # Per-merchant settings surfaced via /org/settings. Spin-cost defaults mirror the
 # service constants — a merchant can override them; the games read the override.
 #
-# Module flags — which of the 3 modules (Customer Engagement / Table QR / POS) a merchant runs.
+# Module flags — which of the 3 modules (Intelligence / Table QR / POS) a merchant runs.
 # This is the LEGACY/FALLBACK layer: per-node overrides live on `org_nodes` and resolve through
 # `boundaries.resolve_modules` (nearest explicit ancestor wins → falls back here). Defaults: all
 # three ON (every current merchant uses our built modules — this is the OUR-POS, not external-POS).

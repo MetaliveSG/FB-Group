@@ -3,13 +3,13 @@
 // renders; what shows is decided here by: module enabled × RBAC permission × (pipeline flag).
 import {
   Users, BarChart3, Sparkles, ReceiptText, Filter, Megaphone, PieChart,
-  BookOpen, QrCode, UserCog, ListChecks, Settings as SettingsIcon,
+  BookOpen, QrCode, UserCog, ListChecks, CreditCard, Settings as SettingsIcon,
   type LucideIcon,
 } from "lucide-react";
 
 export type ActiveKey =
   | "crm" | "reports" | "insights" | "orders" | "pipeline" | "campaigns"
-  | "menu" | "tables" | "team" | "rfm" | "settings" | "tasks";
+  | "menu" | "tables" | "team" | "rfm" | "settings" | "tasks" | "pos_staff";
 
 // Which of the 3 modules an item belongs to (drives show/hide on the toggle). "reports" = analytics,
 // shown if ANY module is on; "core" = always (Admin).
@@ -37,6 +37,7 @@ export const NAV: NavItem[] = [
   { key: "orders", label: "Orders", href: "/merchant/orders", icon: ReceiptText, module: "table_qr", perm: "order.view", scope: "group" },
   { key: "menu", label: "Menu Editor", href: "/merchant/menu", icon: BookOpen, module: "table_qr", perm: "menu.manage", scope: "both" },
   { key: "tables", label: "Tables & QR", href: "/merchant/tables", icon: QrCode, module: "table_qr", perm: "outlet.manage", scope: "storefront" },
+  { key: "pos_staff", label: "Staff & PINs", href: "/merchant/pos-staff", icon: CreditCard, module: "pos", perm: "user.manage", sensitive: true, scope: "both" },
   { key: "reports", label: "Reports", href: "/merchant/reports", icon: BarChart3, module: "reports", perm: "report.view", scope: "both" },
   { key: "team", label: "Team", href: "/merchant/team", icon: UserCog, module: "core", perm: "user.manage", sensitive: true, scope: "group" },
   { key: "settings", label: "Settings", href: "/merchant/settings", icon: SettingsIcon, module: "core", perm: "merchant.manage", sensitive: true, scope: "group" },
@@ -44,8 +45,9 @@ export const NAV: NavItem[] = [
 
 // Sections grouped BY MODULE — a whole section disappears when its module is off (empty → hidden).
 export const NAV_SECTIONS: { title: string; keys: ActiveKey[] }[] = [
-  { title: "Customer Engagement", keys: ["crm", "rfm", "campaigns", "pipeline", "insights", "tasks"] },
+  { title: "Intelligence", keys: ["crm", "rfm", "campaigns", "pipeline", "insights", "tasks"] },
   { title: "Ordering", keys: ["orders", "menu", "tables"] },
+  { title: "Point of Sale", keys: ["pos_staff"] },
   { title: "Reports", keys: ["reports"] },
   { title: "Admin", keys: ["team", "settings"] },
 ];

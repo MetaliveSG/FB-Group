@@ -53,6 +53,27 @@ Advise on and implement:
    icon-only buttons, `prefers-reduced-motion` honored for the animations.
 7. **Perceived performance.** Optimistic UI, instant feedback on tap, skeletons during fetch,
    no layout shift. It should *feel* native-fast.
+8. **Pick the RIGHT control — never default to a dropdown.** Show options inline whenever they fit;
+   a `<select>` hides choices behind a tap and kills at-a-glance comparison. Only the list length
+   decides (see "Control selection" below). This is basic space/clarity common sense — apply it always.
+
+## Control selection (the decision table — follow it, don't pattern-match nearby code)
+
+Choosing the input is a design decision, not "whatever the neighbouring component used." Default rule:
+
+| # of mutually-exclusive options | Use | Never |
+|---|---|---|
+| 2 | **Toggle/switch** (on/off) or 2-segment control | dropdown |
+| **3–4** | **Segmented control or radio group** — all options visible, one tap | **dropdown** ← the common mistake |
+| 5–7 | radio group if vertical space allows, else dropdown | — |
+| 8+ / long / dynamic / unknown | **dropdown / select** (searchable if 15+) | radio (too tall) |
+
+- **Multi-select:** few → checkboxes / chips; many → multi-select or chip-input.
+- **Tri-state** (e.g. inherit/on/off) = 3 options → **segmented radio**, not a dropdown.
+- **Numeric small-range** → stepper; **free range** → slider or input.
+- Rationale: inline controls remove a tap, aid comparison, reduce errors, and read as more polished —
+  a deal-room screen full of dropdowns for 3-choice fields looks unfinished. Reach for `<select>` only
+  when the list is genuinely long. **If you catch yourself adding a 2–4 option `<select>`, stop and use radio/segmented.**
 
 ## Icon Strategy (web now → mobile later)
 
