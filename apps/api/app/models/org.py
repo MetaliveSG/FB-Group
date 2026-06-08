@@ -60,6 +60,13 @@ class OrgNode(PKMixin, TimestampMixin, Base):
     is_settlement_boundary: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_loyalty_domain: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
+    # module adoption (Phase A) — per-node toggles for the 3 modules, 3-state:
+    # NULL = inherit (fall back up-tree → Merchant.settings → default); True/False = explicit on/off.
+    # Resolved by boundaries.resolve_modules (nearest explicit ancestor wins; cascades down the subtree).
+    mod_rewards: Mapped[bool | None] = mapped_column(Boolean)        # Customer Engagement
+    mod_qr_ordering: Mapped[bool | None] = mapped_column(Boolean)    # Table QR
+    mod_pos: Mapped[bool | None] = mapped_column(Boolean)            # POS
+
     # resolved boundary pointers (nearest declaring ancestor; both = merchant today)
     loyalty_domain_id: Mapped[str] = mapped_column(String(32), nullable=False)
     settlement_account_id: Mapped[str] = mapped_column(String(32), nullable=False)
