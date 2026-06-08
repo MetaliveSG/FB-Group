@@ -51,7 +51,14 @@ DISTINCT from, and IN ADDITION TO, the dense AI/catchup-facing `build-state.md` 
 - Unfinished work, KIVs, follow-ups
 ```
 
-If `docs/SESSION_NOTES.md` doesn't exist, create it with header `# CIP (FB Group) — Session Notes`.
+If `docs/SESSION_NOTES.md` doesn't exist, create it with this header + preamble (do NOT backfill past
+sessions — the journal begins at this wrapup; earlier history stays in memory):
+```markdown
+# CIP (FB Group) — Session Notes
+
+> Session journal started <this wrapup's date>. Earlier history (Rounds R1–R39+) lives in the
+> memory `build-state.md`; notes here begin from this date forward — past sessions are not backfilled.
+```
 Keep BOTH logs: `SESSION_NOTES.md` is the at-a-glance human journal in the repo; `build-state.md`
 Round N (Step 4) is the dense machine log for `/my-catchup`. Different readers — don't drop either.
 
