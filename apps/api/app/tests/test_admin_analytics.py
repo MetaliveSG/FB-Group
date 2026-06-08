@@ -1,4 +1,4 @@
-"""Menu management, user management, and RFM analytics."""
+"""Menu management and RFM analytics."""
 from app.tests.factories import make_world
 from app.tests.helpers import H, checkout, place_order, register_customer, staff_token
 
@@ -41,46 +41,7 @@ def test_menu_tenant_isolation(client, db):
     assert r.status_code in (403, 404)
 
 
-# --- User management ---------------------------------------------------
-def test_invite_list_revoke_user(client, db):
-    w = make_world(db)
-    otok = staff_token(client, w.owner_email)
-    inv = client.post("/api/v1/admin/users",
-                      json={"email": "newstaff@m.sg", "password": "Password123!", "full_name": "New Staff",
-                            "role": "staff", "scope_type": "outlet", "scope_id": w.outlet_id}, headers=H(otok))
-    assert inv.status_code == 201
-    # invited user can authenticate
-    assert staff_token(client, "newstaff@m.sg")
-
-    users = client.get("/api/v1/admin/users", headers=H(otok)).json()
-    target = next(u for u in users if u["email"] == "newstaff@m.sg")
-    assert target["roles"][0]["role"] == "staff"
-
-    # duplicate email rejected
-    dup = client.post("/api/v1/admin/users",
-                      json={"email": "newstaff@m.sg", "password": "Password123!", "role": "staff",
-                            "scope_type": "merchant"}, headers=H(otok))
-    assert dup.status_code == 409
-
-    aid = target["roles"][0]["assignment_id"]
-    assert client.delete(f"/api/v1/admin/users/assignments/{aid}", headers=H(otok)).status_code == 204
-
-
-def test_user_management_requires_permission(client, db):
-    w = make_world(db)
-    mgr = staff_token(client, w.outlet_mgr_email)  # outlet manager lacks user.manage
-    assert client.get("/api/v1/admin/users", headers=H(mgr)).status_code == 403
-
-
-def test_invite_scope_isolation(client, db):
-    w1 = make_world(db, name="M1", token_suffix="1")
-    w2 = make_world(db, name="M2", token_suffix="2")
-    o1 = staff_token(client, "owner@m1.sg")
-    # M1 owner cannot place a user into M2's outlet
-    r = client.post("/api/v1/admin/users",
-                    json={"email": "x@m.sg", "password": "Password123!", "role": "staff",
-                          "scope_type": "outlet", "scope_id": w2.outlet_id}, headers=H(o1))
-    assert r.status_code == 403
+# Node-account web logins (manager/viewer/finance) are covered in test_breadtalk_member_tree.py.
 
 
 # --- RFM analytics -----------------------------------------------------

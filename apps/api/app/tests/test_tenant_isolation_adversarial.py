@@ -40,7 +40,6 @@ def test_customer_jwt_rejected_on_staff_and_operator_surfaces(client, db):
     for path in (
         "/api/v1/org/settings",
         "/api/v1/crm/customers",
-        "/api/v1/admin/users",
         "/api/v1/orders",
         "/api/v1/platform/overview",
         "/api/v1/platform/operators",

@@ -22,7 +22,6 @@ def test_foreign_merchant_id_is_rejected(client, db):
     for path in (
         f"/api/v1/org/settings?merchant_id={bid}",
         f"/api/v1/org/loyalty?merchant_id={bid}",
-        f"/api/v1/admin/users?merchant_id={bid}",
         f"/api/v1/crm/customers?merchant_id={bid}",
         f"/api/v1/campaigns?merchant_id={bid}",
         f"/api/v1/promotions?merchant_id={bid}",

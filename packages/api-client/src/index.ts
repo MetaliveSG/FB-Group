@@ -800,50 +800,6 @@ export interface MenuAdminOutlet {
   menu_id: string;
 }
 
-export type StaffRole =
-  | "merchant_owner"
-  | "brand_manager"
-  | "outlet_manager"
-  | "staff";
-
-export type ScopeType = "merchant" | "brand" | "outlet";
-
-export const STAFF_ROLES: StaffRole[] = [
-  "merchant_owner",
-  "brand_manager",
-  "outlet_manager",
-  "staff",
-];
-
-export interface RoleAssignment {
-  assignment_id: string;
-  role: string;
-  scope_type: string;
-  scope_id: string | null;
-}
-
-export interface AdminUser {
-  id: string;
-  email: string;
-  full_name: string;
-  is_active: boolean;
-  roles: RoleAssignment[];
-}
-
-export interface InviteUser {
-  email: string;
-  password: string;
-  full_name: string;
-  role: StaffRole;
-  scope_type: ScopeType;
-  scope_id?: string;
-}
-
-export interface InviteUserResult {
-  id: string;
-  email: string;
-  full_name: string;
-}
 
 export interface RfmCustomer {
   customer_id: string;
@@ -2361,43 +2317,6 @@ export function deleteModifier(
   );
 }
 
-// ─── Round 8: User management ────────────────────────────────
-
-export function listUsers(
-  baseUrl: string,
-  token: string,
-  merchantId?: string
-): Promise<AdminUser[]> {
-  return request(baseUrl, `/admin/users${mq(merchantId)}`, {}, token);
-}
-
-export function inviteUser(
-  baseUrl: string,
-  token: string,
-  data: InviteUser,
-  merchantId?: string
-): Promise<InviteUserResult> {
-  return request(
-    baseUrl,
-    `/admin/users${mq(merchantId)}`,
-    { method: "POST", body: JSON.stringify(data) },
-    token
-  );
-}
-
-export function revokeAssignment(
-  baseUrl: string,
-  token: string,
-  assignmentId: string,
-  merchantId?: string
-): Promise<void> {
-  return request(
-    baseUrl,
-    `/admin/users/assignments/${assignmentId}${mq(merchantId)}`,
-    { method: "DELETE" },
-    token
-  );
-}
 
 // ─── Round 8: RFM analytics ──────────────────────────────────
 
@@ -2741,9 +2660,6 @@ export class FbGroupApiClient {
   deleteMenuItem(itemId: string, merchantId?: string) { return deleteMenuItem(this.baseUrl, this.token!, itemId, merchantId); }
   createModifier(data: { item_id: string; name: string; price_delta?: number }, merchantId?: string) { return createModifier(this.baseUrl, this.token!, data, merchantId); }
   deleteModifier(modifierId: string, merchantId?: string) { return deleteModifier(this.baseUrl, this.token!, modifierId, merchantId); }
-  listUsers(merchantId?: string) { return listUsers(this.baseUrl, this.token!, merchantId); }
-  inviteUser(data: InviteUser, merchantId?: string) { return inviteUser(this.baseUrl, this.token!, data, merchantId); }
-  revokeAssignment(assignmentId: string, merchantId?: string) { return revokeAssignment(this.baseUrl, this.token!, assignmentId, merchantId); }
   rfm(merchantId?: string) { return rfm(this.baseUrl, this.token!, merchantId); }
   aiInsights(merchantId?: string) { return aiInsights(this.baseUrl, this.token!, merchantId); }
 
