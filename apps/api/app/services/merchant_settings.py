@@ -11,17 +11,17 @@ from app.services.rewards import WHEEL_SPIN_COST
 # Per-merchant settings surfaced via /org/settings. Spin-cost defaults mirror the
 # service constants — a merchant can override them; the games read the override.
 #
-# Module flags (Phase 0c) — which parts of the suite a merchant has adopted. Recorded here
-# now; behaviour-gating wired in Phase 2. Backward-compatible defaults: rewards + QR on (every
-# current merchant uses them), POS off (opt-in, no external-POS integration yet). When the org
-# tree lands (Phase 1) these move to per-node org_node columns, inherited down the subtree.
+# Module flags — which of the 3 modules (Customer Engagement / Table QR / POS) a merchant runs.
+# This is the LEGACY/FALLBACK layer: per-node overrides live on `org_nodes` and resolve through
+# `boundaries.resolve_modules` (nearest explicit ancestor wins → falls back here). Defaults: all
+# three ON (every current merchant uses our built modules — this is the OUR-POS, not external-POS).
 DEFAULTS = {
     "pipeline_enabled": True,
     "wheel_spin_cost": WHEEL_SPIN_COST,
     "jackpot_spin_cost": JACKPOT_SPIN_COST,
     "rewards_enabled": True,
     "qr_ordering_enabled": True,
-    "pos_enabled": False,
+    "pos_enabled": True,
     "timezone": "Asia/Singapore",   # the tenant's canonical reporting timezone (the "books")
     # Welcome voucher pack granted on signup (issued by vouchers.issue_welcome_pack). Default off.
     "welcome_voucher": {"enabled": False, "count": 1, "value": 0, "per_period": None,

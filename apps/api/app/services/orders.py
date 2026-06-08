@@ -77,7 +77,8 @@ def create_order(
     _checked_storefronts: set[str] = set()
     # QR ordering is gated by the merchant's `qr_ordering_enabled` module flag (Phase 2):
     # a rewards-only merchant accepts no customer QR orders. Staff/POS channels are unaffected.
-    if channel == OrderChannel.QR and not boundaries.module_flags(db, merchant_id=outlet.merchant_id)["qr_ordering_enabled"]:
+    if channel == OrderChannel.QR and not boundaries.resolve_modules_for_outlet(
+            db, outlet_id=outlet.id, merchant_id=outlet.merchant_id)["qr_ordering_enabled"]:
         raise ConflictError("Online ordering is not enabled here", code="ordering_disabled")
     order = Order(
         merchant_id=outlet.merchant_id,
@@ -209,7 +210,8 @@ def checkout(
     points = 0
     # Loyalty accrual is gated by the merchant's `rewards_enabled` module flag (Phase 2):
     # a merchant running ordering/POS without the loyalty programme earns no coins.
-    rewards_on = boundaries.module_flags(db, merchant_id=order.merchant_id)["rewards_enabled"]
+    rewards_on = boundaries.resolve_modules_for_outlet(
+        db, outlet_id=order.outlet_id, merchant_id=order.merchant_id)["rewards_enabled"]
     if order.customer_id and rewards_on:
         customer = db.get(Customer, order.customer_id)
         if customer:

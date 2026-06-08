@@ -78,3 +78,17 @@ def resolve_modules(db: Session, *, node: OrgNode | None, merchant_id: str) -> d
                 break
         out[flag] = legacy[flag] if explicit is None else explicit
     return out
+
+
+def node_for_outlet(db: Session, outlet_id: str | None) -> OrgNode | None:
+    """The storefront OrgNode for an outlet — via the `menu.id == node.id` invariant
+    (falls back to a node whose id == outlet_id for the legacy/collapsed seed)."""
+    if not outlet_id:
+        return None
+    from app.services import pos_staff
+    return pos_staff.node_for_outlet(db, outlet_id)
+
+
+def resolve_modules_for_outlet(db: Session, *, outlet_id: str | None, merchant_id: str) -> dict:
+    """Convenience: resolve the 3 module flags for the node an outlet maps to (cascade + fallback)."""
+    return resolve_modules(db, node=node_for_outlet(db, outlet_id), merchant_id=merchant_id)

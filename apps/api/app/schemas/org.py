@@ -105,7 +105,7 @@ class NavFlagsOut(BaseModel):
     pipeline_enabled: bool
     rewards_enabled: bool = True
     qr_ordering_enabled: bool = True
-    pos_enabled: bool = False
+    pos_enabled: bool = True
     can_manage_merchant: bool = False
 
 

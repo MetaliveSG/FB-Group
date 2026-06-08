@@ -7,6 +7,7 @@
 from sqlalchemy import select
 
 from app.models.identity import User
+from app.models.org import OrgNode
 from app.models.tenancy import Merchant
 from app.seed_breadtalk import build_breadtalk
 from app.tests.factories import super_admin
@@ -146,6 +147,19 @@ def test_add_and_delete_pos_staff(client, db):
     assert client.delete(f"{base}/{uid}", headers=H(t)).status_code == 204
     assert len(client.get(base, headers=H(t)).json()) == 3
     assert _pin_login(client, "m1", sf["outlet_id"], new_pin).status_code == 401
+
+
+def test_pos_module_off_blocks_pin_login(client, db):
+    """The POS module toggle (mod_pos=off at the node) refuses PIN-login — the toggle really gates POS."""
+    t = _root(client, db)
+    sf = _create_sf(client, t)
+    pin = sf["pos_team"][0]["pin"]
+    assert _pin_login(client, "m1", sf["outlet_id"], pin).status_code == 200      # default ON
+    node = db.get(OrgNode, sf["id"])
+    node.mod_pos = False
+    db.commit()
+    r = _pin_login(client, "m1", sf["outlet_id"], pin)
+    assert r.status_code == 403 and r.json()["error"]["code"] == "pos_disabled"   # toggled OFF
 
 
 def test_node_account_listing_excludes_pos_operators(client, db):

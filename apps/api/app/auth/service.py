@@ -202,6 +202,9 @@ def pin_login(db: Session, *, merchant_id: str, pin: str, outlet_id: str | None 
     node = pos_staff.node_for_outlet(db, outlet_id) if outlet_id else None
     if node is None:
         raise AuthError("This till is not set up for PIN login", code="pos_not_provisioned")
+    from app.services import boundaries
+    if not boundaries.resolve_modules(db, node=node, merchant_id=merchant_id)["pos_enabled"]:
+        raise ForbiddenError("POS is disabled for this store", code="pos_disabled")
     user = pos_staff.resolve_pos_pin(db, node_id=node.id, pin=pin)
     if user is None:
         raise AuthError("Invalid PIN", code="invalid_pin")

@@ -42,7 +42,7 @@ def resolve_qr(token: str, db: Session = Depends(get_db)):
         )
         for m in menus
     ]
-    flags = boundaries.module_flags(db, merchant_id=qr.merchant_id)
+    flags = boundaries.resolve_modules_for_outlet(db, outlet_id=qr.outlet_id, merchant_id=qr.merchant_id)
     # Suspend: a suspended tenant shows as "ordering unavailable" (graceful) — the order endpoint also
     # hard-blocks, and storefront/chain-level suspend is enforced per-stall at order time.
     ordering_enabled = flags["qr_ordering_enabled"] and merchant.is_active
