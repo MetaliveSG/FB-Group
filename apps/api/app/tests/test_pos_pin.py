@@ -149,18 +149,33 @@ def test_add_and_delete_pos_staff(client, db):
 
 
 def test_node_account_listing_excludes_pos_operators(client, db):
-    """The WEB Team listing must skip POS operators (kind="pos", synthetic @pos.local emails) — they
-    are managed via Settings → Staff & PINs, and their reserved-domain emails would also fail EmailStr."""
+    """The WEB Team listing shows only web-palette roles (manager/viewer/finance). It must skip POS
+    operators (kind="pos", @pos.local) AND a POS-role assignment (cashier/supervisor) even on a
+    web-kind user (the legacy onboarding anomaly)."""
+    from app.core.security import hash_password
+    from app.models.enums import RoleName, ScopeType
+    from app.models.identity import Role, User, UserRoleAssignment
+
     t = _root(client, db)
-    sf = _create_sf(client, t)                         # auto-provisions 3 POS staff at this storefront node
-    # node-only (the NodeDetailDrawer "Logins" drawer)
-    r = client.get(f"/api/v1/org/nodes/{sf['id']}/accounts", headers=H(t))
-    assert r.status_code == 200
-    assert all(not a["email"].endswith("@pos.local") for a in r.json())
-    # subtree (the merchant Team page)
-    r2 = client.get(f"/api/v1/org/nodes/{sf['id']}/accounts?subtree=true", headers=H(t))
-    assert r2.status_code == 200
-    assert all(not a["email"].endswith("@pos.local") for a in r2.json())
+    sf = _create_sf(client, t)                         # auto-provisions 3 POS staff (kind=pos) at this node
+    # a web-kind user carrying a POS role (cashier) — must also be excluded from the web Team list
+    cashier_role = db.scalar(select(Role).where(Role.name == RoleName.CASHIER.value))
+    u = User(email="web.cashier@x.sg", full_name="Web Cashier", kind="web",
+             password_hash=hash_password("Password123!"))
+    db.add(u)
+    db.flush()
+    db.add(UserRoleAssignment(user_id=u.id, role_id=cashier_role.id,
+                              scope_type=ScopeType.NODE.value, scope_id=sf["id"]))
+    db.commit()
+
+    for url in (f"/api/v1/org/nodes/{sf['id']}/accounts",            # node-only (Logins drawer)
+                f"/api/v1/org/nodes/{sf['id']}/accounts?subtree=true"):  # subtree (Team page)
+        r = client.get(url, headers=H(t))
+        assert r.status_code == 200, r.text
+        emails = [a["email"] for a in r.json()]
+        assert all(not e.endswith("@pos.local") for e in emails)        # POS operators excluded
+        assert "web.cashier@x.sg" not in emails                          # web user w/ POS role excluded
+        assert all(a["role"] in {"manager", "viewer", "finance"} for a in r.json())
 
 
 def test_node_scope_resolves_provisioned_outlet(client, db):

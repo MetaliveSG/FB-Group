@@ -176,9 +176,12 @@ def test_rename_node_and_status_mirrors_tenant(client, db):
 def test_node_accounts_crud_and_scoping(client, db):
     build_breadtalk(db)
     ceo = _auth(client, "ceo@breadtalk.sg")
-    # List existing logins at a storefront (seeded mgr + cashier).
+    # List WEB logins at a storefront — the seeded manager shows; the seeded cashier does NOT
+    # (cashier is a POS role, managed in Settings → Staff & PINs, not the web Team).
     got = client.get("/api/v1/org/nodes/o_bt_ion/accounts", headers=ceo)
-    assert got.status_code == 200 and {a["email"] for a in got.json()} >= {"mgr.ion@breadtalk.sg", "cashier.ion@breadtalk.sg"}
+    assert got.status_code == 200
+    emails = {a["email"] for a in got.json()}
+    assert "mgr.ion@breadtalk.sg" in emails and "cashier.ion@breadtalk.sg" not in emails
     # Add a new Viewer (read-only) login at a storefront.
     created = client.post("/api/v1/org/nodes/o_bt_ion/accounts", headers=ceo,
                           json={"email": "new.staff@breadtalk.sg", "password": "Password123!",

@@ -49,10 +49,18 @@ def list_node_accounts(db: Session, *, node_id: str, subtree: bool = False) -> l
         UserRoleAssignment.scope_type == ScopeType.NODE.value,
         UserRoleAssignment.scope_id.in_(node_ids),
     )).all()
-    # WEB logins only — POS operators (kind="pos", synthetic @pos.local emails) are managed separately
-    # (Settings → Staff & PINs); their reserved-domain emails would also fail NodeAccountOut.email (EmailStr).
-    rows = [_account_row(db, a, u, names.get(a.scope_id)) for a in asgs
-            if (u := db.get(User, a.user_id)) and u.kind != "pos"]
+    # WEB logins only = web-palette roles (manager/viewer/finance). Exclude POS operators (kind="pos",
+    # synthetic @pos.local) AND any POS-role assignment (cashier/supervisor) even on a web-kind user —
+    # those belong to Settings → Staff & PINs, not the web Team. (Also keeps @pos.local out of EmailStr.)
+    rows = []
+    for a in asgs:
+        u = db.get(User, a.user_id)
+        if u is None or u.kind == "pos":
+            continue
+        role = db.get(Role, a.role_id)
+        if role is None or role.name not in NODE_GRANTABLE_ROLES:
+            continue
+        rows.append(_account_row(db, a, u, names.get(a.scope_id)))
     rows.sort(key=lambda x: (x["node_name"], x["email"]))
     return rows
 
