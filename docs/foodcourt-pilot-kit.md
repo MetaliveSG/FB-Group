@@ -1,141 +1,148 @@
-# Foodcourt Loyalty Pilot — Kit + Rollout Checklist
+# Foodcourt Pilot — Kit + Rollout Checklist (order-ahead model)
 
-_Operational runbook for the **loyalty-only** pilot (no table-QR ordering; keep-your-POS). Capture mode:
-**Mode A (cashier-assisted)** on anchor stalls + **printed static QR (Mode B)** on the tail. KPI: **+10%
-court transactions (+SGD 2.6M on a $26M base).** North-star equation: **court lift = capture-rate × member
-spend-lift → target capture ≥40%, member lift ≥25%.** Strategy/pitch: `docs/cip-vs-salesforce-fnb.md`.
-Costs/specs are SG-market illustrative — verify before purchase._
+_Operational runbook for the greenlit **+10% foodcourt pilot**. **Model: order-ahead + pay + collect**
+(CIP becomes the ordering+payment channel; **pickup** fulfilment mode — no table numbering, an **order/
+pickup number** instead; see `docs/architecture-fulfilment-modes.md`). **Loyalty is baked in as the
+amplifier.** KPI: **+10% court transactions (+SGD 2.6M on a $26M base).**_
+
+**Why order-ahead, not loyalty-only:** loyalty-only retains existing demand and caps ~**+3–6%**.
+Order-ahead **adds** demand — it stacks **balker-recovery (skip the peak queue) + ticket upsell (+10–15%)
++ frequency + retention** — and captures **~100% automatically** (every app order is a known diner + exact
+amount → clean measurement, no cashier-compliance risk). **Order-ahead is the engine; loyalty the amplifier.**
+
+**Sequencing — beachhead, not big-bang:** run on **anchor stalls × peak hours** (where skip-the-queue value
++ adoption + lift are highest and most measurable), loyalty included, then expand. Runs **hybrid** — app
+orders *alongside* the existing queue, not replacing it.
 
 ---
 
-## 0. The model (one line)
-Stalls keep their own till. CIP runs **enrol → earn (cashier taps phone + $amount) → redeem (cross-stall
-coin ring) → grow (RFM/AI pushes)** beside it. A cheap Android per anchor stall runs the **loyalty-till as a
-PWA in kiosk mode — nothing installed, nothing changes about how stalls ring sales.**
+## 0. The flow
+Diner opens app → browses the court's stalls (built) → cart + checkout (built) → **pays in-app (real
+payment)** → order routes to **the stall's order screen** → stall cooks → **"mark ready"** → diner gets
+**"Order #42 ready"** push → collects. Coins/loyalty accrue automatically; RFM/AI/win-back run on top.
 
 ---
 
 ## 1. Pilot kit (bill of materials)
-
-**Per ANCHOR stall (device — ~6–8 highest-revenue stalls):**
+**Per ANCHOR stall (~6–8 highest-revenue / longest-queue stalls) — an ORDER SCREEN (not a loyalty till):**
 | Item | Spec | ~SGD |
 |---|---|---|
-| Android phone | Android 11+, rear cam ≥8MP, 3GB RAM (Redmi A3 / Galaxy A05 / refurbished) | 100 |
-| Stand/cradle | adjustable, weighted | 15 |
-| Charger + long cable | always-plugged; route tidily | 10 |
+| Android phone/tablet | Android 11+, 3GB RAM; tablet (~8–10") easier for order tickets | 100–150 |
+| Stand/cradle + always-on charger | weighted; tidy cable | 25 |
 | Anti-theft tether | cable lock / adhesive mount | 10 |
-| Kiosk lock | Fully Kiosk Browser (one-time ~$7) **or** free Android screen-pinning | 7 |
-| Data SIM (if WiFi weak) | prepaid, low-data plan | 12/mo |
-| **Per anchor all-in** | | **~$140 + $12/mo** |
-
-**Per TAIL stall (no device — remaining ~12–14 stalls):**
-| Item | Spec | ~SGD |
-|---|---|---|
-| Laminated **earn QR** | static, stall-scoped, A5 counter card | 2 |
-| Sign-up standee | A5/A4, "Scan to join — free welcome voucher" | 3 |
+| Kiosk lock | Fully Kiosk Browser (~$7) or Android screen-pinning | 7 |
+| Data SIM (if WiFi weak) | prepaid | 12/mo |
+| *(optional)* BT receipt printer | ESC/POS, for paper order tickets | 60 |
+| **Per anchor all-in** | | **~$150–230 + $12/mo** |
 
 **Court-wide:**
-- Entrance standees / posters (×2–3)
-- **Cashier quick-ref card** per stall ("Earn in 10s / Redeem in 10s")
-- **2 spare devices** (swap on failure/theft)
+- **Entry QR standees** per stall + at the court entrance (stall/court context QR → opens that menu; **not** a table QR)
+- **Pickup-counter signage** ("Collect here — show your order number")
+- Cashier/stall **quick-ref card** ("New order → cook → tap Ready")
+- **2 spare devices**
 
-**Cost summary (20 stalls, 7 anchors):** ~7 × $140 = **~$980 devices** + ~13 × $5 print = **~$65** + spares
-~$280 + SIMs ~$84/mo ≈ **~$1,400 capex + ~$100/mo.** (Against $26M base / $2.6M KPI = a rounding error.)
+**Cost (20 stalls, 7 anchors):** ~7 × $200 ≈ **~$1,400** + signage ~$150 + spares ~$300 ≈ **~$1,900 capex
++ ~$84/mo.** (Rounding error vs $26M base / $2.6M KPI.) *Tail stalls need no device until they opt into
+order-ahead — just an entry QR standee.*
 
 ---
 
-## 2. Software setup (config + the build list)
-**Already built — just configure:** loyalty engine, vouchers + **welcome voucher**, **no-order earn/redeem**,
-RFM, **cross-stall coin ring** (one loyalty domain = the whole court), games, the cashier attach-diner/redeem flow.
+## 2. Software — config + the build list
+**Built — configure:** foodcourt multi-stall browse, menus, cart, checkout, order status lifecycle,
+loyalty + welcome voucher, cross-stall coin ring, RFM, games.
 
-**Build before pilot (engineering):**
-1. **Loyalty-till PWA** — thin cashier screen: scan member QR / type phone **+ $amount → coins**; scan voucher → redeem. **Stall-scoped URL** (each device opens its stall's till → clean per-stall attribution). Reshape of the existing cashier flow.
-2. **LAND sign-up front-door + redemption centre** (memory `buildplan-land-first`, ~5d): QR → phone+OTP → PDPA consent → member + welcome voucher.
-3. **Real messaging channel** — WhatsApp BSP **or** SMS. ⚠️ **The one true new integration; non-negotiable** (campaigns are mock today; the *push* is the return-driver).
-4. **Pilot analytics** — holdout cohort tagging, baseline-revenue import, capture-rate + funnel dashboard.
-5. *(optional)* **offline queue** on the till if foodcourt connectivity is shaky.
+**Build before pilot (engineering, in priority order):**
+1. **Real payment** — PayNow (SG primary) + cards. ⚠️ **#1 critical-path** (checkout is mock today; no
+   in-app ordering without real money). Plugs into the existing checkout/`record_sale` path.
+2. **Fulfilment mode = pickup** (per `docs/architecture-fulfilment-modes.md`): `Order.fulfilment_type`
+   (+migration, default dine_in), per-storefront `fulfilment_modes`, **pickup-number** generation, **table
+   attachment made conditional** (off for these stalls).
+3. **Stall order screen (KDS-lite)** — receive app orders → **"mark ready"** (+ optional printed ticket).
+4. **Ready notification + collection** — "Order #N ready" push (needs the **real messaging channel** —
+   WhatsApp BSP / SMS; same dependency as campaigns).
+5. **Menu digitisation × anchor stalls** — items, prices, modifiers onboarded.
+6. **Pilot analytics** — app-adoption %, ticket lift, baseline import, holdout (for the loyalty/retention slice).
 
 ---
 
 ## 3. Pre-pilot checklist (Week 0)
 **Operator / commercial**
-- [ ] Pilot agreement signed: scope, duration (rec. 6–8 wks), success metric
-- [ ] **Operator mandate** that stalls use the scan every transaction (the make-or-break)
-- [ ] **Baseline data access** — court's historical revenue (no baseline = no measurable lift)
-- [ ] Stall list + revenue history → **rank anchors vs tail** (Pareto)
+- [ ] Pilot agreement: scope, duration (rec. 6–8 wks), success metric, **anchor stall list**
+- [ ] **Operator mandate**: anchor stalls fulfil app orders reliably (watch the screen, mark ready)
+- [ ] **Baseline data access** — court + per-stall historical revenue (no baseline = no measurable lift)
+- [ ] Adoption push agreed: signage, a **skip-the-queue incentive** (e.g. coins/discount for first app order)
 
 **Tech**
-- [ ] Loyalty-till PWA live + **stall-scoped URLs** generated
-- [ ] Sign-up front-door + welcome voucher live; PDPA consent + privacy notice live
-- [ ] Coin ring configured: all 20 stalls in **one loyalty domain** (earn-anywhere/redeem-anywhere)
-- [ ] **Real WhatsApp/SMS channel wired + test send confirmed**
-- [ ] RFM segments + campaign templates ready: welcome/2nd-visit · win-back · cross-stall · off-peak · birthday
-- [ ] **Coupon-budget guardrails set** (caps, margin-per-redemption) — the Luckin CFO discipline
-- [ ] Baseline revenue imported; **holdout split rule** defined (random % of enrolled get no campaigns)
-- [ ] Pilot dashboard live (capture rate · enrolments · earn events · device uptime)
+- [ ] **Real payment live + tested** (PayNow + cards) — settlement to the right account per stall
+- [ ] Fulfilment mode = **pickup** on anchor stalls; **table numbering OFF**; pickup-number working
+- [ ] Stall **order screen** live; "mark ready" → push tested end-to-end
+- [ ] **Real WhatsApp/SMS channel wired + test send** (ready-notify + campaigns)
+- [ ] Anchor **menus digitised** (items/prices/modifiers) + photos where available
+- [ ] Coin ring across stalls (one loyalty domain); welcome voucher; PDPA consent live
+- [ ] RFM segments + campaign templates (welcome, win-back, cross-stall, off-peak) + **coupon-budget guardrails**
+- [ ] Baseline imported; **holdout** split for the retention measurement; pilot dashboard live
 
-**Devices**
-- [ ] Procure + provision anchor devices: kiosk-lock to stall URL, test QR scan in real lighting
-- [ ] **Connectivity verified at each stall** (WiFi reachable or SIM data working)
-- [ ] Tethers + chargers fitted; 2 spares provisioned
-- [ ] Printed earn-QR + sign-up standees produced for tail stalls + entrance
+**Devices / floor**
+- [ ] Anchor order screens provisioned, kiosk-locked, **connectivity verified per stall**
+- [ ] Entry-QR standees up (stalls + entrance); **pickup-counter signage** up
+- [ ] Tethers + chargers + 2 spares
+- [ ] **Dry run**: app order → pay → stall screen → mark ready → push → collect
 
 **People**
-- [ ] Cashier training (10-min) + quick-ref cards at every stall
-- [ ] **Cashier scan incentive** agreed (small per-enrolment/compliance reward)
-- [ ] **Diner welcome incentive** compelling enough that they *want* to scan
-- [ ] End-to-end **dry run** at 1 stall: enrol → earn $X → redeem voucher → cross-stall redeem
+- [ ] Stall training (receive → cook → mark ready); quick-ref cards
+- [ ] Adoption crew for week 1 (floor staff steering queuers to the app at peak)
 
 ---
 
-## 4. Launch checklist (Week 1 — capture ramp)
-- [ ] Standees/QR up at all 20 stalls + entrance; devices live + kiosk-locked at anchors
-- [ ] **Daily capture-rate monitor** (members ÷ transactions) — the leading indicator that predicts everything
-- [ ] Welcome sends firing on enrolment
-- [ ] **Cashier-compliance spot-checks** per stall; coach laggards immediately
-- [ ] Device/connectivity uptime check (a dead till = lost capture)
+## 4. Launch checklist (Week 1 — adoption ramp)
+- [ ] Entry QR + pickup signage live; anchor order screens live
+- [ ] **Daily: app-adoption %** (app orders ÷ total orders) — the leading indicator that predicts the lift
+- [ ] **Stall fulfilment SLA** monitored (orders acknowledged + marked ready promptly — a missed app order kills trust)
+- [ ] Skip-the-queue incentive firing on first app order; welcome voucher on enrol
+- [ ] Device/connectivity uptime check
 
 ---
 
-## 5. Run checklist (Weeks 2–6/8 — activate levers)
-**Daily:** capture rate · enrolments · earn events · device uptime · per-stall compliance %
+## 5. Run checklist (Weeks 2–6/8)
+**Daily:** app-adoption % · ticket (app vs counter) · order-screen uptime · fulfilment SLA per stall
 **Weekly:**
-- [ ] RFM refresh → fire **win-back · cross-stall · off-peak** campaigns
-- [ ] **Coupon budget vs guardrail**; margin-per-redemption within cap
-- [ ] **Holdout integrity** — confirm control group received nothing
-- [ ] Intervene on low-compliance stalls (retrain / re-incentivise / escalate to operator)
+- [ ] RFM refresh → win-back · cross-stall · off-peak campaigns
+- [ ] Coupon budget vs guardrail; margin-per-redemption within cap
+- [ ] Holdout integrity (retention slice)
+- [ ] Intervene on slow-fulfilment stalls (retrain / escalate to operator)
 - [ ] Games live; monitor return-visit lift
 
 ---
 
 ## 6. Measurement & readout
-- **North-star:** court +10% = **capture ≥40% × member lift ≥25%**
-- **Causal proof:** treated vs **holdout** lift (defeats "it would've grown anyway" — KPMG-proof)
-- **Funnel:** capture rate → 2nd-visit → cross-stall rate → spend/member
-- **Baseline:** pilot-period vs prior-period / YoY (controls seasonality)
-- **Honesty:** 6–8 wks proves **mechanism + leading indicators + holdout lift** → **extrapolate to annualised +10%**; a fully-measured +10% on total revenue needs ~8–12 wks
-- **Deliverable:** readout deck → annualised $ projection on the $26M base → convert to full contract
+- **+10% engine = order-ahead.** Track: **app-adoption %** · **ticket lift (app vs counter)** · **balker/
+  peak recovery** (incremental transactions) · **frequency lift** · retention (treated vs **holdout**).
+- **Capture is ~100% on the app channel** (digital) → amounts exact, measurement clean.
+- **Baseline:** pilot-period vs prior-period / YoY per stall (controls seasonality).
+- **Honesty:** 6–8 wks proves **mechanism + adoption curve + per-channel lift** → **extrapolate to
+  annualised +10%**; a fully-measured +10% on total court revenue needs ~8–12 wks + decent adoption.
+- **Deliverable:** readout deck → annualised $ on the $26M base → green-light full rollout.
 
 ---
 
 ## 7. Risk register (failure modes → mitigation)
 | Risk | Mitigation |
 |---|---|
-| **Low capture** (cashiers don't scan) — #1 killer | operator mandate · cashier incentive · strong welcome voucher · daily spot-checks |
-| Connectivity drops | data SIM per anchor · *(optional)* offline queue on the till |
-| Device theft/loss | tether + kiosk MDM · cheap units · 2 spares |
-| Amount fraud (tail self-scan) | receipt-photo audit · per-claim caps · **anchors carry the clean number** |
-| Margin erosion (bought growth) | coupon-budget caps · RFM-targeted not blanket · margin-per-redemption |
-| Seasonality skews result | holdout control absorbs it |
-| Mock send channel | **real BSP/SMS is non-negotiable** — wire it Week 0 |
-| Stall non-cooperation | anchors (device) + tail (printed QR); defensible court number from anchors alone |
+| **Low app adoption** — the #1 killer now | skip-the-queue incentive · floor crew steering queuers at peak · target peak/regulars · strong welcome |
+| **Stall doesn't fulfil app orders** (breaks the promise) | operator mandate · fulfilment SLA monitor · audible order alert · escalate fast |
+| Real-payment issues / settlement per stall | test thoroughly Wk0; per-stall settlement account mapping; reconciliation |
+| Connectivity drops | data SIM per anchor; *(optional)* offline queue |
+| Margin erosion (bought growth) | coupon-budget caps · RFM-targeted · margin-per-redemption |
+| Seasonality skews result | per-stall baseline + YoY; holdout on the retention slice |
+| Device theft | tether + kiosk MDM · spares |
 
 ---
 
 ## 8. Go / no-go gates
-- **Week 1 gate:** capture rate trending to ≥40% on anchors → if not, fix compliance/incentive *before* spending on campaigns.
-- **Week 3 gate:** treated cohort showing frequency lift vs holdout → if flat, adjust offers/segments.
-- **Readout gate:** annualised projection ≥ the +10% KPI → green-light full $26M rollout.
+- **Week 1:** app-adoption trending up on anchors + stalls fulfilling reliably → if not, fix adoption/fulfilment *before* scaling.
+- **Week 3:** app orders show ticket lift + frequency vs baseline/holdout → if flat, adjust incentive/menus/segments.
+- **Readout:** annualised projection ≥ +10% KPI → green-light full court rollout (+ takeaway/delivery modes, more stalls).
 
-**Bottom line:** the hardware is ~$1.4k and trivial. The pilot is won on **capture rate (cashier compliance)
-+ a real send channel + margin discipline + a clean holdout.** Spend your attention there.
+**Bottom line:** hardware is ~$2k and trivial. The pilot is won on **app adoption + reliable stall
+fulfilment + real payment live + margin discipline.** Build **real payment first**; everything else is
+config or a lite slice of existing code. Loyalty rides along as the amplifier.
