@@ -6,6 +6,15 @@ cash-out).** Strategic role: **float + lower fees + lock-in (M5)** → compounds
 `docs/payments-scope.md`. **Phasing:** pilot ships **pass-through** payment (no wallet) to prove +10% without
 regulatory lead time; **wallet is the fast-follow lock-in amplifier.** Status: PLAN. Not legal advice._
 
+## Ownership (decided 2026-06-09): **FSG's wallet, CIP = white-label rails**
+- The wallet is **FSG-issued / FSG-held** (top-ups land in **FSG's** HitPay account → FSG holds the float +
+  owes the balance; FSG is the stored-value issuer). **CIP provides the ledger + app/UX + auto-reload tech.**
+- Spendable **only at FSG's foodcourt** → **single-purpose** → light MAS-PSA lane.
+- **Scoped to the tenant** (FSG's settlement boundary) — exactly like coins are scoped to the loyalty domain;
+  a diner may later hold separate per-tenant wallets.
+- A **CIP cross-merchant *universal* wallet** (spend anywhere on the network) = the **SG-Eats-Rewards coalition
+  vision (M1/M2) — DEFERRED** (multi-merchant stored value = heavy e-money licensing + cross-settlement).
+
 ## Model (the decisions, locked)
 - **Closed-loop, deposit-only** — spendable only at FSG's foodcourt; **no withdrawal/cash-out** → lightest
   stored-value treatment (not money transmission).
