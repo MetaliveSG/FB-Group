@@ -15,8 +15,9 @@ you will do. Include:
   comparing against `~/.claude/.../memory/build-state.md`'s last Round entry)
 - Which `docs/` files need updating (and what counts/lines)
 - Whether artifacts need regenerating (`openapi.json`, `pytest_results.txt`, `schema_tables.txt`)
-- What you'll write in `~/.claude/.../memory/build-state.md` (Round N entry)
-- Whether to attempt a git commit (depends on whether repo is initialised)
+- The new `docs/SESSION_NOTES.md` dated entry (human-facing journal) AND the dense
+  `~/.claude/.../memory/build-state.md` Round N entry (machine/catchup-facing)
+- The git commit on `main` (it IS a repo; direct-to-main flow — see memory `workflow-direct-to-main`)
 - Where the zip backup will be saved
 
 **Wait for user confirmation before proceeding.**
@@ -28,6 +29,35 @@ discussed/changed in this session's working memory. Write a concise summary:
 - What changed (features, fixes, refactors)
 - Key decisions made and why
 - Anything deferred to next session (KIV items)
+
+## Step 1b: Update docs/SESSION_NOTES.md (human-facing session journal — MMQRDepositBot practice)
+
+Maintain a running, human-readable session log at **`docs/SESSION_NOTES.md`** (committed to the repo) —
+DISTINCT from, and IN ADDITION TO, the dense AI/catchup-facing `build-state.md` Round entry in memory
+(Step 4). Add a new dated section at the **top** (newest-first, matching the build-state convention):
+
+```markdown
+---
+
+# Session — YYYY-MM-DD
+
+## What changed
+- Bullet list of changes, with file references
+
+## Decisions
+- Key decisions + the rationale (the "why")
+
+## Still open / next session
+- Unfinished work, KIVs, follow-ups
+```
+
+If `docs/SESSION_NOTES.md` doesn't exist, create it with header `# CIP (FB Group) — Session Notes`.
+Keep BOTH logs: `SESSION_NOTES.md` is the at-a-glance human journal in the repo; `build-state.md`
+Round N (Step 4) is the dense machine log for `/my-catchup`. Different readers — don't drop either.
+
+(Related MMQRDepositBot discipline worth honouring — **Proof of Work**: for heavy/risky tasks
+(prod-like deploys, P0/P1 fixes, migrations, security changes) save dated evidence under `artifacts/`
+as `YYYYMMDD_<desc>.{md,txt}` — before/after state, commands, counts. Trivial edits don't need it.)
 
 ## Step 2: Regenerate artifacts (MANDATORY when counts may have shifted)
 
@@ -75,7 +105,10 @@ Verify and update:
 - §8 endpoints count in OpenAPI mention
 - §9 heading: `Database schema (N tables)` + the domain narrative if a new domain was touched
 - §10 known limitations — flag any new caveat
-- §12 verifier line: `N backend + 37 frontend tests pass`
+- §12 verifier line: `N backend + N frontend tests pass` (use the live counts)
+- §4 demo credentials block — keep current (breadtalk/pepperlunch/toastbox; clean-boot `SEED_ON_START=0`);
+  also regenerate `artifacts/demo_credentials.md` if it drifted. New plan docs exist:
+  `architecture-3-modules.md`, `buildplan-land-first.md`; keep the `docs-index` memory status tags current.
 
 ### docs/architecture.md
 Verify and update:
@@ -142,8 +175,9 @@ Before declaring wrap, verify:
 For each new/changed feature, ask:
 - Happy path test? Negative test? Boundary test? Tenant isolation test?
 
-Run the full backend suite once more (`90 baseline + new tests`) and confirm green.
-Run frontend (`cd apps/web && npm test`, `37 baseline`).
+Run the full backend suite once more (baseline **287+**) and confirm green.
+Run frontend (`cd apps/web && npm test`, baseline **58+** vitest). Pull the live counts from the run —
+never hardcode a stale baseline.
 
 ## Step 4: Update memory (MANDATORY)
 
@@ -163,19 +197,16 @@ If the session uncovered a recurring class of bug, also add a "**Bug fixed**" or
 "**Gotcha**" entry — see the Round 14 entry on API-client-type-vs-backend-schema
 drift for an example.
 
-## Step 5: Git commit (CONDITIONAL)
+## Step 5: Git commit + push (on `main`)
 
-Run `git rev-parse --is-inside-work-tree 2>&1`:
-- **If a repo**: stage changed files (NOT `.env`, NOT `.venv`, NOT `node_modules`,
-  NOT `pgdata`), commit with message:
-  ```
-  session wrapup YYYY-MM-DD: <one-line summary>
-  ```
-  Do NOT push unless explicitly asked.
-- **If NOT a repo** (current state as of 2026-05-29): print a clear note that
-  no commit was made because no git repo exists. Mention that the user previously
-  declined / hadn't decided on `git init` — surface this as an open question if it
-  hasn't been answered.
+This IS a git repo (origin `github.com/MetaliveSG/FB-Group`); the workflow is **commit directly to
+`main`** — no PR/branch (see memory `workflow-direct-to-main`; branch protection removed). Stage changed
+files (NOT `.env`, `.venv`, `node_modules`, `pgdata`, `*.db`), commit:
+```
+session wrapup YYYY-MM-DD: <one-line summary>
+```
+End the message with the `Co-Authored-By: Claude …` trailer, then **`git push`**. CI runs on push
+(informational / non-blocking — glance at it; fix-forward if it goes red).
 
 ## Step 6: Zip backup (OPTIONAL — ask user)
 
@@ -209,7 +240,8 @@ Print a short summary:
 - Docs updated (which docs, what counts shifted)
 - Artifacts regenerated (openapi paths/ops, schema_tables count, pytest result)
 - Memory Round N appended
-- Git: committed (hash) / no-repo (note) / skipped
+- SESSION_NOTES.md dated entry added
+- Git: committed (hash) + pushed to main
 - Backup: created at <path> (size) / skipped
 - KIVs added this session
 - Open items for next session
@@ -220,7 +252,7 @@ Print a short summary:
   many sessions touch the same files, only the Round entry tells you what's new
 - Never inflate counts to "round numbers" — pull the live counts from the
   artifacts you just regenerated
-- Never push to remote unless explicitly asked
+- Commit + push on `main` is the wrapup norm (direct-to-main flow); don't open a PR
 - Never include `.env`, `.venv`, `node_modules`, `pgdata`, `*.db` in commits or backups
 - If a doc update would be a cosmetic-only edit (no count or content shift),
   skip it — don't churn for churning
