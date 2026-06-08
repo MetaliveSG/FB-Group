@@ -7,19 +7,30 @@ _Replaces the **mock** payment in CIP checkout with real money for the SG foodco
 ## PSP choice (this is the main decision)
 You don't build card/wallet rails yourself — you pick a Payment Service Provider. Two real options for SG:
 
-| | **Stripe** (recommended for speed/UX) | **HitPay** (SG-native, cheaper) |
+**Both support all four methods** (Apple Pay, Google Pay, PayNow, cards) — HitPay also adds GrabPay/ShopeePay/
+BNPL. The real difference is **inline vs hosted checkout**, not coverage:
+
+| | **Stripe** (recommended for inline UX) | **HitPay** (SG-native, cheaper) |
 |---|---|---|
-| Apple Pay + Google Pay (web) | **near-free** via **Express Checkout Element** (one drop-in renders both wallet buttons) | supported (hosted checkout / SDK) |
-| PayNow | supported (SGD; QR, async confirm via webhook) | **first-class / native**, SG SME default |
+| Apple Pay + Google Pay | **inline** via **Express Checkout Element** (wallet buttons render *in your own checkout*, no redirect) | **supported**, but on HitPay's **hosted checkout page** |
+| Render model | **embeddable elements** in your webapp | **hosted checkout** (redirect/embed HitPay's page) |
+| PayNow | supported (SGD; QR, async webhook) | **first-class / native**, SG SME default |
 | Cards (Visa/MC/Amex) + 3DS/SCA | yes, PSP-handled | yes |
-| Dev experience / docs | **best-in-class**, fastest integration | good, simpler/SG-focused |
+| **Local e-wallets** | GrabPay, AliPay, WeChat Pay — **NO ShopeePay / Atome** | **GrabPay, ShopeePay, Atome (BNPL), GrabPay/ShopeePay Later**, AliPay, WeChat Pay |
+| Dev experience / docs | **best-in-class** | good, simpler/SG-focused |
 | Fees (SG, indicative) | ~3.4% + S$0.50 cards; PayNow lower | **lower** cards; PayNow cheap |
 | Marketplace / per-stall settlement | **Stripe Connect** (mature) | HitPay has split options |
 
-**Recommendation:** **Stripe** for the pilot — Apple Pay + Google Pay on the web come **basically free** with
-the Express Checkout Element (huge effort saver vs wiring each wallet), best DX, and Connect is ready when you
-need per-stall settlement. **HitPay** if **fees / SG-locality** dominate (it's the cheaper, PayNow-native SME
-choice). *Decide before build — it changes the SDK, not the architecture.*
+**E-wallet coverage (decisive for a mass-market foodcourt):** SG foodcourt diners pay with **PayNow + GrabPay
++ ShopeePay** every day. **Stripe is missing ShopeePay (and Atome).** **HitPay covers all of them** + the BNPL
+"Later" options. So for *this* audience, **HitPay has the better e-wallet fit.**
+
+**Recommendation (revised):** for the **SG foodcourt pilot, lean HitPay** — broadest **local e-wallet coverage**
+(incl. **ShopeePay**, which Stripe lacks) + **lower fees** + SG-native, accepting its **hosted-checkout** UX.
+Choose **Stripe** instead only if **inline in-webapp wallet UX** or **mature per-stall settlement (Connect)**
+is the priority over coverage/cost. *(HitPay fully supports Apple Pay/Google Pay too — the real axes are
+**e-wallet coverage + fees (→ HitPay)** vs **inline UX + Connect (→ Stripe)**.)* Decide before build — it
+changes the SDK, not the architecture.
 
 ## How each method works (so expectations are right)
 - **Apple Pay (web):** needs **Apple Pay on the Web** — HTTPS on a real domain + a **domain-association file**
