@@ -1,14 +1,23 @@
 # Three modules on one core — architecture decision (decided 2026-06-07)
 
-**Status:** AGREED, plan-first (not yet built — refactor + 2 small builds). The decision: split the
-product into **three independently toggleable modules — Table QR · Customer Engagement · POS — sitting
-on one always-on shared core**, communicating through a single sale-event seam so each module enables,
-disables, and functions independently. Grounded in the observed SG market reality (rewards programs run
-*decoupled* from the POS — counter-QR sign-up of a different brand) and in the Foundation Contract
-guarantees #6 (one `record_sale()` core) and #7 (everything behind capability flags).
+**Status:** AGREED, plan-first. The decision: split the product into **three independently toggleable
+modules — Table QR · Customer Engagement · POS — sitting on one always-on shared core**, communicating
+through a single sale-event seam so each module enables, disables, and functions independently. Grounded in
+the observed SG market reality (rewards run *decoupled* from the POS — counter-QR sign-up of a different
+brand) and Foundation Contract #6 (one `record_sale()` core) + #7 (everything behind capability flags).
+
+**Sequencing (decided 2026-06-08): build Phase A — Module Toggles + Adaptive Nav — FIRST and standalone.**
+It does NOT depend on the `record_sale()` hub or the earn-weld break (those are Phases B/C). The headline
+**acceptance for Phase A: toggling a module ON/OFF actually changes the logged-in web user's dashboard menu
+(show/hide), the customer app's tabs, AND gates the module's endpoints** — see §7.7. Full order in §10.
 
 This supersedes the ad-hoc per-merchant feature flags (`qr_ordering_enabled`, `rewards_enabled`, …) by
 rationalising them into exactly **three top-level module flags** with defined graceful-degradation rules.
+
+**Progress (2026-06-08):** the web role palette is already **Manager / Viewer / Finance** (viewer =
+view-all-except-reports; finance = reports-only) and the merchant **Team page is consolidated onto the node
+model** (manager/viewer/finance, subtree listing) — so the role + assignment groundwork the adaptive nav
+relies on is in place; legacy `/admin/users` is deleted.
 
 ---
 
@@ -236,6 +245,21 @@ Table QR-only              :  [ Menu ] [ Orders ] [ Me ]    (no Rewards)
 Net: the nav reads as a **per-storefront capability map** — what you see = that node's resolved modules ×
 your role permissions × node tier.
 
+### 7.7 Acceptance — the menu reacts to the toggle (Phase-A definition-of-done)
+
+The toggle must be *observably* wired end-to-end, not merely stored:
+
+- **Web dashboard (logged-in user):** flipping a module ON/OFF for a node changes the **`MerchantSidebar`
+  menu** for any web user scoped there — the module's nav section appears when ON, hides when OFF (on the
+  next load / nav-flags refresh). Composed with RBAC × node-tier (§7.3): a user still only sees items their
+  role + scope permit *within* the enabled modules.
+- **Customer app:** the `CustomerTabBar` tabs show/hide per the storefront's resolved modules (§7.5).
+- **Endpoints agree with the menu:** an OFF module's endpoints return a clean disabled response (§5), never
+  a 500 — so there is no reachable-but-hidden surface and no orphan nav pointing at a dead endpoint.
+- **Round-trip:** OFF → section + endpoints gone; ON → both return. This is the test in §10 Phase A.
+
+The menu is a **live projection of the resolved module set**, not a static layout.
+
 ---
 
 ## 8. The single architectural change that delivers this
@@ -277,18 +301,31 @@ small builds, not a rebuild.
 
 ## 10. Build / refactor sequence (suite-green each step)
 
-1. **`record_sale()` as the event hub** — funnel QR/POS/manual through one core that records the
-   `Transaction` and emits a sale event. (Foundation #6; no behaviour change, pure convergence.)
-2. **`loyalty event` abstraction** — Engagement earns off the event, not the order. Existing spend-based
-   earn becomes "input kind #1." Suite stays green.
-3. **Three tree-cascaded module flags + adaptive nav + graceful degradation** — move flags onto
-   `org_nodes` with the §7 cascade/natural-scope resolution; drive the side menu off the resolved set
-   (§7.3–7.5); enforce §5 clean disabled-responses; hide nav for off modules.
-4. **Counter-QR join flow + check-in/stamp earn + member QR** — Engagement now runs standalone (the LAND).
-5. **KDS / order-display screen** — Table QR fulfils with POS off.
-6. *(later)* **Referral loop**; the keep-your-POS connectors (inbound API ingest / receipt / outbound
-   order-injection) as additive producers on the same seam — see [[ingestion-seam]],
-   [[gtm-pos-agnostic-capture]].
+**Re-sequenced 2026-06-08: Phase A goes FIRST and is standalone — it does not depend on B/C.** Rationale:
+the user wants the toggle + side-menu working and verifiable before the deeper seam refactor.
+
+**Phase A — Module Toggles + Adaptive Nav (FIRST · standalone).** "Make the toggle really work + side-menu refactor."
+- **A1. 3 module flags on `org_nodes`** (`table_qr`/`engagement`/`pos`, 3-state, cascade per §7.1–7.2) + migration.
+- **A2. `resolve_modules(node)` + enforcement** — gate each module's endpoints (§5 graceful degradation);
+  extends today's `qr_ordering`/`rewards` gating + adds POS. OFF → disabled-not-500.
+- **A3. Toggle UI** — per-node module switches in the Platform Console `NodeDetailDrawer`.
+- **A4. `nav-flags` returns the resolved module set; `MerchantSidebar` regroups by module + hides off
+  (§7.4/7.6); `CustomerTabBar` adapts (§7.5).** → satisfies the §7.7 acceptance (menu reacts to toggle).
+- **A5. Tests** — per-module gating + cascade resolution + nav show/hide round-trip.
+
+**Phase B — `record_sale()` event hub** — funnel QR/POS/manual through one core that records the
+`Transaction` and emits a sale event (Foundation #6; pure convergence, no behaviour change).
+
+**Phase C — `loyalty event` abstraction** — Engagement earns off the event, not the order; existing
+spend-based earn becomes input kind #1 (§8). Highest-risk step; guarded by the ledger-reconciliation tests.
+
+**Phase D — Counter-QR join (the LAND)** — enroll-without-ordering → the existing welcome voucher + the
+no-POS Redemption Centre (`docs/buildplan-land-first.md`). Can run on the current fused earn if done before C.
+
+**Phase E — KDS / order-display screen** — Table QR fulfils with POS off.
+
+**Phase F (later)** — referral loop; keep-your-POS connectors (inbound API ingest / receipt / outbound
+order-injection) as additive producers on the same seam — see [[ingestion-seam]], [[gtm-pos-agnostic-capture]].
 
 ## 11. Consequences
 
