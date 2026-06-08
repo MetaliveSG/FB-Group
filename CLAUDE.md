@@ -1,7 +1,13 @@
 # CLAUDE.md — working notes for this repo
 
-FB Group: a Singapore F&B CRM / QR-ordering / loyalty PoC. Project overview and the
-capture-loop diagram live in `README.md`. This file is operating guidance for Claude.
+## Product: Customer Intelligence Platform (CIP)
+**The system is the "Customer Intelligence Platform" (CIP)** — it helps F&B merchants **grow using
+customer intelligence**. Five integrated modules: **CRM · AI · Payment · Ordering · Rewards (loyalty)**.
+(Repo/codename "FB Group"; a Singapore F&B PoC → MVP.) The product positioning is *intelligence-led
+growth*, not just QR-ordering/loyalty — the data captured across ordering/payment/rewards feeds the CRM +
+AI that drive merchant growth. Maps to the 3-module engine (Table QR · **Intelligence** · POS) on one
+core — see `docs/architecture-3-modules.md`. Project overview + capture-loop diagram in `README.md`;
+this file is operating guidance for Claude.
 
 ## Stack
 - **Backend** `apps/api` — FastAPI + SQLAlchemy 2.0 (typed `Mapped`/`mapped_column`) + Alembic.
