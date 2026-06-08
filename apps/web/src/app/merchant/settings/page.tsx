@@ -103,23 +103,6 @@ export default function SettingsPage() {
     }
   }
 
-  async function saveReceipt(changes: Partial<MerchantSettings["receipt"]>) {
-    const tok = getStaffToken();
-    if (!tok || !settings) return;
-    setSaving(true); setError(null); setMsg(null);
-    try {
-      const updated = await updateSettings(base, tok, { receipt: { ...settings.receipt, ...changes } }, getOperatorMerchant()?.id);
-      setSettings(updated);
-      setMsg("Receipt header saved.");
-      setTimeout(() => setMsg(null), 2500);
-    } catch (err: unknown) {
-      const m = err instanceof Error ? err.message : "Failed to save settings";
-      setError(m.includes("403") ? "Settings require the merchant owner role." : m);
-    } finally {
-      setSaving(false);
-    }
-  }
-
   async function saveWelcomeVoucher(changes: Partial<NonNullable<MerchantSettings["welcome_voucher"]>>) {
     const tok = getStaffToken();
     if (!tok || !settings) return;
@@ -267,26 +250,6 @@ export default function SettingsPage() {
               <option value={settings.timezone}>{settings.timezone}</option>
             )}
           </select>
-        </div>
-      )}
-
-      {/* POS receipt company header */}
-      {settings?.receipt && (
-        <div className="card" style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 600 }}>Receipt header (POS)</div>
-          <div style={{ fontSize: 13, color: "var(--color-text-muted)", marginBottom: 10 }}>
-            Printed at the top of every POS receipt.
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, maxWidth: 560 }}>
-            {([["company_name", "Company name"], ["uen", "UEN"], ["address", "Address"], ["phone", "Phone"], ["footer", "Footer"]] as const).map(([k, label]) => (
-              <label key={k} style={{ fontSize: 13, gridColumn: (k === "address" || k === "footer") ? "1 / -1" : undefined }}>
-                {label}
-                <input defaultValue={settings.receipt[k]} disabled={saving}
-                       onBlur={(e) => { if (e.target.value !== settings.receipt[k]) saveReceipt({ [k]: e.target.value }); }}
-                       style={{ display: "block", width: "100%", marginTop: 2 }} />
-              </label>
-            ))}
-          </div>
         </div>
       )}
 

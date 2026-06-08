@@ -3,13 +3,13 @@
 // renders; what shows is decided here by: module enabled × RBAC permission × (pipeline flag).
 import {
   Users, BarChart3, Sparkles, ReceiptText, Filter, Megaphone, PieChart,
-  BookOpen, QrCode, UserCog, ListChecks, CreditCard, Settings as SettingsIcon,
+  BookOpen, QrCode, UserCog, ListChecks, CreditCard, Printer, Settings as SettingsIcon,
   type LucideIcon,
 } from "lucide-react";
 
 export type ActiveKey =
   | "crm" | "reports" | "insights" | "orders" | "pipeline" | "campaigns"
-  | "menu" | "tables" | "team" | "rfm" | "settings" | "tasks" | "pos_staff";
+  | "menu" | "tables" | "team" | "rfm" | "settings" | "tasks" | "pos_staff" | "pos_settings";
 
 // Which of the 3 modules an item belongs to (drives show/hide on the toggle). "reports" = analytics,
 // shown if ANY module is on; "core" = always (Admin).
@@ -38,6 +38,7 @@ export const NAV: NavItem[] = [
   { key: "menu", label: "Menu Editor", href: "/merchant/menu", icon: BookOpen, module: "table_qr", perm: "menu.manage", scope: "both" },
   { key: "tables", label: "Tables & QR", href: "/merchant/tables", icon: QrCode, module: "table_qr", perm: "outlet.manage", scope: "storefront" },
   { key: "pos_staff", label: "Staff & PINs", href: "/merchant/pos-staff", icon: CreditCard, module: "pos", perm: "user.manage", sensitive: true, scope: "both" },
+  { key: "pos_settings", label: "POS Settings", href: "/merchant/pos-settings", icon: Printer, module: "pos", perm: "merchant.manage", sensitive: true, scope: "both" },
   { key: "reports", label: "Reports", href: "/merchant/reports", icon: BarChart3, module: "reports", perm: "report.view", scope: "both" },
   { key: "team", label: "Team", href: "/merchant/team", icon: UserCog, module: "core", perm: "user.manage", sensitive: true, scope: "group" },
   { key: "settings", label: "Settings", href: "/merchant/settings", icon: SettingsIcon, module: "core", perm: "merchant.manage", sensitive: true, scope: "group" },
@@ -47,7 +48,7 @@ export const NAV: NavItem[] = [
 export const NAV_SECTIONS: { title: string; keys: ActiveKey[] }[] = [
   { title: "Intelligence", keys: ["crm", "rfm", "campaigns", "pipeline", "insights", "tasks"] },
   { title: "Ordering", keys: ["orders", "menu", "tables"] },
-  { title: "Point of Sale", keys: ["pos_staff"] },
+  { title: "Point of Sale", keys: ["pos_staff", "pos_settings"] },
   { title: "Reports", keys: ["reports"] },
   { title: "Admin", keys: ["team", "settings"] },
 ];

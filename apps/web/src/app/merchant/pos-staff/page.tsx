@@ -18,8 +18,8 @@ export default function PosStaffPage() {
   return (
     <MerchantSidebar active="pos_staff">
       <div className="page-header">
-        <h1 className="page-title">Point of Sale</h1>
-        <p className="page-subtitle">Staff &amp; PINs — POS operators (Supervisor / Cashier), PIN-only at the till</p>
+        <h1 className="page-title">Staff &amp; PINs</h1>
+        <p className="page-subtitle">POS operators (Supervisor / Cashier) — PIN-only at the till</p>
       </div>
       <PosStaffCard base={getApiBase()} merchantId={getOperatorMerchant()?.id} />
     </MerchantSidebar>
