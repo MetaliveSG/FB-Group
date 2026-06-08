@@ -215,9 +215,10 @@ def update_org_node(node_id: str, body: OrgNodeUpdateIn, scope=Depends(get_scope
 
 # --- Node logins — staff assigned at a member-tree node (manager/cashier/staff/finance) ----
 @router.get("/nodes/{node_id}/accounts", response_model=list[NodeAccountOut])
-def list_node_accounts(node_id: str, scope=Depends(get_scope), db: Session = Depends(get_db)):
+def list_node_accounts(node_id: str, subtree: bool = Query(False),
+                       scope=Depends(get_scope), db: Session = Depends(get_db)):
     org_tree.get_managed_node(db, scope, node_id)             # 404 absent / 403 outside downline
-    return users_admin.list_node_accounts(db, node_id=node_id)
+    return users_admin.list_node_accounts(db, node_id=node_id, subtree=subtree)
 
 
 @router.post("/nodes/{node_id}/accounts", response_model=NodeAccountOut, status_code=201)

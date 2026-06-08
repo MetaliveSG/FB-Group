@@ -106,19 +106,32 @@ def revoke_assignment(db: Session, *, merchant_id: str, assignment_id: str) -> N
 
 # --- Member-tree (NODE-scoped) logins — the caller's authority over `node_id` is enforced by the
 # route (org_tree.get_managed_node), so these just CRUD the assignment at the node. -------------
-def _account_row(db: Session, a: UserRoleAssignment, u: User) -> dict:
+def _account_row(db: Session, a: UserRoleAssignment, u: User, node_name: str | None = None) -> dict:
     role = db.get(Role, a.role_id)
     return {"assignment_id": a.id, "user_id": u.id, "email": u.email, "full_name": u.full_name,
-            "is_active": u.is_active, "role": role.name if role else "?", "pin_set": bool(u.pin_hash)}
+            "is_active": u.is_active, "role": role.name if role else "?", "pin_set": bool(u.pin_hash),
+            "node_id": a.scope_id, "node_name": node_name or a.scope_id}
 
 
-def list_node_accounts(db: Session, *, node_id: str) -> list[dict]:
+def list_node_accounts(db: Session, *, node_id: str, subtree: bool = False) -> list[dict]:
+    """Web logins assigned at a node. `subtree=True` → all NODE logins anywhere in the node's subtree
+    (the merchant Team view: one node-model surface for the whole scope)."""
+    from app.services import org_tree
+    if subtree:
+        node = db.get(OrgNode, node_id)
+        scope_nodes = org_tree.subtree(db, node, active_only=False) if node else []
+        names = {n.id: (n.name or n.id) for n in scope_nodes}
+        node_ids = list(names) or [node_id]
+    else:
+        n = db.get(OrgNode, node_id)
+        names = {node_id: (n.name if n and n.name else node_id)}
+        node_ids = [node_id]
     asgs = db.scalars(select(UserRoleAssignment).where(
         UserRoleAssignment.scope_type == ScopeType.NODE.value,
-        UserRoleAssignment.scope_id == node_id,
+        UserRoleAssignment.scope_id.in_(node_ids),
     )).all()
-    rows = [_account_row(db, a, u) for a in asgs if (u := db.get(User, a.user_id))]
-    rows.sort(key=lambda x: x["email"])
+    rows = [_account_row(db, a, u, names.get(a.scope_id)) for a in asgs if (u := db.get(User, a.user_id))]
+    rows.sort(key=lambda x: (x["node_name"], x["email"]))
     return rows
 
 
@@ -140,7 +153,8 @@ def create_node_account(db: Session, *, node_id: str, email: str, password: str,
                            scope_type=ScopeType.NODE.value, scope_id=node_id)
     db.add(a)
     db.flush()
-    return _account_row(db, a, user)
+    node = db.get(OrgNode, node_id)
+    return _account_row(db, a, user, node.name if node and node.name else None)
 
 
 # --- POS staff PIN -------------------------------------------------------

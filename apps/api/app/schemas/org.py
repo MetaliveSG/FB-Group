@@ -202,8 +202,10 @@ class NodeAccountOut(BaseModel):
     email: EmailStr
     full_name: str
     is_active: bool
-    role: str                       # manager | cashier | staff | finance
+    role: str                       # manager | viewer | finance (web node palette)
     pin_set: bool = False           # has a POS quick-login PIN
+    node_id: str | None = None      # the node this login is assigned at (for subtree listings)
+    node_name: str | None = None
 
 
 class NodeAccountCreateIn(BaseModel):

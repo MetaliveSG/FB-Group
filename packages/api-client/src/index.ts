@@ -1009,8 +1009,10 @@ export interface OrgNodeAccount {
   email: string;
   full_name: string;
   is_active: boolean;
-  role: string;            // manager | cashier | staff | finance
+  role: string;            // manager | viewer | finance (web node palette)
   pin_set?: boolean;       // has a POS quick-login PIN
+  node_id?: string;        // the node this login is assigned at (subtree listings)
+  node_name?: string;
 }
 
 // A venue↔stall tenancy edge. rent_type is the foodcourt/coffeeshop switch:
@@ -2597,8 +2599,8 @@ export function updateOrgNode(
 }
 
 // Node logins (staff at a member-tree node) — scope-aware, no merchant_id.
-export function listNodeAccounts(baseUrl: string, token: string, nodeId: string): Promise<OrgNodeAccount[]> {
-  return request(baseUrl, `/org/nodes/${nodeId}/accounts`, {}, token);
+export function listNodeAccounts(baseUrl: string, token: string, nodeId: string, subtree = false): Promise<OrgNodeAccount[]> {
+  return request(baseUrl, `/org/nodes/${nodeId}/accounts${subtree ? "?subtree=true" : ""}`, {}, token);
 }
 
 export function createNodeAccount(
@@ -2758,7 +2760,7 @@ export class FbGroupApiClient {
   orgTree() { return orgTree(this.baseUrl, this.token!); }
   createOrgNode(data: { parent_id: string; role: string; name: string; chain_stopped?: boolean; subscription_fee?: string }) { return createOrgNode(this.baseUrl, this.token!, data); }
   updateOrgNode(nodeId: string, data: { name?: string; is_active?: boolean; chain_stopped?: boolean; subscription_fee?: string }) { return updateOrgNode(this.baseUrl, this.token!, nodeId, data); }
-  listNodeAccounts(nodeId: string) { return listNodeAccounts(this.baseUrl, this.token!, nodeId); }
+  listNodeAccounts(nodeId: string, subtree = false) { return listNodeAccounts(this.baseUrl, this.token!, nodeId, subtree); }
   createNodeAccount(nodeId: string, data: { email: string; password: string; full_name?: string; role: string }) { return createNodeAccount(this.baseUrl, this.token!, nodeId, data); }
   revokeNodeAccount(nodeId: string, assignmentId: string) { return revokeNodeAccount(this.baseUrl, this.token!, nodeId, assignmentId); }
   listVenueLeases(venueId: string) { return listVenueLeases(this.baseUrl, this.token!, venueId); }
