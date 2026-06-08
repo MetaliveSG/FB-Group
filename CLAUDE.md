@@ -70,6 +70,16 @@ cd apps/web && npm run test                    # Vitest
 Baseline: **287 backend + 58 frontend tests pass** · 137 endpoints · 43 tables · 24 migrations.
 
 ## Member tree (org spine) — Chain / Storefront
+
+**GLOSSARY — grounded terms (don't invent; these are the engine truth, `app/models/org.py`):**
+- **OrgNode** — one node of the member-tree spine. **`role` is a DISPLAY LABEL only** (`CHAIN`|`STOREFRONT`); the engine keys off **flags**, never the label.
+- **Canonical node kinds = TWO:** **CHAIN** (structural; nests) · **STOREFRONT** (`sells=true`; the orderable leaf with a menu).
+- **The two boundary flags (the real truth):** **`is_settlement_boundary`** = collects money/GST/payout · **`is_loyalty_domain`** = the coin-ring boundary. Resolved per node to `settlement_account_id` / `loyalty_domain_id` (nearest declaring ancestor).
+- **Tenant = Merchant** = a node with **`is_settlement_boundary=true`** (today both flags sit together on the group). "Tenant-level / merchant-level" = **one shared thing for that whole boundary + all its storefronts** (coin balance, CRM list, jackpot pot/prizes).
+- **Storefront-level / per-node** = set per outlet via the **cascade** (the on/off module + game toggles; that store's menu/tables/till). Shared *data* is tenant-level; *participation* (does this store earn/order/ring/spin) is per-node.
+- **Enterprise** = **NOT a built node type** — a *concept + legacy label only* (`RoleName.GROUP_*` bundles, demo-seed; `architecture-org-tree.md §ENTERPRISE` = NOT built). If ever built it's just **a top CHAIN node carrying `is_loyalty_domain`** above several merchant (settlement-boundary) nodes → one ring across them, while **settlement stays per-merchant**. Cross-*different*-enterprise rings = coalition/clearing (M2, deferred).
+- **LEGACY role labels (demo-seed only, superseded):** `ENTERPRISE/MERCHANT/BRAND/OUTLET/STALL` + `GROUP_*/AREA_MANAGER/STALL_OPERATOR`. Current palettes: **web** = manager/viewer/finance · **POS** = supervisor/cashier (see roles bullet below).
+
 The org tree has **two node kinds** (engine keys off the `sells` flag; `role` is a display label):
 **Chain** (structural — nests Chain/Storefront children; optional *stop-chain* → storefronts-only)
 and **Storefront** (`sells=true` — the leaf that has the menu / takes orders). Boundary flags
