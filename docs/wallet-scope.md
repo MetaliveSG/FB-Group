@@ -18,8 +18,13 @@ regulatory lead time; **wallet is the fast-follow lock-in amplifier.** Status: P
 - **Light/single-purpose holds while the enterprise = ONE settlement boundary** (one legal merchant-of-record
   — true for the FSG pilot). If an enterprise later spans **multiple settlement boundaries**, wallet money
   across them = **multi-merchant stored value (heavier MAS) + cross-settlement (M2)** — flag then.
-- **Cross-enterprise** (FS Wallet at a Tasty outlet) = the **universal/coalition wallet → DEFERRED**
-  (different loyalty domains → cross-clearing; the SG-Eats-Rewards vision, M1/M2).
+- **Cross-enterprise = COINS ONLY.** **Money (wallet) NEVER crosses an enterprise** — each wallet is
+  closed-loop within its loyalty domain (→ keeps it single-purpose/light; a universal cross-enterprise *money*
+  wallet does **not** exist, by design). The **coins** layer *can* cross via the **coalition ring** (earn at
+  FSG, redeem at Tasty = SG-Eats-Rewards). Coins = **loyalty value, not stored money** → **no e-money
+  licensing** for cross-enterprise use; only cross-enterprise *coin redemption* needs **coalition
+  clearing/settlement (M2, deferred)** + the discipline *"never wire unverified earn to the coalition pool."*
+- **Layering:** *within enterprise* = wallet (money) + domain coins; *cross-enterprise* = coalition coins only.
 
 ## Model (the decisions, locked)
 - **Closed-loop, deposit-only** — spendable only at FSG's foodcourt; **no withdrawal/cash-out** → lightest
