@@ -16,6 +16,16 @@ export default function CustomerTabBar({ token, active }: { token: string; activ
   // i.e. their coin balance covers the cheapest of the wheel/jackpot spin costs.
   // (Previously it badged on login alone, so users with too few coins still saw it.)
   const [canPlay, setCanPlay] = useState(false);
+  // Adapt tabs to the storefront's resolved modules: Table QR off → no Menu; Engagement off → no Rewards.
+  const [showMenu, setShowMenu] = useState(true);
+  const [showRewards, setShowRewards] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    resolveQr(getApiBase(), token)
+      .then((qr) => { if (!cancelled) { setShowMenu(qr.ordering_enabled !== false); setShowRewards(qr.rewards_enabled !== false); } })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [token]);
   useEffect(() => {
     const tok = getCustomerToken();
     if (!tok) return;
@@ -52,8 +62,8 @@ export default function CustomerTabBar({ token, active }: { token: string; activ
     <BottomNav
       active={active}
       items={[
-        { key: "menu", label: "Menu", icon: Icons.Utensils, onClick: () => router.push(`/t/${t}`) },
-        { key: "rewards", label: "Rewards", icon: Icons.Gift, badge: showBadge, onClick: () => router.push(`/t/${t}/rewards`) },
+        ...(showMenu ? [{ key: "menu", label: "Menu", icon: Icons.Utensils, onClick: () => router.push(`/t/${t}`) }] : []),
+        ...(showRewards ? [{ key: "rewards", label: "Rewards", icon: Icons.Gift, badge: showBadge, onClick: () => router.push(`/t/${t}/rewards`) }] : []),
         { key: "orders", label: "Orders", icon: Icons.Receipt, onClick: () => router.push(`/t/${t}/orders`) },
         { key: "me", label: "Me", icon: Icons.User, onClick: () => router.push(`/t/${t}/me`) },
       ]}

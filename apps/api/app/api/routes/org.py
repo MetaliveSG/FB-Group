@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.auth.deps import get_scope, require, resolve_merchant
 from app.auth.permissions import P, WILDCARD
 from app.db.session import get_db
+from app.models.org import OrgNode
 from app.models.tenancy import Merchant
 from app.schemas.org import (
     BrandCreateIn,
@@ -375,12 +376,19 @@ def delete_venue_lease(node_id: str, lease_id: str,
 
 
 @router.get("/nav-flags", response_model=NavFlagsOut)
-def get_nav_flags(merchant_id: str | None = Query(None), scope=Depends(get_scope), db: Session = Depends(get_db)):
+def get_nav_flags(merchant_id: str | None = Query(None), node_id: str | None = Query(None),
+                  scope=Depends(get_scope), db: Session = Depends(get_db)):
     mid = _mid(scope, merchant_id, "order.view")
     flags = merchant_settings.get_nav_flags(db, merchant_id=mid)
+    # Resolve the 3 MODULE flags through the org-tree cascade at the current scope node (the entered
+    # node if given + in this tenant, else the tenant node whose id == merchant id). So the dashboard
+    # menu reflects per-node toggles, not just the merchant default. pipeline stays merchant-level.
+    node = db.get(OrgNode, node_id) if node_id else None
+    if node is None or node.settlement_account_id != mid:
+        node = db.get(OrgNode, mid)
+    flags = {**flags, **boundaries.resolve_modules(db, node=node, merchant_id=mid)}
     # Capability for client nav-gating: whether the caller may manage merchant-level config
-    # (true for the owner + an operator drilled into the merchant). Lets the UI hide
-    # owner-only nav without exposing the settings themselves.
+    # (true for the owner + an operator drilled into the merchant).
     return {**flags, "can_manage_merchant": scope.can("merchant.manage", mid)}
 
 

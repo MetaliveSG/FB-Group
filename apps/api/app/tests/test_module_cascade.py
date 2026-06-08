@@ -84,3 +84,15 @@ def test_node_modules_endpoint(client, db):
     # GET reflects the change; other modules untouched (still inherit→on)
     g = client.get("/api/v1/org/nodes/o_bt_ion/modules", headers=ceo).json()
     assert g["pos"] == "off" and g["rewards"] == "inherit" and g["resolved"]["rewards_enabled"] is True
+
+
+# --- A4: nav-flags resolves the module set per scope node (drives the dashboard menu show/hide) ---
+def test_nav_flags_resolves_per_node(client, db):
+    build_breadtalk(db)
+    ceo = H(staff_token(client, "ceo@breadtalk.sg"))
+    client.put("/api/v1/org/nodes/o_bt_ion/modules", json={"pos": "off", "qr_ordering": "off"}, headers=ceo)
+    nf = client.get("/api/v1/org/nav-flags?merchant_id=m1&node_id=o_bt_ion", headers=ceo).json()
+    assert nf["pos_enabled"] is False and nf["qr_ordering_enabled"] is False and nf["rewards_enabled"] is True
+    # The tenant scope (no node_id) is unaffected by the storefront override.
+    nf2 = client.get("/api/v1/org/nav-flags?merchant_id=m1", headers=ceo).json()
+    assert nf2["pos_enabled"] is True and nf2["qr_ordering_enabled"] is True

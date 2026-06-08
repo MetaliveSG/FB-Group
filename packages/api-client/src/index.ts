@@ -2011,9 +2011,14 @@ export function getSettings(
 export function getNavFlags(
   baseUrl: string,
   token: string,
-  merchantId?: string
+  merchantId?: string,
+  nodeId?: string
 ): Promise<NavFlags> {
-  return request(baseUrl, `/org/nav-flags${mq(merchantId)}`, {}, token);
+  const q = new URLSearchParams();
+  if (merchantId) q.set("merchant_id", merchantId);
+  if (nodeId) q.set("node_id", nodeId);
+  const qs = q.toString();
+  return request(baseUrl, `/org/nav-flags${qs ? `?${qs}` : ""}`, {}, token);
 }
 
 /** Capabilities: the caller's effective permissions in a merchant context (for nav-gating). */
@@ -2709,7 +2714,7 @@ export class FbGroupApiClient {
   // Round 10 — win-back launcher + merchant settings
   launchWinback(data: WinbackLaunch, merchantId?: string) { return launchWinback(this.baseUrl, this.token!, data, merchantId); }
   getSettings(merchantId?: string) { return getSettings(this.baseUrl, this.token!, merchantId); }
-  getNavFlags(merchantId?: string) { return getNavFlags(this.baseUrl, this.token!, merchantId); }
+  getNavFlags(merchantId?: string, nodeId?: string) { return getNavFlags(this.baseUrl, this.token!, merchantId, nodeId); }
   getMyPermissions(merchantId?: string) { return getMyPermissions(this.baseUrl, this.token!, merchantId); }
   updateSettings(data: Partial<MerchantSettings>, merchantId?: string) { return updateSettings(this.baseUrl, this.token!, data, merchantId); }
   getLoyaltyProgram(merchantId?: string) { return getLoyaltyProgram(this.baseUrl, this.token!, merchantId); }
