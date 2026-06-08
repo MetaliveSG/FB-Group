@@ -1,36 +1,38 @@
 # Demo Credentials
 
-Seed summary: {
-  "merchants": [
-    "Makan Express",
-    "Kopi Culture",
-    "Hawker Hub"
-  ],
-  "merchant1_id": "ba4f4eb5716c4f10a9672987ff4feeeb",
-  "merchant2_id": "8732e1c5b9ea419780d4bbdc9e555623",
-  "merchant3_id": "8b4ccfc8dcc84c51b6c7ba833e020363",
-  "outlet_orchard_id": "fce3cdfc0b7d48afab76e2df808c8fac",
-  "outlet_tampines_id": "557ea486916e4c3db1b0dc23d36f0a60",
-  "coalition": "SG Eats Rewards",
-  "customers": 40,
-  "opportunities": 8,
-  "activities": 8,
-  "sample_qr_token": "orchard-01"
-}
+_Regenerated 2026-06-08. The old seeded `makan.sg` demo was cleared; the live demo data is the two
+UI-onboarded groups rebuilt idempotently by `python -m app.seed_demo_merchants` (fixed node ids →
+stable QR tokens; re-run after a data wipe). All passwords `Password123!`._
 
-## Staff / back-office (password: Password123!)
-| Role           | Email                       | Scope                |
-|----------------|-----------------------------|----------------------|
-| Super Admin    | superadmin@platform.sg      | Platform (all)       |
-| Merchant Owner | owner@makan.sg              | Makan Express        |
-| Outlet Manager | manager.orchard@makan.sg    | Orchard outlet only  |
-| Staff/Cashier  | staff.orchard@makan.sg      | Orchard outlet only  |
-| Merchant Owner | owner@kopiculture.sg        | Kopi Culture         |
+## Operator (Platform Console)
+| Role        | Email                    | URL                                      |
+|-------------|--------------------------|------------------------------------------|
+| Super Admin | superadmin@platform.sg   | http://localhost:3001/platform/login     |
 
-## Customers (password: Customer123!; or OTP via mock)
-- Emails cust0@example.sg .. cust24@example.sg
-- Sample QR token (Orchard table 1): orchard-01
+## Merchant dashboard logins (web, email + password — role = node-scoped **Manager**, owner-equiv)
+| Email                  | Scope (member-tree node)                                            |
+|------------------------|--------------------------------------------------------------------|
+| owner@breadtalk.sg     | **Breadtalk Group** (Bakery, Toast Box, Toast Box @ Orchard/Taka)  |
+| owner@pepperlunch.sg   | **Pepper Lunch Group** (all Pepper Lunch outlets + sub-group/YIS)  |
+| manager@toastbox.sg    | **Toast Box @ Orchard** only (single-storefront scope)             |
 
-## Bedok Food Hall (foodcourt)
-- Merchant owner: `owner@bedokfoodhall.sg` / `Password123!` (operator can also drill in via /operator)
-- Customer QR: `http://localhost:3001/t/foodhall-01` (foodcourt → 3 stalls)
+Login at http://localhost:3001/merchant/login
+
+### Web role palette (segregated from POS)
+- **Manager** — full node powers (owner-equivalent at its scope)
+- **Viewer** — view everything **except** reports
+- **Finance** — reports only
+(POS operators — **Supervisor / Cashier** — are PIN-only at `/pos`, never web logins; see below.)
+
+## POS operators (PIN-only, at `/pos` — per storefront)
+- Each storefront auto-provisions **1 Supervisor + 2 Cashiers** (`User.kind="pos"`, `@pos.local`).
+- PINs are encrypted at rest; the owner reveals/sets them in **Settings → Point of Sale → Staff & PINs**
+  (or Platform Console node drawer). Not reproducible here — reveal per storefront.
+
+## Customers
+- Scan a live storefront QR (each storefront's *Tables & QR* page has its tokens).
+- OTP login phone `+6580000000` — in `DEBUG` the API returns `debug_code`.
+
+## Modules (per-node toggles)
+Each node can toggle **Table QR · Intelligence · POS** (inherit/on/off, cascades down). The dashboard
+sidebar and the customer tab bar show/hide accordingly. POS defaults ON.

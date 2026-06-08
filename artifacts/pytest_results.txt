@@ -1,1 +1,2 @@
-287 passed (full backend suite, 2026-06-07)
+291 passed (pytest, 49 files) — 2026-06-08
+Frontend: 63 passed (Vitest, 7 files)

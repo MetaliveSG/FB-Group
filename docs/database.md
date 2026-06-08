@@ -1,13 +1,13 @@
 # Database Schema
 
-SQLAlchemy 2.0 models (`apps/api/app/models/`), Alembic-managed (**24 migrations**, single
+SQLAlchemy 2.0 models (`apps/api/app/models/`), Alembic-managed (**26 migrations**, single
 head). **43 application tables** (+ `alembic_version`). String UUID PKs (`uuid4().hex`),
 naive-UTC timestamps, money as `Numeric(12,2)`. Full DDL: run `alembic upgrade head` or
 see `artifacts/schema_tables.txt`.
 
 ## Tables by domain
 **Tenancy** — `merchants` (+`settings` JSON feature-toggles incl. module flags rewards/qr_ordering/pos), `brands`, `outlets`, `tables`, `qr_codes`
-**Org spine** — `org_nodes` (the member-tree-map: one node per Merchant/Brand/Outlet/Menu; adjacency `parent_id` + materialised `path` + `sells`/boundary flags + `loyalty_domain_id`/`settlement_account_id`; typed tables are its profiles). Standardised to two display kinds — **CHAIN** (structural) + **STOREFRONT** (`sells`); cols `name`, `chain_stopped`, `subscription_fee` Numeric(12,2) (migrations `q4r5orgnodename`, `r5s6chainfee`)
+**Org spine** — `org_nodes` (the member-tree-map: one node per Merchant/Brand/Outlet/Menu; adjacency `parent_id` + materialised `path` + `sells`/boundary flags + `loyalty_domain_id`/`settlement_account_id`; typed tables are its profiles). Standardised to two display kinds — **CHAIN** (structural) + **STOREFRONT** (`sells`); cols `name`, `chain_stopped`, `subscription_fee` Numeric(12,2) (migrations `q4r5orgnodename`, `r5s6chainfee`); per-node 3-state **module flags** `mod_rewards`/`mod_qr_ordering`/`mod_pos` (nullable Boolean = inherit; migration `b6c7modflags`)
 **Identity / RBAC** — `users` (+`kind` web/pos, +`pin` encrypted-at-rest POS PIN), `roles`, `permissions`, `role_permissions`, `user_roles`, `customers`, `customer_auth_identities`, `customer_consents` (PDPA terms/marketing, versioned)
 **Catalog** — `menus` (a Menu = a stall; foodcourt cols `stall_name`/`cuisine`/`logo`/`sort_order`/`is_open`), `menu_categories`, `menu_items` (incl. `image_url` for real food photos), `menu_modifiers`
 **Orders** — `orders` (+`source`/`external_id` for POS integration, `OrderChannel.pos`), `order_items`
@@ -20,11 +20,12 @@ see `artifacts/schema_tables.txt`.
 **Audit** — `audit_logs`
 
 ## Migrations (chain)
-**24 migrations, single linear head (`z4a5pinenc`).** The chain self-documents in
+**26 migrations, single linear head (`b6c7modflags`).** The chain self-documents in
 `apps/api/alembic/versions/` (`alembic history`) — not hand-maintained here (it drifts every migration).
 Recent additions (post org-spine): `p2q3settingsnn` (settings NOT NULL) → `q4r5orgnodename` →
 `r5s6chainfee` → `s6t7venuelease` (leases) → `t7u8consent` (PDPA) → `u8v9voucher` → `v0w1campaignid` →
-`w1x2staffpin` → `x2y3userkind` → `y3z4pospin` → `z4a5pinenc` (Fernet PIN widen).
+`w1x2staffpin` → `x2y3userkind` → `y3z4pospin` → `z4a5pinenc` (Fernet PIN widen) →
+`a5b6scopeidx` (reward-redemption scope index) → `b6c7modflags` (per-node module flags).
 (Target Postgres; SQLite dev/test uses `Base.metadata.create_all`.)
 
 ## Key relationships

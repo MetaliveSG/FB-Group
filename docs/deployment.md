@@ -18,7 +18,7 @@ alembic upgrade head            # apply
 alembic downgrade -1            # roll back one revision
 alembic revision --autogenerate -m "msg"   # new migration after model changes
 ```
-Migration chain: **24 revisions**, single head (`z4a5pinenc`), verified to upgrade from empty (43 tables);
+Migration chain: **26 revisions**, single head (`b6c7modflags`), verified to upgrade from empty (43 tables);
 migrations are **roll-forward** (CI checks upgrade-from-empty + model-drift, no downgrade-to-base). The
 chain self-documents in `apps/api/alembic/versions/` (`alembic history`) — not hand-listed here (it drifts).
 On container start `alembic upgrade head` runs; seeding is **off by default** (`SEED_ON_START=0` → clean DB,

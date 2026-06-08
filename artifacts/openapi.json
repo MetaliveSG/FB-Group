@@ -7333,215 +7333,6 @@
         }
       }
     },
-    "/api/v1/admin/users": {
-      "get": {
-        "tags": [
-          "admin"
-        ],
-        "summary": "List Users",
-        "operationId": "list_users_api_v1_admin_users_get",
-        "parameters": [
-          {
-            "name": "merchant_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Merchant Id"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AdminUserOut"
-                  },
-                  "title": "Response List Users Api V1 Admin Users Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "admin"
-        ],
-        "summary": "Invite User",
-        "operationId": "invite_user_api_v1_admin_users_post",
-        "parameters": [
-          {
-            "name": "merchant_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Merchant Id"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/InviteUserIn"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InviteUserOut"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/users/assignments/{assignment_id}": {
-      "delete": {
-        "tags": [
-          "admin"
-        ],
-        "summary": "Revoke Assignment",
-        "operationId": "revoke_assignment_api_v1_admin_users_assignments__assignment_id__delete",
-        "parameters": [
-          {
-            "name": "assignment_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Assignment Id"
-            }
-          },
-          {
-            "name": "merchant_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Merchant Id"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/org/permissions": {
       "get": {
         "tags": [
@@ -7787,6 +7578,132 @@
         }
       }
     },
+    "/api/v1/org/nodes/{node_id}/modules": {
+      "get": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Read Node Modules",
+        "description": "The node's own per-module tri-state (inherit/on/off) + the resolved effective values.",
+        "operationId": "read_node_modules_api_v1_org_nodes__node_id__modules_get",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeModulesOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Update Node Modules",
+        "description": "Toggle the 3 modules at a node (inherit/on/off); cascades to the subtree (resolve_modules).",
+        "operationId": "update_node_modules_api_v1_org_nodes__node_id__modules_put",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NodeModulesIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeModulesOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/org/nodes/{node_id}/accounts": {
       "get": {
         "tags": [
@@ -7802,6 +7719,16 @@
             "schema": {
               "type": "string",
               "title": "Node Id"
+            }
+          },
+          {
+            "name": "subtree",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Subtree"
             }
           },
           {
@@ -8605,6 +8532,22 @@
                 }
               ],
               "title": "Merchant Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Node Id"
             }
           },
           {
@@ -10005,43 +9948,6 @@
         ],
         "title": "ActivityOut"
       },
-      "AdminUserOut": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "title": "Email"
-          },
-          "full_name": {
-            "type": "string",
-            "title": "Full Name"
-          },
-          "is_active": {
-            "type": "boolean",
-            "title": "Is Active"
-          },
-          "roles": {
-            "items": {
-              "$ref": "#/components/schemas/RoleAssignmentOut"
-            },
-            "type": "array",
-            "title": "Roles",
-            "default": []
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "email",
-          "full_name",
-          "is_active"
-        ],
-        "title": "AdminUserOut"
-      },
       "AudienceResult": {
         "properties": {
           "audience_size": {
@@ -11408,80 +11314,6 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
-      "InviteUserIn": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email",
-            "title": "Email"
-          },
-          "password": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 8,
-            "title": "Password"
-          },
-          "full_name": {
-            "type": "string",
-            "maxLength": 160,
-            "title": "Full Name",
-            "default": ""
-          },
-          "role": {
-            "type": "string",
-            "pattern": "^(merchant_owner|brand_manager|outlet_manager|staff)$",
-            "title": "Role"
-          },
-          "scope_type": {
-            "type": "string",
-            "pattern": "^(merchant|brand|outlet)$",
-            "title": "Scope Type"
-          },
-          "scope_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Scope Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "email",
-          "password",
-          "role",
-          "scope_type"
-        ],
-        "title": "InviteUserIn"
-      },
-      "InviteUserOut": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "title": "Email"
-          },
-          "full_name": {
-            "type": "string",
-            "title": "Full Name"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "email",
-          "full_name"
-        ],
-        "title": "InviteUserOut"
-      },
       "ItemCreateIn": {
         "properties": {
           "category_id": {
@@ -12712,7 +12544,7 @@
           "pos_enabled": {
             "type": "boolean",
             "title": "Pos Enabled",
-            "default": false
+            "default": true
           },
           "can_manage_merchant": {
             "type": "boolean",
@@ -12748,7 +12580,7 @@
           },
           "role": {
             "type": "string",
-            "pattern": "^(manager|staff|finance)$",
+            "pattern": "^(manager|viewer|finance)$",
             "title": "Role"
           }
         },
@@ -12791,6 +12623,28 @@
             "type": "boolean",
             "title": "Pin Set",
             "default": false
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "node_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Name"
           }
         },
         "type": "object",
@@ -12835,6 +12689,104 @@
         ],
         "title": "NodeBrowseOut",
         "description": "A node-scoped customer browse (the 'brand / group app' view): point at any member-tree node\nand see the orderable leaf stalls in its scope (its own sellable leaves + any stalls leased into\na venue within it). `is_group` = it's a chain (many stalls) vs a single storefront."
+      },
+      "NodeModulesIn": {
+        "properties": {
+          "rewards": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "inherit",
+                  "on",
+                  "off"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rewards"
+          },
+          "qr_ordering": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "inherit",
+                  "on",
+                  "off"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qr Ordering"
+          },
+          "pos": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "inherit",
+                  "on",
+                  "off"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pos"
+          }
+        },
+        "type": "object",
+        "title": "NodeModulesIn",
+        "description": "Set a node's per-module tri-state. Omitted fields are left unchanged."
+      },
+      "NodeModulesOut": {
+        "properties": {
+          "rewards": {
+            "type": "string",
+            "enum": [
+              "inherit",
+              "on",
+              "off"
+            ],
+            "title": "Rewards"
+          },
+          "qr_ordering": {
+            "type": "string",
+            "enum": [
+              "inherit",
+              "on",
+              "off"
+            ],
+            "title": "Qr Ordering"
+          },
+          "pos": {
+            "type": "string",
+            "enum": [
+              "inherit",
+              "on",
+              "off"
+            ],
+            "title": "Pos"
+          },
+          "resolved": {
+            "type": "object",
+            "title": "Resolved"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rewards",
+          "qr_ordering",
+          "pos",
+          "resolved"
+        ],
+        "title": "NodeModulesOut"
       },
       "NoteCreate": {
         "properties": {
@@ -15067,40 +15019,6 @@
           "created_at"
         ],
         "title": "RewardTxnOut"
-      },
-      "RoleAssignmentOut": {
-        "properties": {
-          "assignment_id": {
-            "type": "string",
-            "title": "Assignment Id"
-          },
-          "role": {
-            "type": "string",
-            "title": "Role"
-          },
-          "scope_type": {
-            "type": "string",
-            "title": "Scope Type"
-          },
-          "scope_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Scope Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "assignment_id",
-          "role",
-          "scope_type"
-        ],
-        "title": "RoleAssignmentOut"
       },
       "SendResultOut": {
         "properties": {

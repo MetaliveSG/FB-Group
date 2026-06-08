@@ -6,10 +6,10 @@ cd apps/api && .venv/bin/python -m pytest -v      # full backend suite
 ```
 Tests use an isolated in-memory SQLite DB (StaticPool) shared between the test
 session and the FastAPI `TestClient`, with RBAC seeded and rate-limiter/OTP reset per
-test (`app/tests/conftest.py`). Latest run: **287 passed** (see
-`artifacts/pytest_results.txt`). Frontend: **58 Vitest tests**.
+test (`app/tests/conftest.py`). Latest run: **291 passed** (see
+`artifacts/pytest_results.txt`). Frontend: **63 Vitest tests**.
 
-## Coverage by file (287 backend tests across 48 files)
+## Coverage by file (291 backend tests across 49 files)
 | File | Module(s) | What it proves |
 |---|---|---|
 | `test_health.py` | 12 | health endpoint + secure headers |
@@ -28,7 +28,8 @@ test (`app/tests/conftest.py`). Latest run: **287 passed** (see
 | `test_seed_kampong.py` | seed | **Kampong Eats** merchant 4 seeded (2 outlets, 11 SG-local items), owner login, QR resolves menu, **idempotent re-run** |
 | `test_jackpot.py` | 2 | **888 Jackpot**: insufficient-coins blocked, spin cost deducted every play, grid 3x3 invariants, **middle-row payline matches outcome** (3-of-a-kind on win, not-all-same on loss), win mints `JACKPOT-*` voucher (+ resets the progressive grand-jackpot pot) |
 | `test_my_account.py` | 7 | customer **My Account**: order history shape + **customer isolation** (B can't see A's orders), vouchers list, profile get/update, **mobile required + unique** |
-| `test_admin_analytics.py` | 9, 10 | menu CRUD + isolation, **user invite/list/revoke** (+perm+scope), **RFM scoring** |
+| `test_admin_analytics.py` | 9, 10 | menu CRUD + isolation, **RFM scoring** |
+| `test_module_cascade.py` | modules | **per-node module cascade** (Phase A): `resolve_modules` nearest-explicit-ancestor wins, inherit falls through to `Merchant.settings`, `GET/PUT /org/nodes/{id}/modules` round-trip, POS default-on |
 | `test_org_admin.py` | 1, 10 | brand→outlet(auto-menu)→table→**QR resolves**, permission, tenant isolation, unique table label |
 | `test_foodcourt.py` | 1, 10 | **foodcourt** stall directory: single-stall inline menu, multi-stall directory + null inline menu, stall-menu fetch + **cross-outlet isolation** (404 menu_not_found) |
 | `test_loyalty_ledger.py` | 6 | **posting ledger** (Phase 0a): domain stamp on every posting, **balance == SUM(ledger)** reconciliation, idempotent accrual per (account,order), keyless-not-deduped, per-domain idempotency-key scoping |
@@ -75,7 +76,7 @@ test (`app/tests/conftest.py`). Latest run: **287 passed** (see
 11. Permission boundaries → `test_e2e`, `test_permissions`, `test_platform`
 
 ## Frontend tests
-`apps/web` — **58 Vitest tests** (format helpers, auth-resilience, stage/role/campaign-type contracts, wheel math, menu filtering). Run `npm test` in `apps/web`.
+`apps/web` — **63 Vitest tests** (format helpers, auth-resilience, stage/role/campaign-type contracts, wheel math, menu filtering, **module-gated nav** `merchantNav.test.ts`). Run `npm test` in `apps/web`.
 
 ## Regression checklist (run before any release)
 - [ ] `pytest` green

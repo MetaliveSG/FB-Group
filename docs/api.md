@@ -162,12 +162,11 @@ Configurable modes: **sales** (prospecting→qualified→proposal→negotiation�
 | POST/PATCH/DELETE | `/api/v1/menu-admin/items[/{id}]` | item CRUD + `is_available` toggle |
 | POST/DELETE | `/api/v1/menu-admin/modifiers[/{id}]` | modifier add/remove |
 
-## User management (Module 10) — staff `user.manage` (owner)
-| Method | Path | Notes |
-|---|---|---|
-| GET | `/api/v1/admin/users` | users + scoped role assignments |
-| POST | `/api/v1/admin/users` | invite `{email, password, full_name, role, scope_type, scope_id?}` (409 if email taken) |
-| DELETE | `/api/v1/admin/users/assignments/{id}` | revoke a role assignment |
+## User management — web logins are node-scoped
+The legacy flat `/admin/users` path was **removed** (2026-06-08). Web logins (Manager / Viewer /
+Finance) are now created + listed + revoked per member-tree node via
+`GET/POST/DELETE /org/nodes/{id}/accounts` (see the Org structure section below). POS operators
+(Supervisor / Cashier, PIN-only) live under `/org/nodes/{id}/pos-staff`.
 
 ## Org structure (Module 1 admin) — brands / outlets / tables+QR
 | Method | Path | Notes |
@@ -176,13 +175,14 @@ Configurable modes: **sales** (prospecting→qualified→proposal→negotiation�
 | GET/POST/PATCH | `/api/v1/org/outlets[/{id}]` | outlet CRUD (`outlet.manage`); create auto-provisions an empty menu |
 | GET/POST | `/api/v1/org/outlets/{id}/tables` | list/add tables (auto-generates a stable QR token) |
 | DELETE | `/api/v1/org/tables/{id}` | remove a table + its QR |
-| GET | `/api/v1/org/nav-flags` | nav-only booleans `{pipeline_enabled, rewards_enabled, qr_ordering_enabled, pos_enabled, can_manage_merchant}` for sidebar/nav gating — readable by **any staff member** (`order.view` floor); carries **no** spin costs / earn rates. `can_manage_merchant` = caller holds `merchant.manage` (owner/operator) → client hides owner-only nav (Settings/Team) when false |
+| GET | `/api/v1/org/nav-flags` | nav-only booleans `{pipeline_enabled, rewards_enabled, qr_ordering_enabled, pos_enabled, can_manage_merchant}` for sidebar/nav gating — readable by **any staff member** (`order.view` floor); carries **no** spin costs / earn rates. Optional `?node_id=` resolves the module flags via the node cascade (so the sidebar reacts to per-node toggles); omitted → tenant `Merchant.settings`. `can_manage_merchant` = caller holds `merchant.manage` (owner/operator) → client hides owner-only nav (Settings/Team) when false |
 | GET | `/api/v1/org/permissions` | **capabilities** `{permissions:[…], is_super_admin}` — the caller's effective permission codes in a merchant context; drives the declarative client nav manifest. Wildcard expands to all codes; super-admin short-circuits. Server still enforces per-route (this only prunes the menu) |
 | GET/PATCH | `/api/v1/org/settings` | full merchant settings: `{pipeline_enabled, wheel_spin_cost, jackpot_spin_cost, rewards_enabled, qr_ordering_enabled, pos_enabled}` — **owner-only** (GET **and** PATCH need `merchant.manage`; downline managers 403 — hard upline isolation, use `/org/nav-flags` for nav) |
 | GET/PUT | `/api/v1/org/loyalty` | loyalty program (standing earn rules): `{points_per_dollar, welcome_bonus, birthday_bonus}` — 0 disables a rule; **owner-only** (GET **and** PUT need `merchant.manage`, audited) |
 | GET | `/api/v1/org/tree` | the caller's visible slice of the **member tree** (Chain/Storefront nodes, flat — client assembles via `parent_id`); each node has `can_manage`. Scope-aware (no `merchant_id`): a node-assigned user sees its subtree, a platform operator sees the whole forest. Drives the **Platform Console** directory drill-down |
 | POST/PATCH | `/api/v1/org/nodes[/{id}]` | create a child node (`{parent_id, role:CHAIN\|STOREFRONT, name, chain_stopped?, subscription_fee?}`) / rename·(de)activate·set fee·stop-chain. Downline-gated (`org.manage`); a child only attaches under a Chain; a chain-stopped node takes Storefronts only; suspending a tenant mirrors `Merchant.is_active` |
-| GET/POST/DELETE | `/api/v1/org/nodes/{id}/accounts[/{assignment_id}]` | **web logins** (dashboard, email+password) — list / create (`{email, password, full_name?, role:manager\|staff\|finance}`) / revoke staff at the node; cascade-gated. "cashier" excluded (POS-only) |
+| GET/PUT | `/api/v1/org/nodes/{id}/modules` | per-node **module toggles** — 3-state `{rewards, qr_ordering, pos}` each `inherit\|on\|off`; GET returns the explicit setting **and** the resolved effective state (via `boundaries.resolve_modules`: nearest explicit ancestor → `Merchant.settings` fallback). Downline-gated |
+| GET/POST/DELETE | `/api/v1/org/nodes/{id}/accounts[/{assignment_id}]` | **web logins** (dashboard, email+password) — list (web-palette roles only) / create (`{email, password, full_name?, role:manager\|viewer\|finance}`) / revoke staff at the node; cascade-gated. POS operators (cashier/supervisor) excluded from the listing |
 | GET/POST/DELETE | `/api/v1/org/nodes/{id}/pos-staff[/{user_id}]` | **POS operators** (PIN-only, `kind="pos"`) — list (incl. the readable `pin`) / create (`{full_name, role:supervisor\|cashier, pin?}` → returns the PIN) / remove. PINs encrypted at rest, unique per storefront |
 | POST | `/api/v1/org/nodes/{id}/pos-staff/{user_id}/reset-pin` | set a chosen PIN (`{pin}`) or auto-generate; returns it. Cascade-gated |
 | GET/POST/DELETE | `/api/v1/promotions[/{id}]` | point-multiplier promos (time-bound `CAMPAIGN_MULTIPLIER`): `{label, multiplier, starts_on, ends_on, is_active}` — engine applies an active in-window multiplier to every earn (`campaign.manage`, audited) |
