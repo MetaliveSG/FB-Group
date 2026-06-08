@@ -81,6 +81,11 @@ it earns via the signed receipt-QR). So this build is for the **order-ahead lane
 - **Fees vs margin:** ~2–3.4% per txn — factor into the +10% economics + coupon guardrails (the Luckin CFO discipline).
 - **Settlement-per-stall deferred** — pilot uses one account; don't accidentally scope Connect now.
 
-## Decisions needed before build
-1. **PSP: Stripe (DX + free Apple/Google Pay) or HitPay (SG-native, cheaper)?**
-2. **Merchant-of-record for the pilot: FSG (one account, simplest) or per-stall (defer)?**
+## Decisions
+1. **PSP — ✅ LOCKED: HitPay** (2026-06-09). Reason: best **e-wallet coverage** (PayNow, GrabPay,
+   **ShopeePay**, Atome) + **lower fees** + SG-native + first-class PayNow — the right fit for a mass-market
+   foodcourt. Trade accepted: **hosted-checkout** UX (vs Stripe inline). *Stripe* kept as the fallback only if
+   inline in-webapp wallet UX or **Connect** per-stall settlement later becomes the priority. **KPay parked**
+   (terminal/in-person acquirer; no confirmed online web API; the counter lane is already uPOS).
+2. **Merchant-of-record for the pilot — OPEN:** **FSG single account** (recommended — simplest, no per-stall
+   KYC, also de-risks the wallet's single-purpose status) vs per-stall (defer = M2 split settlement).
