@@ -13,16 +13,20 @@ Run:  cd apps/api && .venv/bin/python -m app.seed_demo_merchants
 """
 from __future__ import annotations
 
+from decimal import Decimal
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth.permissions import seed_rbac
 from app.core.security import hash_password
+from app.models.engagement import JackpotPrize, WheelSegment
 from app.models.enums import RoleName, ScopeType
 from app.models.identity import User, UserRoleAssignment
 from app.models.org import PATH_SEP, OrgNode
 from app.models.tenancy import Merchant
 from app.services import storefronts
+from app.services.jackpot import ensure_grand_anchor
 
 PW = "Password123!"
 CHAIN, STOREFRONT = "CHAIN", "STOREFRONT"
@@ -65,6 +69,41 @@ ACCOUNTS = [
     ("owner@pepperlunch.sg", "Pepper Lunch Owner", PEPPER_GROUP),
     ("manager@toastbox.sg", "Toast Box Orchard Manager", TOASTBOX_ORCHARD),
 ]
+
+
+# Spin-the-wheel segments (label, prize_kind, prize_value, weight, color) + 3x3 jackpot reel symbols
+# (item_name, price, emoji, weight) — generic F&B set so both demo groups have working games out of the box.
+_DEMO_WHEEL = [
+    ("10 coins", "points", 10, 3, "#f87171"),
+    ("50 coins", "points", 50, 2, "#fbbf24"),
+    ("Free item", "voucher", 0, 1, "#34d399"),
+    ("Try again", "nothing", 0, 3, "#a3a3a3"),
+    ("100 coins", "points", 100, 1, "#60a5fa"),
+    ("20 coins", "points", 20, 3, "#c084fc"),
+]
+_DEMO_JACKPOT = [
+    ("Coffee", 4.50, "☕", 3), ("Toast Set", 5.50, "🍞", 2), ("Rice Bowl", 6.50, "🍛", 2),
+    ("Iced Tea", 2.50, "🥤", 4), ("Cake", 4.00, "🍰", 3), ("Free Meal", 12.00, "🎁", 1),
+    ("Fries", 3.50, "🍟", 3), ("Egg", 1.50, "🥚", 5), ("Croissant", 3.20, "🥐", 5),
+]
+
+
+def _ensure_demo_games(db: Session, merchant_id: str) -> None:
+    """Idempotently give a demo merchant a spin-the-wheel + 3x3 jackpot so the games work out of the
+    box (insert once; skip if already configured). Anchors the progressive grand-jackpot pot."""
+    if not db.scalar(select(WheelSegment.id).where(WheelSegment.merchant_id == merchant_id)):
+        for i, (label, kind, val, w, color) in enumerate(_DEMO_WHEEL):
+            db.add(WheelSegment(merchant_id=merchant_id, label=label, prize_kind=kind, prize_value=val,
+                                voucher_name=label if kind == "voucher" else None,
+                                weight=w, color=color, sort_order=i))
+    if not db.scalar(select(JackpotPrize.id).where(JackpotPrize.merchant_id == merchant_id)):
+        for i, (name, price, emoji, w) in enumerate(_DEMO_JACKPOT):
+            db.add(JackpotPrize(merchant_id=merchant_id, item_name=name, item_price=Decimal(str(price)),
+                                emoji=emoji, weight=w, sort_order=i))
+    m = db.get(Merchant, merchant_id)
+    if m is not None:
+        ensure_grand_anchor(m)
+    db.flush()
 
 
 def build_demo_merchants(db: Session) -> dict:
@@ -138,6 +177,11 @@ def build_demo_merchants(db: Session) -> dict:
     # reveals one via Settings → Staff & PINs → Reset PIN (they're hashed, never reproducible).
     from app.services import pos_staff
     pos = pos_staff.provision_teams_missing(db)
+
+    # Each tenant gets a working spin-the-wheel + jackpot (idempotent) so the games aren't empty.
+    for tid in SETTLEMENT_BOUNDARIES:
+        _ensure_demo_games(db, tid)
+
     db.commit()
     return {
         "nodes": len(NODES),
@@ -145,6 +189,7 @@ def build_demo_merchants(db: Session) -> dict:
         "tenants": len(SETTLEMENT_BOUNDARIES),
         "accounts": len(ACCOUNTS),
         "pos_teams_seeded": pos["storefronts_seeded"],
+        "games_seeded": len(SETTLEMENT_BOUNDARIES),
     }
 
 
