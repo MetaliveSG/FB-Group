@@ -1,30 +1,41 @@
-# Foodcourt Pilot — Kit + Rollout Checklist (order-ahead model)
+# Foodcourt Pilot — Kit + Rollout Checklist (dual-lane: order-ahead + receipt-QR)
 
-_Operational runbook for the greenlit **+10% foodcourt pilot**. **Model: order-ahead + pay + collect**
-(CIP becomes the ordering+payment channel; **pickup** fulfilment mode — no table numbering, an **order/
-pickup number** instead; see `docs/architecture-fulfilment-modes.md`). **Loyalty is baked in as the
-amplifier.** KPI: **+10% court transactions (+SGD 2.6M on a $26M base).**_
+_Operational runbook for the greenlit **+10% foodcourt pilot** at **FSG** (foodcourt operator; all stalls on
+**one POS vendor — uPOS**, one unit per stall). KPI: **+10% court transactions (+SGD 2.6M on a $26M base).**
+**All customer-facing = webapp (PWA), no app install.** uPOS is **not replaced** — small tweaks only
+(see `docs/upos-integration-spec.md`)._
 
-**Why order-ahead, not loyalty-only:** loyalty-only retains existing demand and caps ~**+3–6%**.
-Order-ahead **adds** demand — it stacks **balker-recovery (skip the peak queue) + ticket upsell (+10–15%)
-+ frequency + retention** — and captures **~100% automatically** (every app order is a known diner + exact
-amount → clean measurement, no cashier-compliance risk). **Order-ahead is the engine; loyalty the amplifier.**
+**Two lanes — cover everyone, force nobody:**
+- **Non-queue → ORDER-AHEAD** *(the +10% engine).* Scan stall/court QR → CIP webapp → order + pay (PayNow/
+  cards) + collect when ready (**pickup** fulfilment mode — no table numbering; `docs/architecture-fulfilment-modes.md`).
+  Exact data; stacks **balker-recovery + ticket upsell (+10–15%) + frequency + retention.**
+- **Queue → SCAN RECEIPT QR** *(the retention net).* Order + pay at the uPOS counter as usual → uPOS prints a
+  **signed receipt QR** → diner scans → CIP webapp → **verified coins.** Opt-in (a subset of queuers scan).
+- **Coins/loyalty accrue on both.** (Loyalty-only alone caps ~**+3–6%** → order-ahead is the engine, loyalty the amplifier.)
 
-**Sequencing — beachhead, not big-bang:** run on **anchor stalls × peak hours** (where skip-the-queue value
-+ adoption + lift are highest and most measurable), loyalty included, then expand. Runs **hybrid** — app
-orders *alongside* the existing queue, not replacing it.
+**Measurement uses the uPOS outbound webhook** (100% of sales → full baseline + airtight +10%), **NOT** the
+opt-in receipt scans. **Sequencing:** beachhead — **anchor stalls × peak hours** — then expand. **Hybrid**:
+both lanes run alongside the existing queue, nothing replaced.
 
 ---
 
-## 0. The flow
-Diner opens app → browses the court's stalls (built) → cart + checkout (built) → **pays in-app (real
-payment)** → order routes to **the stall's order screen** → stall cooks → **"mark ready"** → diner gets
-**"Order #42 ready"** push → collects. Coins/loyalty accrue automatically; RFM/AI/win-back run on top.
+## 0. The two flows
+**Order-ahead (non-queue):** scan stall QR → webapp → cart + checkout → **pay (PayNow/cards)** → order
+reaches the stall (**uPOS inbound injection** *if it's a small tweak*, else a **light order screen**) → cook →
+**"ready"** → "Order #42 ready" push → collect.
+**Receipt-QR (queue):** order + pay at the **uPOS counter** as usual → uPOS prints a **signed receipt QR** →
+diner scans → webapp (phone+OTP first time) → **verified coins** for that transaction.
+Coins · RFM · AI · win-back run on **both** lanes.
 
 ---
 
 ## 1. Pilot kit (bill of materials)
-**Per ANCHOR stall (~6–8 highest-revenue / longest-queue stalls) — an ORDER SCREEN (not a loyalty till):**
+**Queue lane needs NO device** — just uPOS's signed **receipt QR** (a uPOS tweak) + a printed counter standee.
+**Order-ahead fulfilment needs a way for the order to reach the stall:** if **uPOS inbound injection** is a
+small tweak → app orders show on the stall's **own uPOS screen → no device needed**; otherwise provision the
+order screen below (anchor stalls only).
+
+**Per ANCHOR stall — an ORDER SCREEN (only if uPOS inbound injection is NOT available):**
 | Item | Spec | ~SGD |
 |---|---|---|
 | Android phone/tablet | Android 11+, 3GB RAM; tablet (~8–10") easier for order tickets | 100–150 |
@@ -53,15 +64,19 @@ loyalty + welcome voucher, cross-stall coin ring, RFM, games.
 
 **Build before pilot (engineering, in priority order):**
 1. **Real payment** — PayNow (SG primary) + cards. ⚠️ **#1 critical-path** (checkout is mock today; no
-   in-app ordering without real money). Plugs into the existing checkout/`record_sale` path.
-2. **Fulfilment mode = pickup** (per `docs/architecture-fulfilment-modes.md`): `Order.fulfilment_type`
+   order-ahead without real money). Plugs into the existing checkout/`record_sale` path.
+2. **uPOS tweaks** (one vendor → one integration, all stalls — spec in `docs/upos-integration-spec.md`):
+   - **Outbound webhook** — uPOS POSTs every sale to CIP → **100% capture + the +10% baseline/measurement.** *(the high-payoff small tweak)*
+   - **Signed receipt-QR** — uPOS prints a QR with a **signed/registered txn token** on the receipt → queue-lane verified earn. *(small)*
+   - **Inbound order injection** — accept CIP orders into the uPOS queue → order-ahead on the stall's own POS, no order screen. *(verify it's actually small; else use the order screen.)*
+3. **Fulfilment mode = pickup** (`docs/architecture-fulfilment-modes.md`): `Order.fulfilment_type`
    (+migration, default dine_in), per-storefront `fulfilment_modes`, **pickup-number** generation, **table
-   attachment made conditional** (off for these stalls).
-3. **Stall order screen (KDS-lite)** — receive app orders → **"mark ready"** (+ optional printed ticket).
-4. **Ready notification + collection** — "Order #N ready" push (needs the **real messaging channel** —
-   WhatsApp BSP / SMS; same dependency as campaigns).
-5. **Menu digitisation × anchor stalls** — items, prices, modifiers onboarded.
-6. **Pilot analytics** — app-adoption %, ticket lift, baseline import, holdout (for the loyalty/retention slice).
+   attachment conditional** (off for these stalls).
+4. **Receipt-QR claim flow** (webapp) — scan signed QR → match the webhook txn → award verified coins.
+5. **Stall order screen (KDS-lite)** — *only if inbound injection (2c) isn't available* — receive app orders → "mark ready".
+6. **Ready notification + collection** — "Order #N ready" push (needs the **real messaging channel** — WhatsApp BSP / SMS).
+7. **Menu digitisation × anchor stalls** — items, prices, modifiers.
+8. **Pilot analytics** — driven off the **webhook** (full court): adoption %, ticket lift, baseline, holdout.
 
 ---
 
@@ -115,10 +130,11 @@ loyalty + welcome voucher, cross-stall coin ring, RFM, games.
 ---
 
 ## 6. Measurement & readout
+- **Source of truth = the uPOS webhook** → **100% of sales** (queue + app), so the **baseline and the +10%
+  are airtight**, not a sample. (The opt-in receipt-QR scans drive *earn*, not measurement.)
 - **+10% engine = order-ahead.** Track: **app-adoption %** · **ticket lift (app vs counter)** · **balker/
   peak recovery** (incremental transactions) · **frequency lift** · retention (treated vs **holdout**).
-- **Capture is ~100% on the app channel** (digital) → amounts exact, measurement clean.
-- **Baseline:** pilot-period vs prior-period / YoY per stall (controls seasonality).
+- **Baseline:** webhook history (or operator data) — pilot-period vs prior-period / YoY per stall (controls seasonality).
 - **Honesty:** 6–8 wks proves **mechanism + adoption curve + per-channel lift** → **extrapolate to
   annualised +10%**; a fully-measured +10% on total court revenue needs ~8–12 wks + decent adoption.
 - **Deliverable:** readout deck → annualised $ on the $26M base → green-light full rollout.
@@ -135,6 +151,7 @@ loyalty + welcome voucher, cross-stall coin ring, RFM, games.
 | Margin erosion (bought growth) | coupon-budget caps · RFM-targeted · margin-per-redemption |
 | Seasonality skews result | per-stall baseline + YoY; holdout on the retention slice |
 | Device theft | tether + kiosk MDM · spares |
+| **uPOS tweaks slip** (webhook/QR/injection late or "not small") | get the 4-Q capability answer + cost/timeline **Wk-0** (`docs/upos-integration-spec.md`); webhook + signed-QR are the must-haves; inbound injection has the order-screen fallback; FSG (the paying customer) applies the pressure |
 
 ---
 
@@ -143,6 +160,8 @@ loyalty + welcome voucher, cross-stall coin ring, RFM, games.
 - **Week 3:** app orders show ticket lift + frequency vs baseline/holdout → if flat, adjust incentive/menus/segments.
 - **Readout:** annualised projection ≥ +10% KPI → green-light full court rollout (+ takeaway/delivery modes, more stalls).
 
-**Bottom line:** hardware is ~$2k and trivial. The pilot is won on **app adoption + reliable stall
-fulfilment + real payment live + margin discipline.** Build **real payment first**; everything else is
-config or a lite slice of existing code. Loyalty rides along as the amplifier.
+**Bottom line:** hardware is trivial (queue lane needs none; order-ahead needs an order screen only if uPOS
+inbound injection isn't available). The pilot is won on **app adoption + reliable fulfilment + real payment +
+the uPOS webhook + margin discipline.** Critical path = **real payment + the uPOS webhook/signed-QR tweaks**;
+everything else is config or a lite slice of existing code. **Dual lanes (order-ahead + receipt-QR) on one
+webapp, uPOS untouched but for small tweaks.** Loyalty rides along as the amplifier.
