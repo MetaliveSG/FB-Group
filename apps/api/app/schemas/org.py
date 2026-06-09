@@ -175,6 +175,12 @@ class OrgNodeOut(BaseModel):
     can_manage: bool = False
     qr_path: str | None = None      # customer-scan path: a Storefront → /t/{token}; a Chain → /t/node/{id}; None if unscannable
     outlet_id: str | None = None    # a Storefront's typed Outlet (menu.id==node.id → outlet) — lets the console scope to it; None for a Chain
+    # The node's OWN module on/off (binary). The client computes the EFFECTIVE value by AND-ing these
+    # up the path (parent-gating); wallet additionally needs qr_ordering. Drives the tree-grid toggles.
+    mod_rewards: bool = False
+    mod_qr_ordering: bool = False
+    mod_pos: bool = False
+    mod_wallet: bool = False
 
 
 class OrgTreeOut(BaseModel):

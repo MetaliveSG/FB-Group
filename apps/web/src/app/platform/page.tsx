@@ -18,6 +18,7 @@ import {
   platformRemoveCoalitionMember,
   platformMyPermissions,
   orgTree,
+  setNodeModules,
   createOrgNode,
   updateOrgNode,
   listVenueLeases,
@@ -59,6 +60,17 @@ const MODULE_FLAGS: { key: string; label: string }[] = [
   { key: "qr_ordering_enabled", label: "QR Ordering" },
   { key: "pos_enabled", label: "POS" },
 ];
+
+// The 4 per-node capability toggles for the tree-grid (binary + parent-gated). `own` is the
+// OrgTreeNode field carrying this node's own on/off; `setKey` is the NodeModulesIn field to PUT.
+// Order = Table QR first (Wallet depends on it). `confirmOff` = ask before turning OFF (real-money/POS).
+const NODE_MODS = [
+  { key: "qr_ordering", own: "mod_qr_ordering", label: "Table QR", confirmOff: false },
+  { key: "rewards", own: "mod_rewards", label: "Intel", confirmOff: false },
+  { key: "pos", own: "mod_pos", label: "POS", confirmOff: true },
+  { key: "wallet", own: "mod_wallet", label: "Wallet", confirmOff: true },
+] as const;
+type NodeMod = (typeof NODE_MODS)[number];
 
 // Member-tree node display: colour per role + a coarse rank so a level lists Brands before
 // Outlets before Stalls. Mirrors the merchant Org-Tree page.
@@ -224,6 +236,28 @@ export default function OperatorConsolePage() {
   async function reloadTree() {
     const tok = getStaffToken();
     if (tok) setTree((await orgTree(base, tok)).nodes);
+  }
+  // Flip one capability toggle at a node. `nextOn` is the node's new OWN value; the effective value
+  // (and the whole subtree) follows from parent-gating server-side. Confirm before turning OFF the
+  // destructive ones (POS / Wallet). Reloads the tree so every descendant re-renders gated.
+  async function toggleNodeModule(node: OrgTreeNode, mk: NodeMod, nextOn: boolean) {
+    if (!nextOn && mk.confirmOff &&
+        !window.confirm(`Turn ${mk.label} OFF for “${node.name || "this node"}”? This also turns it OFF for everything beneath it.`)) {
+      return;
+    }
+    const tok = getStaffToken();
+    if (!tok) return;
+    setTogglingId(node.id);
+    setError(null);
+    try {
+      await setNodeModules(base, tok, node.id,
+                           { [mk.key]: nextOn } as Parameters<typeof setNodeModules>[3]);
+      await reloadTree();
+    } catch (err: unknown) {
+      setError(errMsg(err, `Could not toggle ${mk.label}`));
+    } finally {
+      setTogglingId(null);
+    }
   }
   function openManage(node: OrgTreeNode) {
     setManageId(manageId === node.id ? null : node.id);
@@ -687,6 +721,24 @@ export default function OperatorConsolePage() {
           }
           return undefined;
         };
+        // Module gating, computed client-side from the OWN flags on the tree (one /org/tree call):
+        // a module is effective-ON only if the node AND every ancestor have it ON. Wallet additionally
+        // needs Table QR effective-ON at the node. Mirrors boundaries.resolve_modules exactly.
+        const effOn = (node: OrgTreeNode, mk: NodeMod): boolean => {
+          let cur: OrgTreeNode | undefined = node;
+          let on = true;
+          while (cur) {
+            on = on && Boolean(cur[mk.own]);
+            cur = cur.parent_id ? byId.get(cur.parent_id) : undefined;
+          }
+          if (mk.key === "wallet") on = on && effOn(node, NODE_MODS[0]);  // wallet needs Table QR
+          return on;
+        };
+        const parentEffOn = (node: OrgTreeNode, mk: NodeMod): boolean => {
+          const p = node.parent_id ? byId.get(node.parent_id) : undefined;
+          return p ? effOn(p, mk) : true;   // a root node is ungated
+        };
+        const qrOn = (node: OrgTreeNode) => effOn(node, NODE_MODS[0]);
         const crumb = (active: boolean) => ({
           background: "none",
           border: "none",
@@ -733,6 +785,13 @@ export default function OperatorConsolePage() {
                   const kids = childrenOf(n.id);
                   const kpi = kpiById.get(n.id);
                   const rs = ROLE_STYLE[n.role] ?? { bg: "#f1f5f9", fg: "#334155" };
+                  const enter = () => {
+                    const t = tenantOf(n);
+                    if (t) enterNode({ merchantId: t.id, tenantName: t.name || "", nodeId: n.id,
+                                       nodeName: n.name || "",
+                                       outletId: n.sells ? n.outlet_id : undefined,
+                                       storefrontName: n.sells ? (n.name || "") : undefined });
+                  };
                   return (
                     <div
                       key={n.id}
@@ -743,24 +802,69 @@ export default function OperatorConsolePage() {
                         opacity: n.is_active ? 1 : 0.55,
                         display: "flex",
                         alignItems: "center",
-                        gap: 12,
+                        gap: 10,
                         flexWrap: "wrap",
                       }}
                     >
                       <span className="badge" style={{ background: rs.bg, color: rs.fg, fontSize: 11, fontWeight: 700 }}>
                         {KIND_LABEL[n.role] ?? n.role}
                       </span>
+                      {/* Name = Enter this node's console (the operating unit / scoped chain). */}
                       <button
-                        onClick={() => (kids.length ? setDrill([...drill, n.id]) : setDetailId(n.id))}
+                        onClick={enter}
                         style={{ background: "none", border: "none", padding: 0, font: "inherit", fontWeight: 600, cursor: "pointer", color: "inherit", textAlign: "left" }}
+                        title={n.sells ? "Enter this storefront (menu · tables & QR)" : "Enter this chain's console (scoped to its subtree)"}
                       >
                         {n.name || "(unnamed)"}
-                        {kids.length > 0 && (
-                          <span style={{ color: "var(--color-text-muted)", fontWeight: 400, fontSize: 12 }}> · {kids.length} inside ›</span>
-                        )}
                       </button>
+                      {/* Inside = walk DOWN the tree (separate from Enter). */}
+                      {kids.length > 0 && (
+                        <button
+                          onClick={() => setDrill([...drill, n.id])}
+                          style={{ background: "none", border: "none", padding: 0, font: "inherit", fontWeight: 400, fontSize: 12, cursor: "pointer", color: "#ea580c" }}
+                          title="Open this group — show what's inside"
+                        >
+                          {kids.length} inside ›
+                        </button>
+                      )}
+                      {/* Capability toggles — binary, parent-gated (a child can be ON only if its parent
+                          is ON); Wallet additionally needs Table QR. Turning one OFF cascades to the subtree. */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        {NODE_MODS.map((mk) => {
+                          const on = effOn(n, mk);
+                          const parentOff = !parentEffOn(n, mk);
+                          const needsQr = mk.key === "wallet" && !qrOn(n);
+                          const locked = !n.can_manage || parentOff || needsQr;
+                          const title = parentOff ? `${mk.label} is OFF above — enable the parent first`
+                            : needsQr ? `Wallet needs Table QR ON`
+                            : !n.can_manage ? "No access"
+                            : on ? `Turn ${mk.label} OFF` : `Turn ${mk.label} ON`;
+                          return (
+                            <button
+                              key={mk.key}
+                              type="button"
+                              disabled={locked || togglingId === n.id}
+                              onClick={() => toggleNodeModule(n, mk, !Boolean(n[mk.own]))}
+                              title={title}
+                              style={{
+                                padding: "3px 9px", fontSize: 11, fontWeight: 700, borderRadius: 999,
+                                border: `1px solid ${on ? "#16a34a" : "#e2e8f0"}`,
+                                background: on ? "#dcfce7" : "#f8fafc",
+                                color: on ? "#15803d" : "#94a3b8",
+                                opacity: locked ? 0.45 : 1,
+                                cursor: locked || togglingId === n.id ? "default" : "pointer",
+                                display: "inline-flex", alignItems: "center", gap: 4,
+                              }}
+                            >
+                              <span style={{ width: 6, height: 6, borderRadius: 99, background: on ? "#16a34a" : "#cbd5e1" }} />
+                              {mk.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        {n.qr_path && (
+                        {/* QR Menu — only meaningful when Table QR is effective-ON (don't preview a dead menu). */}
+                        {qrOn(n) && n.qr_path && (
                           <button
                             className="btn btn-secondary btn-sm"
                             style={{ padding: "4px 12px", fontWeight: 600 }}
@@ -770,7 +874,7 @@ export default function OperatorConsolePage() {
                             QR Menu
                           </button>
                         )}
-                        {n.sells && n.qr_path && (
+                        {n.sells && n.qr_path && effOn(n, NODE_MODS[2]) && (
                           <button
                             className="btn btn-secondary btn-sm"
                             style={{ padding: "4px 12px", fontWeight: 600 }}
@@ -780,20 +884,6 @@ export default function OperatorConsolePage() {
                             Open POS
                           </button>
                         )}
-                        <button
-                          className="btn btn-primary btn-sm"
-                          style={{ padding: "4px 14px", fontWeight: 700 }}
-                          onClick={() => {
-                            const t = tenantOf(n);
-                            if (t) enterNode({ merchantId: t.id, tenantName: t.name || "", nodeId: n.id,
-                                               nodeName: n.name || "",
-                                               outletId: n.sells ? n.outlet_id : undefined,
-                                               storefrontName: n.sells ? (n.name || "") : undefined });
-                          }}
-                          title={n.sells ? "Enter this storefront (menu · tables & QR)" : "Enter this chain's console (scoped to its subtree)"}
-                        >
-                          Enter
-                        </button>
                         {n.is_settlement_boundary && kpi && (
                           <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{formatSGD(kpi.revenue)}</span>
                         )}
@@ -804,7 +894,7 @@ export default function OperatorConsolePage() {
                           className="btn btn-secondary btn-sm"
                           style={{ padding: "4px 10px", fontWeight: 700 }}
                           onClick={() => setDetailId(n.id)}
-                          title="Details & manage"
+                          title="Details & manage (rename · status · fee · logins · add child)"
                           aria-label="Details"
                         >
                           ⋯

@@ -928,6 +928,12 @@ export interface OrgTreeNode {
   can_manage: boolean;     // may THIS caller grow the tree beneath this node?
   qr_path: string | null;  // customer-scan link: a Storefront → /t/{token}; a Chain → /t/node/{id}; null if unscannable
   outlet_id?: string | null; // a Storefront's typed Outlet — lets the console scope to it; null for a Chain
+  // the node's OWN module on/off (binary; backend always sends them). EFFECTIVE = AND up the path
+  // (parent-gated); wallet also needs qr. Optional so older fixtures/callers stay valid.
+  mod_rewards?: boolean;
+  mod_qr_ordering?: boolean;
+  mod_pos?: boolean;
+  mod_wallet?: boolean;
 }
 
 // A node-scoped customer browse (the "brand / group app" view): the orderable leaf stalls in a

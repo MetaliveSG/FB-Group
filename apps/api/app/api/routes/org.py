@@ -106,7 +106,9 @@ def _node_out(node, can_manage: bool, qr_path: str | None = None,
                       depth=node.depth, sells=node.sells, chain_stopped=node.chain_stopped,
                       is_settlement_boundary=node.is_settlement_boundary,
                       subscription_fee=node.subscription_fee, is_active=node.is_active,
-                      can_manage=can_manage, qr_path=qr_path, outlet_id=outlet_id)
+                      can_manage=can_manage, qr_path=qr_path, outlet_id=outlet_id,
+                      mod_rewards=node.mod_rewards, mod_qr_ordering=node.mod_qr_ordering,
+                      mod_pos=node.mod_pos, mod_wallet=node.mod_wallet)
 
 
 def _qr_paths_for(db, nodes) -> dict[str, str]:
