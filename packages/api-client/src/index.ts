@@ -974,13 +974,15 @@ export interface OrgNodeAccount {
   node_name?: string;
 }
 
-export type ModuleState = "inherit" | "on" | "off";
 export type ModuleKey = "rewards" | "qr_ordering" | "pos";
 export interface OrgNodeModules {
-  rewards: ModuleState;        // the node's OWN setting — Customer Engagement
-  qr_ordering: ModuleState;    // Table QR
-  pos: ModuleState;            // POS
+  rewards: boolean;        // the node's OWN on/off — Intelligence
+  qr_ordering: boolean;    // Table QR
+  pos: boolean;            // POS
+  // effective after parent-gating (a node is ON only if it AND every ancestor are ON):
   resolved: { rewards_enabled: boolean; qr_ordering_enabled: boolean; pos_enabled: boolean };
+  // each module's value at the PARENT — drives the grey/lock (a child can be ON only if parent is ON):
+  parent_enabled: { rewards_enabled: boolean; qr_ordering_enabled: boolean; pos_enabled: boolean };
 }
 
 // A venue↔stall tenancy edge. rent_type is the foodcourt/coffeeshop switch:
@@ -2558,7 +2560,7 @@ export function getNodeModules(baseUrl: string, token: string, nodeId: string): 
 
 export function setNodeModules(
   baseUrl: string, token: string, nodeId: string,
-  body: Partial<Record<ModuleKey, ModuleState>>
+  body: Partial<Record<ModuleKey, boolean>>
 ): Promise<OrgNodeModules> {
   return request(baseUrl, `/org/nodes/${nodeId}/modules`, { method: "PUT", body: JSON.stringify(body) }, token);
 }
@@ -2708,7 +2710,7 @@ export class FbGroupApiClient {
   createNodeAccount(nodeId: string, data: { email: string; password: string; full_name?: string; role: string }) { return createNodeAccount(this.baseUrl, this.token!, nodeId, data); }
   revokeNodeAccount(nodeId: string, assignmentId: string) { return revokeNodeAccount(this.baseUrl, this.token!, nodeId, assignmentId); }
   getNodeModules(nodeId: string) { return getNodeModules(this.baseUrl, this.token!, nodeId); }
-  setNodeModules(nodeId: string, body: Partial<Record<ModuleKey, ModuleState>>) { return setNodeModules(this.baseUrl, this.token!, nodeId, body); }
+  setNodeModules(nodeId: string, body: Partial<Record<ModuleKey, boolean>>) { return setNodeModules(this.baseUrl, this.token!, nodeId, body); }
   listVenueLeases(venueId: string) { return listVenueLeases(this.baseUrl, this.token!, venueId); }
   createLease(venueId: string, data: { tenant_node_id: string; rent_type: string; rate: string }) { return createLease(this.baseUrl, this.token!, venueId, data); }
   updateLease(venueId: string, leaseId: string, data: { rent_type?: string; rate?: string; is_active?: boolean }) { return updateLease(this.baseUrl, this.token!, venueId, leaseId, data); }

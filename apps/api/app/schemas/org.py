@@ -208,22 +208,22 @@ class NodeAccountOut(BaseModel):
     node_name: str | None = None
 
 
-# --- Per-node module toggles (Table QR / Intelligence / POS) ----
-_MODULE_STATE = Literal["inherit", "on", "off"]
-
+# --- Per-node module toggles (Table QR / Intelligence / POS) — binary, parent-gated ----
 
 class NodeModulesIn(BaseModel):
-    """Set a node's per-module tri-state. Omitted fields are left unchanged."""
-    rewards: _MODULE_STATE | None = None        # Intelligence
-    qr_ordering: _MODULE_STATE | None = None     # Table QR
-    pos: _MODULE_STATE | None = None             # POS
+    """Set a node's per-module on/off. Omitted fields are left unchanged. A child can be ON only if
+    its parent is ON (parent-gated); turning a node OFF cascades OFF to its subtree."""
+    rewards: bool | None = None        # Intelligence
+    qr_ordering: bool | None = None     # Table QR
+    pos: bool | None = None             # POS
 
 
 class NodeModulesOut(BaseModel):
-    rewards: _MODULE_STATE                        # the node's OWN setting (inherit/on/off)
-    qr_ordering: _MODULE_STATE
-    pos: _MODULE_STATE
-    resolved: dict                               # effective after cascade: {rewards_enabled, qr_ordering_enabled, pos_enabled}
+    rewards: bool                        # the node's OWN on/off
+    qr_ordering: bool
+    pos: bool
+    resolved: dict                       # effective after parent-gating: {rewards_enabled, qr_ordering_enabled, pos_enabled}
+    parent_enabled: dict                 # each module's value at the parent (drives grey/lock); {..._enabled}
 
 
 class NodeAccountCreateIn(BaseModel):

@@ -111,7 +111,8 @@ def _node(db, nid, parent, path, mid, *, sells):
     db.add(OrgNode(id=nid, parent_id=parent, role="STOREFRONT" if sells else "CHAIN", name=nid,
                    depth=path.count(PATH_SEP), path=path, sells=sells, chain_stopped=False,
                    is_settlement_boundary=(parent is None), is_loyalty_domain=(parent is None),
-                   settlement_account_id=mid, loyalty_domain_id=mid, is_active=True))
+                   settlement_account_id=mid, loyalty_domain_id=mid, is_active=True,
+                   mod_rewards=True, mod_qr_ordering=True, mod_pos=True))   # active storefront: modules ON
 
 
 def test_scope_subtree_redemption(client, db):

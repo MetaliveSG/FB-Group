@@ -35,6 +35,7 @@ def _upsert(db: Session, *, node_id: str, parent_id: str | None, role: str, dept
     node = db.get(OrgNode, node_id)
     if node is None:
         node = OrgNode(id=node_id)
+        node.mod_rewards = node.mod_qr_ordering = node.mod_pos = True   # active business: modules ON (creation only)
         db.add(node)
     node.parent_id = parent_id
     node.role = role
@@ -272,6 +273,8 @@ def create_child(db: Session, *, parent: OrgNode, role: str, name: str,
     if not name:
         raise AppError("name is required", code="name_required", status_code=400)
     nid = uuid.uuid4().hex
+    # A new node inherits its parent's OWN module on/off — so a freshly-onboarded child is usable
+    # under an enabled parent, yet can never be ON where the parent is OFF (parent-gating holds).
     node = OrgNode(
         id=nid, parent_id=parent.id, role=role, name=name,
         depth=parent.depth + 1, path=PATH_SEP.join([parent.path, nid]),
@@ -282,6 +285,9 @@ def create_child(db: Session, *, parent: OrgNode, role: str, name: str,
         chain_stopped=bool(chain_stopped) if role == ROLE_CHAIN else False,
         subscription_fee=subscription_fee,
         is_active=True,
+        mod_rewards=bool(parent.mod_rewards),
+        mod_qr_ordering=bool(parent.mod_qr_ordering),
+        mod_pos=bool(parent.mod_pos),
     )
     db.add(node)
     db.flush()

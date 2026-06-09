@@ -17,7 +17,7 @@ import {
 } from "@/lib/api";
 import { getStaffToken } from "@/lib/auth";
 import { Toggle } from "@/components/ui";
-import type { OrgTreeNode, OrgNodeAccount, MerchantKpi, Lease, OrgNodeCreated, PosStaffSecret, OrgNodeModules, ModuleState, ModuleKey } from "@fbgroup/api-client";
+import type { OrgTreeNode, OrgNodeAccount, MerchantKpi, Lease, OrgNodeCreated, PosStaffSecret, OrgNodeModules, ModuleKey } from "@fbgroup/api-client";
 
 const ROLE_STYLE: Record<string, { bg: string; fg: string }> = {
   CHAIN: { bg: "#dbeafe", fg: "#1e40af" },
@@ -140,8 +140,8 @@ export default function NodeDetailDrawer({
   const reloadLeases = () => listVenueLeases(base, tok(), node.id)
     .then((ls) => { setLeases(ls); setRateEdit(Object.fromEntries(ls.map((l) => [l.id, l.rate]))); })
     .catch(() => {});
-  const changeModule = (key: ModuleKey, val: ModuleState) =>
-    run(() => setNodeModules(base, tok(), node.id, { [key]: val } as Partial<Record<ModuleKey, ModuleState>>),
+  const changeModule = (key: ModuleKey, val: boolean) =>
+    run(() => setNodeModules(base, tok(), node.id, { [key]: val } as Partial<Record<ModuleKey, boolean>>),
         (m) => setModules(m as OrgNodeModules));
 
   // Candidate stalls to lease in: any Storefront not under THIS venue (those are house stalls,
@@ -361,32 +361,33 @@ export default function NodeDetailDrawer({
                 ([["qr_ordering", "Table QR", "qr_ordering_enabled"],
                   ["rewards", "Intelligence", "rewards_enabled"],
                   ["pos", "POS", "pos_enabled"]] as [ModuleKey, string, keyof OrgNodeModules["resolved"]][]).map(([key, lbl, rk]) => {
-                  const on = modules.resolved[rk];
-                  const inherited = modules[key] === "inherit";
+                  const on = modules.resolved[rk];                  // effective (after parent-gating)
+                  const parentOff = !modules.parent_enabled[rk];    // locked: parent has it OFF
                   return (
-                    <div key={key} style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <div key={key} style={{ display: "flex", flexDirection: "column", gap: 5, opacity: parentOff ? 0.6 : 1 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>{lbl}</span>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: on ? "#15803d" : "#b91c1c" }}>
                           <span style={{ width: 7, height: 7, borderRadius: 99, background: on ? "#16a34a" : "#dc2626" }} />
                           {on ? "ON" : "OFF"}
-                          {inherited && <span style={{ fontWeight: 500, color: "var(--color-text-muted)" }}>· inherited</span>}
+                          {parentOff && <span style={{ fontWeight: 500, color: "var(--color-text-muted)" }}>· locked (parent off)</span>}
                         </span>
                       </div>
                       <div role="radiogroup" aria-label={lbl} style={{ display: "flex", border: "1px solid var(--color-border,#e5e7eb)", borderRadius: 8, overflow: "hidden" }}>
-                        {(["inherit", "on", "off"] as ModuleState[]).map((opt, i) => {
-                          const sel = modules[key] === opt;
+                        {([["On", true], ["Off", false]] as [string, boolean][]).map(([optLabel, optVal], i) => {
+                          const sel = modules[key] === optVal;       // the node's OWN on/off
+                          const disabled = busy || parentOff;
                           return (
-                            <button key={opt} type="button" role="radio" aria-checked={sel} disabled={busy}
-                              onClick={() => changeModule(key, opt)}
+                            <button key={optLabel} type="button" role="radio" aria-checked={sel} disabled={disabled}
+                              onClick={() => changeModule(key, optVal)}
                               style={{
                                 flex: 1, padding: "6px 0", fontSize: 12, fontWeight: sel ? 700 : 500,
                                 border: "none", borderLeft: i ? "1px solid var(--color-border,#e5e7eb)" : "none",
                                 background: sel ? "var(--color-primary,#dc2626)" : "#fff",
                                 color: sel ? "#fff" : "var(--color-text,#334155)",
-                                cursor: busy ? "default" : "pointer", textTransform: "capitalize",
+                                cursor: disabled ? "default" : "pointer",
                               }}>
-                              {opt}
+                              {optLabel}
                             </button>
                           );
                         })}
@@ -395,7 +396,7 @@ export default function NodeDetailDrawer({
                   );
                 })
               )}
-              <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>Inherit follows the parent (default on). Changes cascade to this node&apos;s subtree.</span>
+              <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>A node can be ON only if its parent is ON; turning a node OFF locks its whole subtree OFF.</span>
             </div>
           )}
 

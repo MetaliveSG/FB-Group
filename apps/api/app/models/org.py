@@ -20,6 +20,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from sqlalchemy import Boolean, ForeignKey, Index, Integer, Numeric, String
+from sqlalchemy import false
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, PKMixin, TimestampMixin
@@ -60,12 +61,13 @@ class OrgNode(PKMixin, TimestampMixin, Base):
     is_settlement_boundary: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_loyalty_domain: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-    # module adoption (Phase A) — per-node toggles for the 3 modules, 3-state:
-    # NULL = inherit (fall back up-tree → Merchant.settings → default); True/False = explicit on/off.
-    # Resolved by boundaries.resolve_modules (nearest explicit ancestor wins; cascades down the subtree).
-    mod_rewards: Mapped[bool | None] = mapped_column(Boolean)        # Intelligence
-    mod_qr_ordering: Mapped[bool | None] = mapped_column(Boolean)    # Table QR
-    mod_pos: Mapped[bool | None] = mapped_column(Boolean)            # POS
+    # module adoption — per-node toggles for the 3 modules, BINARY + parent-gated:
+    # each node carries its OWN on/off; the effective value is AND-ed down the path
+    # (a node is ON only if it AND every ancestor are ON). Default False (a fresh row is OFF;
+    # node-creation / seed turn them on for a usable merchant). Resolved by boundaries.resolve_modules.
+    mod_rewards: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false(), default=False)        # Intelligence
+    mod_qr_ordering: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false(), default=False)    # Table QR
+    mod_pos: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false(), default=False)            # POS
 
     # resolved boundary pointers (nearest declaring ancestor; both = merchant today)
     loyalty_domain_id: Mapped[str] = mapped_column(String(32), nullable=False)

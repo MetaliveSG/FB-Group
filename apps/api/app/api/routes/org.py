@@ -228,7 +228,7 @@ def read_node_modules(node_id: str, scope=Depends(get_scope), db: Session = Depe
 @router.put("/nodes/{node_id}/modules", response_model=NodeModulesOut)
 def update_node_modules(node_id: str, body: NodeModulesIn,
                         scope=Depends(get_scope), db: Session = Depends(get_db)):
-    """Toggle the 3 modules at a node (inherit/on/off); cascades to the subtree (resolve_modules)."""
+    """Toggle the 3 modules at a node (binary on/off); parent-gated — OFF cascades to the subtree."""
     node = org_tree.get_managed_node(db, scope, node_id)
     out = boundaries.set_node_modules(db, node, **body.model_dump(exclude_unset=True))
     audit_record(db, action="org.node_modules_set", actor_id=scope.user_id,

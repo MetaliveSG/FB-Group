@@ -145,6 +145,7 @@ def build_demo_merchants(db: Session) -> dict:
         node.settlement_account_id = settle
         node.loyalty_domain_id = loyalty
         node.is_active = True
+        node.mod_rewards = node.mod_qr_ordering = node.mod_pos = True   # established merchant: all modules ON
         db.add(node)
     db.flush()
 
