@@ -69,6 +69,11 @@ child · module toggles · logins · enter). Endpoints: `GET /org/tree`, `POST/P
 - **QR resolution = 3 radii:** directory "QR Menu" (`org.py::_qr_paths_for`, node-keyed) · group browse
   `/t/node/{id}` = `catalog.direct_storefronts` (DIRECT children only) · venue scan `/t/{token}` =
   `catalog.list_outlet_stalls` (house ∪ leased).
+- **Node-browse UX (INTENDED, `t/node/[id]/page.tsx`):** **1 direct stall → auto-enter that stall's
+  menu/ordering** (skips the list — straight to its items); **2+ stalls → show the group stall list**. So a
+  sub-chain with a single child jumps straight into that child (NOT a bug). If it looks "empty", the stall's
+  **menu has 0 items** (data), not a nav bug — menu items are live data, NOT in `seed_demo_merchants` (e.g.
+  Pepper Lunch Sub @ YIS had 0 items while siblings had ~17).
 - **POS = `User.kind="pos"`**, synthetic `@pos.local` + locked pw (can't web-login; web can't PIN-login);
   PINs **encrypted at rest** (Fernet, `core/pin_crypto.py`), unique per storefront. Supervisor = Cashier +
   `order.void` (`POST /orders/{id}/void` reverses sale/payment/loyalty/voucher; receipt → Supervisor-PIN modal).

@@ -23,10 +23,7 @@ export default function NodeBrowsePage() {
     resolveNodeBrowse(base, id)
       .then((d) => {
         setData(d);
-        // Auto-enter a lone stall ONLY when the node itself is a storefront — a GROUP/CHAIN must always
-        // list its stalls (even a single child), else its QR Menu looks empty (bug: sub-group skipped its
-        // one child straight into an empty menu).
-        if (d.stalls.length === 1 && !d.is_group) selectStall(d.stalls[0]);
+        if (d.stalls.length === 1) selectStall(d.stalls[0]);   // single stall → straight into it
       })
       .catch(() => setError(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
