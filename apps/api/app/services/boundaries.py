@@ -22,14 +22,15 @@ from app.models.org import PATH_SEP, OrgNode
 from app.models.orders import Order
 from app.services import merchant_settings
 
-# The module flags recorded in Phase 0c (gated for real in Phase 2).
-MODULE_FLAGS = ("rewards_enabled", "qr_ordering_enabled", "pos_enabled")
+# The per-node module flags (resolved binary + parent-gated).
+MODULE_FLAGS = ("rewards_enabled", "qr_ordering_enabled", "pos_enabled", "wallet_enabled")
 
 # Module flag → its org_node column (binary on/off, parent-gated).
 _MODULE_COL = {
     "rewards_enabled": "mod_rewards",        # Intelligence
     "qr_ordering_enabled": "mod_qr_ordering",  # Table QR
     "pos_enabled": "mod_pos",                # POS
+    "wallet_enabled": "mod_wallet",          # Wallet (additionally gated by qr_ordering — see resolve_modules)
 }
 
 
@@ -70,9 +71,13 @@ def resolve_modules(db: Session, *, node: OrgNode | None, merchant_id: str) -> d
     `node` is the storefront (or any node) the action happens at; `merchant_id` is the funding tenant
     used for the node=None fallback. Returns the same shape as `module_flags`."""
     if node is None:
-        return module_flags(db, merchant_id=merchant_id)
-    chain = _node_chain(db, node)                          # node + ancestors (nearest-first)
-    return {flag: all(bool(getattr(n, col)) for n in chain) for flag, col in _MODULE_COL.items()}
+        base = module_flags(db, merchant_id=merchant_id)
+    else:
+        chain = _node_chain(db, node)                      # node + ancestors (nearest-first)
+        base = {flag: all(bool(getattr(n, col)) for n in chain) for flag, col in _MODULE_COL.items()}
+    # Wallet is money to spend on orders → additionally gated by Table QR (no ordering ⇒ no wallet).
+    base["wallet_enabled"] = base["wallet_enabled"] and base["qr_ordering_enabled"]
+    return base
 
 
 def node_for_outlet(db: Session, outlet_id: str | None) -> OrgNode | None:
@@ -107,13 +112,15 @@ def get_node_modules(db: Session, node: OrgNode) -> dict:
         "rewards": bool(node.mod_rewards),
         "qr_ordering": bool(node.mod_qr_ordering),
         "pos": bool(node.mod_pos),
+        "wallet": bool(node.mod_wallet),
         "resolved": resolve_modules(db, node=node, merchant_id=node.settlement_account_id),
         "parent_enabled": _parent_enabled(db, node),
     }
 
 
 def set_node_modules(db: Session, node: OrgNode, *, rewards: bool | None = None,
-                     qr_ordering: bool | None = None, pos: bool | None = None) -> dict:
+                     qr_ordering: bool | None = None, pos: bool | None = None,
+                     wallet: bool | None = None) -> dict:
     """Set a node's per-module binary on/off. Omitted fields are left unchanged. Turning a node OFF
     cascades OFF to the whole subtree via parent-gating (no extra writes — `resolve_modules` AND-gates)."""
     if rewards is not None:
@@ -122,5 +129,7 @@ def set_node_modules(db: Session, node: OrgNode, *, rewards: bool | None = None,
         node.mod_qr_ordering = bool(qr_ordering)
     if pos is not None:
         node.mod_pos = bool(pos)
+    if wallet is not None:
+        node.mod_wallet = bool(wallet)
     db.flush()
     return get_node_modules(db, node)

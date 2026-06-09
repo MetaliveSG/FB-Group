@@ -288,6 +288,7 @@ def create_child(db: Session, *, parent: OrgNode, role: str, name: str,
         mod_rewards=bool(parent.mod_rewards),
         mod_qr_ordering=bool(parent.mod_qr_ordering),
         mod_pos=bool(parent.mod_pos),
+        mod_wallet=bool(parent.mod_wallet),
     )
     db.add(node)
     db.flush()

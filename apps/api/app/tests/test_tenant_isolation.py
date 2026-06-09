@@ -87,7 +87,7 @@ def test_downline_manager_isolated_from_merchant_settings(client, db):
     nav = client.get("/api/v1/org/nav-flags", headers=H(mgrtok))
     assert nav.status_code == 200
     assert set(nav.json()) == {"pipeline_enabled", "rewards_enabled", "qr_ordering_enabled",
-                               "pos_enabled", "can_manage_merchant"}
+                               "pos_enabled", "wallet_enabled", "can_manage_merchant"}
     assert "wheel_spin_cost" not in nav.json()  # spin costs never exposed to downline
     # Capability flag is False for a downline manager → client hides owner-only nav (Settings/Team).
     assert nav.json()["can_manage_merchant"] is False

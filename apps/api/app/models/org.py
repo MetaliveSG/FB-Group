@@ -68,6 +68,9 @@ class OrgNode(PKMixin, TimestampMixin, Base):
     mod_rewards: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false(), default=False)        # Intelligence
     mod_qr_ordering: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false(), default=False)    # Table QR
     mod_pos: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false(), default=False)            # POS
+    # Wallet (stored-value) — opt-in (default OFF) and gated by Table QR (money to spend on orders →
+    # no ordering channel ⇒ no wallet). Effective wallet = (AND of mod_wallet up the path) AND qr_ordering.
+    mod_wallet: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false(), default=False)         # Wallet
 
     # resolved boundary pointers (nearest declaring ancestor; both = merchant today)
     loyalty_domain_id: Mapped[str] = mapped_column(String(32), nullable=False)

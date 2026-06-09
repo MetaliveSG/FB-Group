@@ -624,6 +624,7 @@ export interface MerchantSettings {
   rewards_enabled: boolean;
   qr_ordering_enabled: boolean;
   pos_enabled: boolean;
+  wallet_enabled: boolean;
   timezone: string;   // the tenant's canonical reporting timezone (the "books")
   welcome_voucher: WelcomeVoucherCfg;
   receipt: ReceiptCfg;
@@ -636,6 +637,7 @@ export interface NavFlags {
   rewards_enabled: boolean;
   qr_ordering_enabled: boolean;
   pos_enabled: boolean;
+  wallet_enabled: boolean;
   /** Caller holds `merchant.manage` (owner or operator) — gate owner-only nav (Settings/Team) on this. */
   can_manage_merchant: boolean;
 }
@@ -974,15 +976,22 @@ export interface OrgNodeAccount {
   node_name?: string;
 }
 
-export type ModuleKey = "rewards" | "qr_ordering" | "pos";
+export type ModuleKey = "rewards" | "qr_ordering" | "pos" | "wallet";
+export interface ModuleFlags {
+  rewards_enabled: boolean;
+  qr_ordering_enabled: boolean;
+  pos_enabled: boolean;
+  wallet_enabled: boolean;
+}
 export interface OrgNodeModules {
   rewards: boolean;        // the node's OWN on/off — Intelligence
   qr_ordering: boolean;    // Table QR
   pos: boolean;            // POS
-  // effective after parent-gating (a node is ON only if it AND every ancestor are ON):
-  resolved: { rewards_enabled: boolean; qr_ordering_enabled: boolean; pos_enabled: boolean };
+  wallet: boolean;         // Wallet (needs Table QR ON)
+  // effective after parent-gating (a node is ON only if it AND every ancestor are ON; wallet also needs qr):
+  resolved: ModuleFlags;
   // each module's value at the PARENT — drives the grey/lock (a child can be ON only if parent is ON):
-  parent_enabled: { rewards_enabled: boolean; qr_ordering_enabled: boolean; pos_enabled: boolean };
+  parent_enabled: ModuleFlags;
 }
 
 // A venue↔stall tenancy edge. rent_type is the foodcourt/coffeeshop switch:
@@ -2045,6 +2054,7 @@ export function updateSettings(
     rewards_enabled?: boolean;
     qr_ordering_enabled?: boolean;
     pos_enabled?: boolean;
+    wallet_enabled?: boolean;
     timezone?: string;
     welcome_voucher?: WelcomeVoucherCfg;
     receipt?: ReceiptCfg;

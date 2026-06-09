@@ -360,23 +360,28 @@ export default function NodeDetailDrawer({
               ) : (
                 ([["qr_ordering", "Table QR", "qr_ordering_enabled"],
                   ["rewards", "Intelligence", "rewards_enabled"],
-                  ["pos", "POS", "pos_enabled"]] as [ModuleKey, string, keyof OrgNodeModules["resolved"]][]).map(([key, lbl, rk]) => {
+                  ["pos", "POS", "pos_enabled"],
+                  ["wallet", "Wallet", "wallet_enabled"]] as [ModuleKey, string, keyof OrgNodeModules["resolved"]][]).map(([key, lbl, rk]) => {
                   const on = modules.resolved[rk];                  // effective (after parent-gating)
                   const parentOff = !modules.parent_enabled[rk];    // locked: parent has it OFF
+                  // Wallet has an extra gate: it needs Table QR ON at this node (money to spend on orders).
+                  const needsQrOff = key === "wallet" && !modules.resolved.qr_ordering_enabled;
+                  const locked = parentOff || needsQrOff;
                   return (
-                    <div key={key} style={{ display: "flex", flexDirection: "column", gap: 5, opacity: parentOff ? 0.6 : 1 }}>
+                    <div key={key} style={{ display: "flex", flexDirection: "column", gap: 5, opacity: locked ? 0.6 : 1 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>{lbl}</span>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: on ? "#15803d" : "#b91c1c" }}>
                           <span style={{ width: 7, height: 7, borderRadius: 99, background: on ? "#16a34a" : "#dc2626" }} />
                           {on ? "ON" : "OFF"}
                           {parentOff && <span style={{ fontWeight: 500, color: "var(--color-text-muted)" }}>· locked (parent off)</span>}
+                          {needsQrOff && !parentOff && <span style={{ fontWeight: 500, color: "var(--color-text-muted)" }}>· needs Table QR</span>}
                         </span>
                       </div>
                       <div role="radiogroup" aria-label={lbl} style={{ display: "flex", border: "1px solid var(--color-border,#e5e7eb)", borderRadius: 8, overflow: "hidden" }}>
                         {([["On", true], ["Off", false]] as [string, boolean][]).map(([optLabel, optVal], i) => {
                           const sel = modules[key] === optVal;       // the node's OWN on/off
-                          const disabled = busy || parentOff;
+                          const disabled = busy || locked;
                           return (
                             <button key={optLabel} type="button" role="radio" aria-checked={sel} disabled={disabled}
                               onClick={() => changeModule(key, optVal)}
@@ -396,7 +401,7 @@ export default function NodeDetailDrawer({
                   );
                 })
               )}
-              <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>A node can be ON only if its parent is ON; turning a node OFF locks its whole subtree OFF.</span>
+              <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>A node can be ON only if its parent is ON; turning a node OFF locks its whole subtree OFF. Wallet also needs Table QR ON.</span>
             </div>
           )}
 

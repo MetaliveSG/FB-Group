@@ -22,6 +22,7 @@ DEFAULTS = {
     "rewards_enabled": True,
     "qr_ordering_enabled": True,
     "pos_enabled": True,
+    "wallet_enabled": False,        # stored-value wallet — opt-in (gated by qr_ordering at resolve time)
     "timezone": "Asia/Singapore",   # the tenant's canonical reporting timezone (the "books")
     # Welcome voucher pack granted on signup (issued by vouchers.issue_welcome_pack). Default off.
     "welcome_voucher": {"enabled": False, "count": 1, "value": 0, "per_period": None,
@@ -32,7 +33,7 @@ DEFAULTS = {
 
 
 # The non-sensitive subset any staff member may read to render nav (no spin costs).
-NAV_FLAG_KEYS = ("pipeline_enabled", "rewards_enabled", "qr_ordering_enabled", "pos_enabled")
+NAV_FLAG_KEYS = ("pipeline_enabled", "rewards_enabled", "qr_ordering_enabled", "pos_enabled", "wallet_enabled")
 
 
 def get_settings(db: Session, *, merchant_id: str) -> dict:

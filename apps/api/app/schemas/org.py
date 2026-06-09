@@ -88,6 +88,7 @@ class SettingsOut(BaseModel):
     rewards_enabled: bool = True
     qr_ordering_enabled: bool = True
     pos_enabled: bool = False
+    wallet_enabled: bool = False
     # The tenant's canonical reporting timezone (the "books" — payouts/GST/daily close use it).
     timezone: str = "Asia/Singapore"
     welcome_voucher: WelcomeVoucherCfg = Field(default_factory=WelcomeVoucherCfg)
@@ -106,6 +107,7 @@ class NavFlagsOut(BaseModel):
     rewards_enabled: bool = True
     qr_ordering_enabled: bool = True
     pos_enabled: bool = True
+    wallet_enabled: bool = False
     can_manage_merchant: bool = False
 
 
@@ -126,6 +128,7 @@ class SettingsUpdateIn(BaseModel):
     rewards_enabled: bool | None = None
     qr_ordering_enabled: bool | None = None
     pos_enabled: bool | None = None
+    wallet_enabled: bool | None = None
     timezone: str | None = None   # IANA reporting timezone for this tenant; validated → 422 on bad
     welcome_voucher: WelcomeVoucherCfg | None = None
     receipt: ReceiptCfg | None = None
@@ -212,17 +215,20 @@ class NodeAccountOut(BaseModel):
 
 class NodeModulesIn(BaseModel):
     """Set a node's per-module on/off. Omitted fields are left unchanged. A child can be ON only if
-    its parent is ON (parent-gated); turning a node OFF cascades OFF to its subtree."""
+    its parent is ON (parent-gated); turning a node OFF cascades OFF to its subtree. Wallet is
+    additionally gated by Table QR."""
     rewards: bool | None = None        # Intelligence
     qr_ordering: bool | None = None     # Table QR
     pos: bool | None = None             # POS
+    wallet: bool | None = None          # Wallet (needs Table QR ON)
 
 
 class NodeModulesOut(BaseModel):
     rewards: bool                        # the node's OWN on/off
     qr_ordering: bool
     pos: bool
-    resolved: dict                       # effective after parent-gating: {rewards_enabled, qr_ordering_enabled, pos_enabled}
+    wallet: bool
+    resolved: dict                       # effective after parent-gating: {rewards/qr_ordering/pos/wallet_enabled}
     parent_enabled: dict                 # each module's value at the parent (drives grey/lock); {..._enabled}
 
 
