@@ -75,7 +75,11 @@ sets it once high, stalls inherit); the **diner/staff selects one per order** if
   behavior axes on the `Order` (today only `order_type` = dine_in/takeaway/manual; needs the hand-off axis) +
   per-order selection in the QR app (today `t/[token]` hardcodes `dine_in`) + the console control + pickup
   number + conditional table (eat_in only) + (later) per-item availability by option (Olo-style).
-Full design → `docs/architecture-fulfilment-modes.md` + memory [[fulfilment-modes]] (UPDATE both to this
+- **UI placement:** it's a sub-config of the **Ordering** module → **merchant** sets the enabled options on
+  the Ordering → **"Tables & QR" page** (reframe "Tables & Service"; tables show/hide per option); **operator**
+  sets the cascade default in the platform **`NodeDetailDrawer`** alongside the module toggles (foodcourt sets
+  once, stalls inherit). Both gate on Table-QR effective-ON.
+Full design → `docs/architecture-fulfilment-modes.md` + memory [[fulfilment-modes]] (both now on this
 two-axis model — the old "dine_in vs pickup single mode" framing is superseded).
 
 ## Stack

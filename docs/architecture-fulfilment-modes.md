@@ -84,6 +84,18 @@ operating-model moat, not a Toast clone).
   table** (only when a table applies) · the **ready notification** via the real messaging channel · (later)
   **per-item availability by option** (Olo-style restrictions).
 
+## Where it lives in the UI
+A **sub-config of the Ordering module** → it belongs in the **Ordering** nav section (which already groups
+Orders · Menu · Tables & QR and auto-hides when the module is off). Two complementary surfaces:
+- **Merchant console → Ordering → the "Tables & QR" page (the natural home; reframe as "Tables & Service").**
+  Tables are **conditional on the option** (`eat_in/served` needs tables, `self_pickup` doesn't), so "how food
+  is handed off" sits next to "do we use tables": the storefront ticks its **enabled options** and the table
+  grid shows/hides accordingly.
+- **Platform console → `NodeDetailDrawer` (the cascade default).** Per-storefront, cascade-resolved config
+  **exactly like the module toggles** already in the drawer — so an operator running a whole **foodcourt** sets
+  the default once at the venue node and stalls inherit (`self_pickup`).
+Both gate on **Table QR effective-ON** (the Ordering module), consistent with the rest of the console.
+
 ## Module relationship + naming
 A **sub-config of the Ordering module**. The current **"Table QR"** label is dine-in-centric; the module is
 really **"Ordering · with service options."** Keep the label for now; the engine underneath is option-aware.
