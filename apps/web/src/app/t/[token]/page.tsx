@@ -268,10 +268,16 @@ export default function TablePage() {
   const base = getApiBase();
 
   const [step, setStep] = useState<AppStep>("loading");
+  // Mirror `step` into a ref so the (stale-closure) session-expiry handler can read where the
+  // diner was when their token died — to send them back there after re-login.
+  const stepRef = useRef<AppStep>("loading");
+  stepRef.current = step;
   const [qrData, setQrData] = useState<QrResolution | null>(null);
   const [cart, setCart] = useState<CartEntry[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [resumeCheckout, setResumeCheckout] = useState(false);
+  // Where to return after an expiry-triggered re-login ("payment" → back to the pay screen).
+  const [resumeStep, setResumeStep] = useState<AppStep | null>(null);
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [customiseItem, setCustomiseItem] = useState<MenuItem | null>(null);
@@ -301,9 +307,12 @@ export default function TablePage() {
     function onLogout(e: Event) {
       const detail = (e as CustomEvent).detail as { actor?: string } | undefined;
       if (detail?.actor && detail.actor !== "customer") return;
+      const was = stepRef.current;
       setCustomerTokenState(null);
       setCustomerName(null);
-      setError("Your session expired — please log in again to continue.");
+      setError("Session expired — please log in again to continue your order.");
+      // Remember where they were so we can resume after re-login (esp. mid-checkout).
+      if (was === "payment") setResumeStep("payment");
       setStep((prev) => (prev === "success" ? prev : "auth"));
     }
     window.addEventListener(AUTH_LOGOUT_EVENT, onLogout);
@@ -484,12 +493,19 @@ export default function TablePage() {
               setCustomerTokenState(tok);
               if (cust.full_name) setCustomerName(cust.full_name as string);
               setError(null);
-              setStep("menu");
-              // If they came here from "Log in to Order", reopen the cart so they can
-              // pay straight away (now signed in → the sheet shows "Place Order").
-              if (resumeCheckout) {
-                setResumeCheckout(false);
-                setCartOpen(true);
+              // Resume where they were when the session died: back to the pay screen if they
+              // were mid-checkout (order still in hand), otherwise the menu.
+              if (resumeStep === "payment" && order) {
+                setResumeStep(null);
+                setStep("payment");
+              } else {
+                setStep("menu");
+                // If they came here from "Log in to Order", reopen the cart so they can
+                // pay straight away (now signed in → the sheet shows "Place Order").
+                if (resumeCheckout) {
+                  setResumeCheckout(false);
+                  setCartOpen(true);
+                }
               }
             }}
           />

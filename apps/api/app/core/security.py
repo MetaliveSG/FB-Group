@@ -27,8 +27,10 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def create_access_token(subject: str, claims: dict[str, Any] | None = None) -> str:
-    return _encode(subject, "access", timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES), claims)
+def create_access_token(subject: str, claims: dict[str, Any] | None = None,
+                        ttl_minutes: int | None = None) -> str:
+    minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES if ttl_minutes is None else ttl_minutes
+    return _encode(subject, "access", timedelta(minutes=minutes), claims)
 
 
 def create_refresh_token(subject: str, claims: dict[str, Any] | None = None) -> str:

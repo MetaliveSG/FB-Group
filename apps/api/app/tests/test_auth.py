@@ -46,6 +46,20 @@ def test_otp_login_and_invalid_otp_blocked(client):
     assert good.status_code == 200 and good.json()["actor"] == "customer"
 
 
+def test_customer_token_is_long_lived(client):
+    """Diners get a ~1-week access token (don't interrupt a meal/checkout); staff stay short."""
+    import jwt
+
+    req = client.post("/api/v1/auth/customer/otp/request", json={"phone": "+6580000009"})
+    code = req.json()["debug_code"]
+    res = client.post("/api/v1/auth/customer/otp/verify",
+                      json={"phone": "+6580000009", "code": code, "accepted_terms": True})
+    claims = jwt.decode(res.json()["access_token"], options={"verify_signature": False})
+    ttl_min = (claims["exp"] - claims["iat"]) / 60
+    assert abs(ttl_min - settings.CUSTOMER_TOKEN_EXPIRE_MINUTES) < 2
+    assert ttl_min > settings.ACCESS_TOKEN_EXPIRE_MINUTES   # longer than the staff/operator TTL
+
+
 def test_expired_token_rejected(client):
     now = int(time.time())
     token = jwt.encode(

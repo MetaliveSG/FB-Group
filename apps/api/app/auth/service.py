@@ -8,6 +8,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.auth.otp import otp_store
+from app.core.config import settings
 from app.core.errors import AuthError, ConflictError, ForbiddenError
 from app.core.security import (
     create_access_token,
@@ -25,8 +26,10 @@ def issue_tokens(subject: str, actor: str, claims: dict | None = None) -> dict:
     extra = {"actor": actor}
     if claims:
         extra.update(claims)
+    # Customers (diners) get a 1-week access token so a meal/checkout isn't cut short; staff stay short.
+    ttl = settings.CUSTOMER_TOKEN_EXPIRE_MINUTES if actor == "customer" else None
     return {
-        "access_token": create_access_token(subject, extra),
+        "access_token": create_access_token(subject, extra, ttl_minutes=ttl),
         "refresh_token": create_refresh_token(subject, {"actor": actor}),
         "token_type": "bearer",
     }

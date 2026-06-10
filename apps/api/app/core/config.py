@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     # JWT_SECRET so dev/docker need no extra config; set a distinct value (or KMS) in production.
     PIN_SECRET: str | None = None
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    # Customers (diners) get a much longer access token — low-risk, and we don't want a dine-in /
+    # checkout interrupted by an expiry. 1 week. Staff/operator keep the shorter TTL above.
+    CUSTOMER_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # --- OTP (mock provider) ---
