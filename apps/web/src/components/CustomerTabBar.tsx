@@ -76,6 +76,8 @@ export default function CustomerTabBar({ token, active }: { token: string; activ
         );
         if (cancelled) return;
         setReadyOrder(ready ?? null);
+        // Auto-close a stale popup the moment its order is no longer the ready one (collected/gone).
+        setPopup((prev) => (prev && (!ready || ready.id !== prev.id) ? null : prev));
         // Pop the overlay ONCE per order the first time we see it ready (not every poll).
         if (ready && !popped.current.has(ready.id)) {
           popped.current.add(ready.id);
@@ -84,7 +86,7 @@ export default function CustomerTabBar({ token, active }: { token: string; activ
       } catch { /* transient */ }
     };
     poll();
-    const iv = setInterval(poll, 12000);
+    const iv = setInterval(poll, 6000);   // snappy enough to clear the banner/popup soon after "Collected"
     return () => { cancelled = true; clearInterval(iv); };
   }, [token]);
 
