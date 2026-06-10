@@ -68,19 +68,25 @@ no alert) · restaurant takeaway (takeaway×self_pickup) · foodcourt with runne
 single-axis model). The **storefront configures its enabled set** (cascade like the module flags — a foodcourt
 sets it once high, stalls inherit); the **diner/staff selects one per order** if >1, else it's auto.
 
-- **Already built (the "ready" half):** KDS "mark ready" + `fulfilment_status` (queued→preparing→ready→
-  collected) + the customer pick-up tracker — all key off the order's hand-off, so they light up once service
-  options drive it. (Current code keys off `order_type !== "dine_in"`; that becomes the `self_pickup` axis.)
-- **NOT built:** the per-storefront enabled-options config (cascade-resolved on `org_nodes`) + the two
-  behavior axes on the `Order` (today only `order_type` = dine_in/takeaway/manual; needs the hand-off axis) +
-  per-order selection in the QR app (today `t/[token]` hardcodes `dine_in`) + the console control + pickup
-  number + conditional table (eat_in only) + (later) per-item availability by option (Olo-style).
-- **UI placement:** it's a sub-config of the **Ordering** module → **merchant** sets the enabled options on
-  the Ordering → **"Tables & QR" page** (reframe "Tables & Service"; tables show/hide per option); **operator**
-  sets the cascade default in the platform **`NodeDetailDrawer`** alongside the module toggles (foodcourt sets
-  once, stalls inherit). Both gate on Table-QR effective-ON.
-Full design → `docs/architecture-fulfilment-modes.md` + memory [[fulfilment-modes]] (both now on this
-two-axis model — the old "dine_in vs pickup single mode" framing is superseded).
+- **BUILT (2026-06-10/11):** `org_nodes.service_options` cascade config + simplified console control
+  (NodeDetailDrawer: **Dine-in [Self-Service|Served] + Takeaway on/off**, settable on chain or storefront) ·
+  `Order.hand_off` axis (migration `h2i3serviceopts`) + `create_order` derivation (rejects an unoffered option) ·
+  per-order picker in the QR app (when >1) · **SEA-first default = Self-Service + Takeaway** · KDS 🍽/📦 cue +
+  diner ready-to-collect notification (popup + banner + Orders-tab badge, keyed off `self_pickup`, ≤6s poll).
+- **DECISION 2026-06-11 — per-stall service options in a foodcourt = NOT needed, DEFERRED into M2.** Standalone
+  storefronts already resolve per-storefront (live). Foodcourt orders attribute to the **venue outlet, not the
+  stall** (`create_qr_order`→`create_order(outlet_id=qr.outlet_id)`), so per-stall can't take effect until
+  foodcourt-order→stall-outlet attribution is built (M2/settlement); real foodcourts are uniformly self-service
+  so the venue-level cascade default is correct. Mixed venues (kopitiam table-service drinks stall) = revisit
+  alongside M2, not standalone.
+- **Still to add:** `pickup_number` · conditional table (hide for self-pickup-only) · real-time push
+  (SSE/WebSocket + Web Push — KIV; today in-app poll ≤6s) · per-item availability by option · **service-charge
+  fix** (charge only when `hand_off==served`, not `order_type==dine_in` — foodcourt self-collect wrongly charged).
+- **UI placement:** sub-config of the **Ordering** module. Today the config lives in the platform
+  **`NodeDetailDrawer`** (cascade on chain/storefront); a merchant-facing copy on the Ordering → "Tables & QR"
+  page (reframe "Tables & Service") is the nicer placement, not yet done.
+Full design → `docs/architecture-fulfilment-modes.md` + memory [[fulfilment-modes]] (both on this two-axis
+model — the old "dine_in vs pickup single mode" framing is superseded).
 
 ## Stack
 - **Backend** `apps/api` — FastAPI + SQLAlchemy 2.0 (typed `Mapped`/`mapped_column`) + Alembic.

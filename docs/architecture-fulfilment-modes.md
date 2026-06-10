@@ -78,11 +78,26 @@ operating-model moat, not a Toast clone).
   cart, checkout, order status lifecycle, loyalty-on-checkout. **NEW (2026-06-10):** the KDS "mark ready"
   screen (`/kds`) + `fulfilment_status` + the customer pick-up tracker — all key off the order's hand-off
   (currently `order_type !== "dine_in"`), so they light up automatically once service options drive it.
-- **To add:** the per-storefront **enabled-options config** (cascade-resolved) · the **`hand_off` axis** on the
-  `Order` (+migration; the second axis) · **per-order selection** in the QR app (today `t/[token]` hardcodes
-  `dine_in`) · the **console control** (NodeDetailDrawer) · **`pickup_number`** generation · **conditional
-  table** (only when a table applies) · the **ready notification** via the real messaging channel · (later)
-  **per-item availability by option** (Olo-style restrictions).
+- **BUILT (2026-06-10/11):** the per-storefront enabled-options config (`org_nodes.service_options`,
+  cascade-resolved) + the simplified console control (NodeDetailDrawer: Dine-in [Self-Service|Served] + Takeaway
+  on/off, settable on chain/storefront) · the **`hand_off` axis** on the `Order` (+migration) + derivation in
+  `create_order` · **per-order selection** in the QR app (picker when >1) · **SEA-first default** (Self-Service +
+  Takeaway) · KDS plate/package cue + the diner ready-to-collect notification (popup + banner + tab badge, keyed
+  off `self_pickup`).
+- **Still to add:** `pickup_number` generation · conditional table (hide tables for self-pickup-only) · the ready
+  notification via a **real push channel** (today in-app poll, ≤6s; SSE/WebSocket + Web Push deferred) · (later)
+  **per-item availability by option** (Olo-style) · the **service-charge fix** (charge only when `hand_off==served`).
+
+## Per-stall service options in a foodcourt — DEFERRED into M2 (decided 2026-06-11)
+**Not needed now; not built.** Rationale:
+- **Standalone storefronts already resolve per-storefront** (the order's outlet → that storefront's node) — live.
+- **Foodcourt orders attribute to the VENUE outlet, not the stall** (`create_qr_order` → `create_order(outlet_id =
+  qr.outlet_id)`; `placeOrder` sends the venue token). So per-*stall* options **cannot take effect** until
+  foodcourt orders are attributed to the **stall's** outlet — a deeper change tied to **settlement/leasing (M2)**.
+- **Real foodcourts are uniformly self-service**, so one **venue-level cascade default** (set once at the venue
+  node → stalls inherit) is correct and already covered.
+- Per-stall only matters for a genuinely **mixed venue** (e.g. a kopitiam where the drinks stall serves to table) —
+  an edge case to revisit **alongside the M2 foodcourt-order-to-stall-outlet attribution**, not as a standalone task.
 
 ## Where it lives in the UI
 A **sub-config of the Ordering module** → it belongs in the **Ordering** nav section (which already groups
