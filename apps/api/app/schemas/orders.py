@@ -48,6 +48,7 @@ class OrderOut(ORMModel):
     channel: str
     order_type: str
     status: str
+    fulfilment_status: str = "queued"   # kitchen/pick-up state — lets the diner track "ready for pick-up"
     subtotal: float
     service_charge: float
     tax: float

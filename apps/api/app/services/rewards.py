@@ -98,6 +98,8 @@ def my_orders(db: Session, *, customer_id: str, merchant_id: str, limit: int = 2
         result.append({
             "id": o.id,
             "status": o.status,
+            "fulfilment_status": o.fulfilment_status,
+            "order_type": o.order_type,
             "total": float(o.total),
             "items_count": sum(i.quantity for i in items),
             "summary": summary,

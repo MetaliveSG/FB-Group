@@ -128,6 +128,8 @@ export interface OrderOut {
   tax: number;
   total: number;
   status: string;
+  fulfilment_status?: FulfilmentStatus;   // kitchen/pick-up state — lets the diner track "ready for pick-up"
+  order_type?: string;
   items: OrderItem[];
 }
 
@@ -338,6 +340,8 @@ export interface CatalogItem {
 export interface MyOrder {
   id: string;
   status: string;
+  fulfilment_status: FulfilmentStatus;   // kitchen/pick-up state: queued→preparing→ready→collected
+  order_type: string;
   total: number;
   items_count: number;
   summary: string;

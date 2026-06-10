@@ -9,6 +9,24 @@ import { Card, Badge, Skeleton, EmptyState, Button, Icons } from "@/components/u
 import CustomerTabBar from "@/components/CustomerTabBar";
 import type { MyOrder, OrderOut } from "@fbgroup/api-client";
 
+// The badge a DINER sees: once an order is paid (status=completed), show the KITCHEN/pick-up state
+// (so "completed" payment doesn't masquerade as "done") — otherwise show the payment state.
+function pickupBadge(o: { status: string; fulfilment_status?: string; order_type?: string }):
+  { label: string; tone: "success" | "warning" | "danger" | "default" } {
+  if (o.status === "completed") {
+    // Dine-in is table service — the waiter serves it, the diner tracks nothing → just "Paid".
+    if (o.order_type === "dine_in") return { label: "Paid", tone: "success" };
+    // Pick-up: surface the collection journey so the diner knows when to collect.
+    switch (o.fulfilment_status) {
+      case "ready": return { label: "🔔 Ready for pick-up", tone: "success" };
+      case "collected": return { label: "Collected", tone: "default" };
+      case "preparing": return { label: "Preparing", tone: "warning" };
+      default: return { label: "Order received", tone: "warning" };  // queued
+    }
+  }
+  return { label: o.status, tone: STATUS_TONE[o.status] ?? "default" };
+}
+
 const STATUS_TONE: Record<string, "success" | "warning" | "danger" | "default"> = {
   completed: "success",
   paid: "success",
@@ -29,6 +47,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<MyOrder[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [loggedOut, setLoggedOut] = useState(false);
+  const [merchantId, setMerchantId] = useState<string | null>(null);
   // Expand-a-card → lazily fetch its full detail (line items + cost breakdown).
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [details, setDetails] = useState<Record<string, OrderOut | "loading" | "error">>({});
@@ -57,6 +76,7 @@ export default function OrdersPage() {
           return;
         }
         try {
+          setMerchantId(qr.merchant.id);
           setOrders(await getMyOrders(base, tok, qr.merchant.id));
         } finally {
           setLoading(false);
@@ -64,6 +84,17 @@ export default function OrdersPage() {
       })
       .catch(() => setLoading(false));
   }, [base, token]);
+
+  // Poll while the page is open so a "Ready for pick-up" appears live (every 8s).
+  useEffect(() => {
+    if (!merchantId) return;
+    const tok = getCustomerToken();
+    if (!tok) return;
+    const t = setInterval(() => {
+      getMyOrders(base, tok, merchantId).then(setOrders).catch(() => {});
+    }, 8000);
+    return () => clearInterval(t);
+  }, [merchantId, base]);
 
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <div className="t-shell">
@@ -126,7 +157,7 @@ export default function OrdersPage() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-2)" }}>
                     <div style={{ fontWeight: 800 }}>Order #{o.id.slice(0, 8)}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                      <Badge tone={STATUS_TONE[o.status] ?? "default"}>{o.status}</Badge>
+                      {(() => { const b = pickupBadge(o); return <Badge tone={b.tone}>{b.label}</Badge>; })()}
                       <Icons.ChevronRight
                         size={18}
                         style={{ transform: expanded ? "rotate(90deg)" : "none", transition: "transform .15s", color: "var(--color-text-muted)" }}

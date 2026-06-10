@@ -9,6 +9,7 @@ import {
   otpVerify,
   createOrder,
   checkout,
+  getOrder,
   getApiBase,
   installAuthHandler,
   AUTH_LOGOUT_EVENT,
@@ -289,6 +290,7 @@ export default function TablePage() {
   const [customerName, setCustomerName] = useState<string | null>(null);
   const [order, setOrder] = useState<OrderOut | null>(null);
   const [checkoutResult, setCheckoutResult] = useState<CheckoutResponse | null>(null);
+  const [pickupStatus, setPickupStatus] = useState<string | null>(null);  // live fulfilment_status (pick-up orders only)
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>("card");
   const [forceOutcome, setForceOutcome] = useState<string>("");
   const [placingOrder, setPlacingOrder] = useState(false);
@@ -346,6 +348,23 @@ export default function TablePage() {
     if (!cartLoaded.current) { cartLoaded.current = true; return; }
     try { localStorage.setItem(cartKey, JSON.stringify(cart)); } catch { /* quota/private mode */ }
   }, [cart, cartKey]);
+
+  // PICK-UP only: track the kitchen so the diner knows WHEN to collect. Dine-in is table service —
+  // the waiter brings the food, the diner does nothing, so we show no fulfilment notification for it.
+  useEffect(() => {
+    const isPickup = (order?.order_type ?? "dine_in") !== "dine_in";
+    if (step !== "success" || !checkoutResult || !customerToken || !isPickup) return;
+    let active = true;
+    const poll = async () => {
+      try {
+        const o = await getOrder(base, customerToken, checkoutResult.order_id);
+        if (active) setPickupStatus(o.fulfilment_status ?? null);
+      } catch { /* transient — keep last known */ }
+    };
+    poll();
+    const t = setInterval(poll, 5000);
+    return () => { active = false; clearInterval(t); };
+  }, [step, checkoutResult, customerToken, base, order]);
 
   // The menu currently shown: a single-stall outlet's inline menu, or the fetched
   // menu of the stall the diner tapped in a foodcourt.
@@ -527,6 +546,23 @@ export default function TablePage() {
             <p style={{ color: "var(--color-text-muted)", fontSize: "var(--text-sm)", marginTop: 4 }}>
               Order #{checkoutResult.order_id.slice(0, 8)} · {checkoutResult.payment.method.toUpperCase()} · Ref {checkoutResult.payment.reference}
             </p>
+            {/* Live PICK-UP tracker (pick-up orders only — dine-in is table service, no diner action).
+                Populated only when polling runs, which is gated to pick-up orders above. */}
+            {pickupStatus === "ready" ? (
+              <div style={{ margin: "var(--space-3) 0", padding: "var(--space-4)", background: "var(--color-success-bg)", border: "2px solid var(--color-success)", borderRadius: "var(--radius-lg)" }}>
+                <div style={{ fontSize: "var(--text-2xl)", fontWeight: 900, color: "var(--color-success)" }}>🔔 Ready for pick-up!</div>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginTop: 2 }}>
+                  Collect order #{checkoutResult.order_id.slice(0, 8).toUpperCase()} from the stall.
+                </div>
+              </div>
+            ) : pickupStatus && pickupStatus !== "collected" ? (
+              <div style={{ margin: "var(--space-3) 0", padding: "var(--space-3)", background: "var(--color-surface-alt)", borderRadius: "var(--radius-lg)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <span style={{ fontSize: "var(--text-lg)" }}>👨‍🍳</span>
+                <span style={{ fontSize: "var(--text-sm)", fontWeight: 700 }}>Preparing — we&apos;ll tell you when to collect.</span>
+              </div>
+            ) : pickupStatus === "collected" ? (
+              <div style={{ margin: "var(--space-3) 0", fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--color-text-muted)" }}>✓ Collected — enjoy!</div>
+            ) : null}
             <div style={{ margin: "var(--space-4) 0", padding: "var(--space-4)", background: "var(--color-surface-alt)", borderRadius: "var(--radius-lg)" }}>
               <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)" }}>You earned</div>
               <div style={{ fontSize: "var(--text-4xl)", fontWeight: 900, color: "var(--color-primary)" }}>

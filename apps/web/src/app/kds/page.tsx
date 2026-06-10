@@ -80,11 +80,17 @@ export default function KdsPage() {
     );
   }
 
-  const next: Record<FulfilmentStatus, { to: FulfilmentStatus; label: string } | null> = {
-    queued: { to: "preparing", label: "Start" },
-    preparing: { to: "ready", label: "Ready for pick-up" },
-    ready: { to: "collected", label: "Collected" },
-    collected: null,
+  // Two-tap flow: NEW → Ready → done. Wording follows the order's mode — a pick-up order is
+  // COLLECTED by the diner; a dine-in order is SERVED by a waiter. (PREPARING still exists in the
+  // model for kitchens that want a "Start" step — re-add a button to use it.)
+  const nextAction = (o: KitchenOrder): { to: FulfilmentStatus; label: string } | null => {
+    const pickup = o.order_type !== "dine_in";
+    switch (o.fulfilment_status) {
+      case "queued":
+      case "preparing": return { to: "ready", label: pickup ? "Ready for pick-up" : "Ready to serve" };
+      case "ready": return { to: "collected", label: pickup ? "Collected" : "Served" };
+      default: return null;
+    }
   };
 
   return (
@@ -100,7 +106,7 @@ export default function KdsPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
           {orders.map((o) => {
             const s = STATUS_STYLE[o.fulfilment_status];
-            const adv = next[o.fulfilment_status];
+            const adv = nextAction(o);
             const isPickup = o.order_type !== "dine_in";
             return (
               <div key={o.id} style={{ background: s.bg, borderRadius: 12, overflow: "hidden", border: `1px solid ${s.bar}55`, display: "flex", flexDirection: "column" }}>
@@ -110,7 +116,9 @@ export default function KdsPage() {
                     <span style={{ fontWeight: 800, fontSize: 16 }}>
                       {isPickup ? "🥡 Pick-up" : `Table ${o.table_label ?? "—"}`}
                     </span>
-                    <span style={{ fontSize: 10, fontWeight: 800, color: s.bar, letterSpacing: 0.5 }}>{s.label}</span>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: s.bar, letterSpacing: 0.5 }}>
+                      {o.fulfilment_status === "ready" ? (isPickup ? "READY • PICK-UP" : "READY • SERVE") : s.label}
+                    </span>
                   </div>
                   <div style={{ fontSize: 12, color: "#94a3b8", display: "flex", justifyContent: "space-between" }}>
                     <span>{o.customer_name ?? "Guest"}</span>

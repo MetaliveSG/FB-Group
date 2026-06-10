@@ -31,6 +31,8 @@ class ProfileUpdate(BaseModel, _PhoneMixin):
 class MyOrderOut(ORMModel):
     id: str
     status: str
+    fulfilment_status: str = "queued"   # kitchen/pick-up state: queued→preparing→ready→collected
+    order_type: str = "dine_in"
     total: float
     items_count: int
     summary: str
