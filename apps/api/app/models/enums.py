@@ -78,7 +78,9 @@ SERVICE_OPTIONS: dict[str, dict] = {
     "dine_in_pickup": {"label": "Dine in — self-collect", "order_type": "dine_in", "hand_off": "self_pickup"},
     "takeaway": {"label": "Takeaway", "order_type": "takeaway", "hand_off": "self_pickup"},
 }
-DEFAULT_SERVICE_OPTIONS = ["dine_in_served"]   # nearest-ancestor cascade falls back here (restaurant)
+# SEA-first default: dine-in is SELF-SERVICE (diner collects) + takeaway ON. A restaurant flips dine-in to
+# "served". Resolution: a storefront's own set → nearest declaring ancestor → this default.
+DEFAULT_SERVICE_OPTIONS = ["dine_in_pickup", "takeaway"]
 
 
 class OrderStatus(str, Enum):

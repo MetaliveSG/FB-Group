@@ -114,7 +114,12 @@ export default function KdsPage() {
                 <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontWeight: 800, fontSize: 16 }}>
-                      {isPickup ? "🥡 Pick-up" : `Table ${o.table_label ?? "—"}`}
+                      {/* 📦 package (takeaway) vs 🍽 plate (dine-in); served shows the table, self-collect the hand-off. */}
+                      {o.order_type === "takeaway"
+                        ? "📦 Takeaway"
+                        : isPickup
+                          ? "🍽 Dine-in · collect"
+                          : `🍽 Table ${o.table_label ?? "—"}`}
                     </span>
                     <span style={{ fontSize: 10, fontWeight: 800, color: s.bar, letterSpacing: 0.5 }}>
                       {o.fulfilment_status === "ready" ? (isPickup ? "READY • PICK-UP" : "READY • SERVE") : s.label}

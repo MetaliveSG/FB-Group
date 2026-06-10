@@ -148,12 +148,10 @@ export default function NodeDetailDrawer({
     run(() => setNodeModules(base, tok(), node.id, { [key]: val } as Partial<Record<ModuleKey, boolean>>),
         (m) => setModules(m as OrgNodeModules));
 
-  // Toggle a service option on/off in the node's OWN set (empty → inherit/cascade).
-  const toggleServiceOption = (key: string) => {
-    if (!svcOpts) return;
-    const cur = svcOpts.own ?? svcOpts.resolved;   // editing starts from the effective set
-    const next = cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key];
-    run(() => setNodeServiceOptions(base, tok(), node.id, next), (o) => setSvcOpts(o as NodeServiceOptions));
+  // Save the simplified config: dine-in is Self-Service OR Served (exactly one) + Takeaway on/off.
+  const saveServiceConfig = (dineInServed: boolean, takeawayOn: boolean) => {
+    const list = [dineInServed ? "dine_in_served" : "dine_in_pickup", ...(takeawayOn ? ["takeaway"] : [])];
+    run(() => setNodeServiceOptions(base, tok(), node.id, list), (o) => setSvcOpts(o as NodeServiceOptions));
   };
   const resetServiceOptions = () =>
     run(() => setNodeServiceOptions(base, tok(), node.id, null), (o) => setSvcOpts(o as NodeServiceOptions));
@@ -419,38 +417,56 @@ export default function NodeDetailDrawer({
             </div>
           )}
 
-          {/* Service options (fulfilment) — which dine-in/self-collect/takeaway options this node offers.
-              Cascades like the module flags (a foodcourt sets it once high; stalls inherit). */}
-          {canManage && svcOpts && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--color-border,#e5e7eb)", paddingTop: 14 }}>
-              {label("Service options (fulfilment)")}
-              {svcOpts.catalog.map((opt) => {
-                const on = (svcOpts.own ?? svcOpts.resolved).includes(opt.key);
-                return (
-                  <div key={opt.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ flex: 1, fontSize: 13, color: "var(--color-text)" }}>
-                      {opt.label}
-                      <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: opt.hand_off === "self_pickup" ? "#b45309" : "#475569" }}>
-                        {opt.hand_off === "self_pickup" ? "SELF-COLLECT" : "SERVED"}
-                      </span>
-                    </span>
-                    <Toggle on={on} onChange={() => toggleServiceOption(opt.key)} disabled={busy} />
+          {/* Service options (fulfilment) — Dine-in: Self-Service or Served · Takeaway: on/off.
+              Cascades like the module flags (a foodcourt/brand sets it once; storefronts inherit + override). */}
+          {canManage && svcOpts && (() => {
+            const eff = svcOpts.own ?? svcOpts.resolved;
+            const served = eff.includes("dine_in_served");
+            const takeawayOn = eff.includes("takeaway");
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: "1px solid var(--color-border,#e5e7eb)", paddingTop: 14 }}>
+                {label(node.sells ? "Service options (fulfilment)" : "Service options — default for storefronts below")}
+                {/* Dine-in: Self-Service (collect) vs Served (waiter). */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>Dine-in</span>
+                  <div role="radiogroup" aria-label="Dine-in service" style={{ display: "flex", border: "1px solid var(--color-border,#e5e7eb)", borderRadius: 8, overflow: "hidden" }}>
+                    {([["Self-Service", false], ["Served", true]] as [string, boolean][]).map(([lbl, isServed], i) => {
+                      const sel = served === isServed;
+                      return (
+                        <button key={lbl} type="button" role="radio" aria-checked={sel} disabled={busy}
+                          onClick={() => saveServiceConfig(isServed, takeawayOn)}
+                          style={{ flex: 1, padding: "6px 0", fontSize: 12, fontWeight: sel ? 700 : 500, border: "none",
+                            borderLeft: i ? "1px solid var(--color-border,#e5e7eb)" : "none",
+                            background: sel ? "var(--color-primary,#dc2626)" : "#fff", color: sel ? "#fff" : "var(--color-text,#334155)",
+                            cursor: busy ? "default" : "pointer" }}>
+                          {lbl}
+                        </button>
+                      );
+                    })}
                   </div>
-                );
-              })}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
-                  {svcOpts.own == null ? "Inheriting from parent (cascade)." : "Set here; cascades to the subtree. Diner picks if >1."}
-                </span>
-                {svcOpts.own != null && (
-                  <button type="button" onClick={resetServiceOptions} disabled={busy}
-                    style={{ background: "none", border: "none", color: "var(--color-primary,#dc2626)", fontSize: 11, fontWeight: 700, cursor: busy ? "default" : "pointer" }}>
-                    Reset to inherit
-                  </button>
-                )}
+                  <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
+                    {served ? "A waiter/runner brings it to the table (no diner alert)." : "Diner collects from the counter when ready (gets a “ready” alert)."}
+                  </span>
+                </div>
+                {/* Takeaway on/off. */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>Takeaway <span style={{ fontWeight: 400, color: "var(--color-text-muted)", fontSize: 11 }}>— packaged to go</span></span>
+                  <Toggle on={takeawayOn} onChange={() => saveServiceConfig(served, !takeawayOn)} disabled={busy} />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
+                    {svcOpts.own == null ? "Inheriting (cascade)." : "Set here; cascades to the subtree."}
+                  </span>
+                  {svcOpts.own != null && (
+                    <button type="button" onClick={resetServiceOptions} disabled={busy}
+                      style={{ background: "none", border: "none", color: "var(--color-primary,#dc2626)", fontSize: 11, fontWeight: 700, cursor: busy ? "default" : "pointer" }}>
+                      Reset to inherit
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Web logins — dashboard accounts (email + password). POS PINs live in Settings → Staff & PINs. */}
           {canManage && (

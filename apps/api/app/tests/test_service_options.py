@@ -25,12 +25,13 @@ def _order(client, tok, w, **extra):
                        headers=H(tok))
 
 
-def test_default_is_dine_in_served(client, db):
+def test_default_is_dine_in_self_service(client, db):
+    """SEA-first default: an unconfigured storefront is dine-in SELF-SERVICE (diner collects) + takeaway."""
     w = make_world(db)
     cust = register_customer(client, email="so1@b.sg")
     r = _order(client, cust["access_token"], w)
     assert r.status_code == 201
-    assert r.json()["order_type"] == "dine_in" and r.json()["hand_off"] == "served"
+    assert r.json()["order_type"] == "dine_in" and r.json()["hand_off"] == "self_pickup"
 
 
 def test_storefront_pickup_drives_handoff(client, db):
@@ -70,10 +71,10 @@ def test_node_service_options_endpoint(client, db):
     build_breadtalk(db)
     ceo = H(staff_token(client, "ceo@breadtalk.sg"))
     g = client.get("/api/v1/org/nodes/o_bt_ion/service-options", headers=ceo).json()
-    assert g["own"] is None and g["resolved"] == ["dine_in_served"]       # default restaurant
+    assert g["own"] is None and g["resolved"] == ["dine_in_pickup", "takeaway"]   # SEA-first default
     assert any(c["key"] == "takeaway" for c in g["catalog"])
     s = client.put("/api/v1/org/nodes/o_bt_ion/service-options",
-                   json={"options": ["dine_in_pickup", "takeaway"]}, headers=ceo).json()
-    assert s["own"] == ["dine_in_pickup", "takeaway"] and s["resolved"] == ["dine_in_pickup", "takeaway"]
+                   json={"options": ["dine_in_served"]}, headers=ceo).json()       # flip to restaurant served
+    assert s["own"] == ["dine_in_served"] and s["resolved"] == ["dine_in_served"]
     c = client.put("/api/v1/org/nodes/o_bt_ion/service-options", json={"options": []}, headers=ceo).json()
-    assert c["own"] is None and c["resolved"] == ["dine_in_served"]       # cleared → inherit
+    assert c["own"] is None and c["resolved"] == ["dine_in_pickup", "takeaway"]    # cleared → inherit default
