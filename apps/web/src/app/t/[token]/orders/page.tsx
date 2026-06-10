@@ -157,6 +157,13 @@ export default function OrdersPage() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-2)" }}>
                     <div style={{ fontWeight: 800 }}>Order #{o.id.slice(0, 8)}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                      {/* Keep an explicit "✓ Paid" confirmation when the badge shows the pick-up journey
+                          (self-collect) instead of the word "Paid" (served orders already say "Paid"). */}
+                      {o.status === "completed" && o.hand_off === "self_pickup" && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 2, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--color-success)" }}>
+                          <Icons.Check size={13} /> Paid
+                        </span>
+                      )}
                       {(() => { const b = pickupBadge(o); return <Badge tone={b.tone}>{b.label}</Badge>; })()}
                       <Icons.ChevronRight
                         size={18}
