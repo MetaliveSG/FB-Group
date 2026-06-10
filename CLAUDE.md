@@ -48,20 +48,35 @@ credentials on a toggle flip — it cascades + churns PINs).
   the station-token issue/revoke is the hardening step (deferred). Launched standalone (new window) from the
   `/platform` tree-grid "Open Kitchen" (gated on Table-QR) + `/merchant/orders`.
 
-## Fulfilment mode = STOREFRONT setting, not a customer choice (LOCKED 2026-06-10)
-**Dine-in vs pick-up is chosen by the STOREFRONT (cascading), NEVER by the diner.** A restaurant SF =
-`dine_in` (table QR + table number); a **foodcourt** stall = `pickup` (order-ahead + pay + collect, order
-number, NO table). For a foodcourt, set `pickup` once high in the tree and stalls inherit (cascade like the
-module flags — nearest declaring ancestor wins → default `dine_in`). Full design → `docs/architecture-
-fulfilment-modes.md` + memory [[fulfilment-modes]]; sub-config of the Ordering/"Table QR" module.
-- **`Order.order_type` is DERIVED from the storefront's resolved mode at order time** — the customer app must
-  NOT dictate it (today `t/[token]` hardcodes `dine_in` on `createOrder` — that's the PoC gap to replace).
-- **Already built (the "ready" half):** the KDS "mark ready" screen + `fulfilment_status` + the customer
-  pick-up tracker all key off `order_type`, so they light up automatically once the SF mode drives it.
-- **NOT built (the remaining gap):** per-storefront `fulfilment_mode` config (a cascade-resolved `org_nodes`
-  column + resolver) · `OrderType.PICKUP` value · order_type derived from it in `create_order` · expose it on
-  the QR context · a Dine-in/Pick-up control in the console (NodeDetailDrawer) · pickup_number + conditional
-  table (dine-in only). Customer NEVER sees a "ready for pick-up" prompt for dine-in (waiter serves).
+## Service options (fulfilment) — TWO orthogonal axes, per-storefront SET, per-order pick (LOCKED 2026-06-10)
+**NOT a single "dine-in vs pickup" mode.** Studied Toast (configurable "Dining Options" w/ behaviors:
+DineIn adds table+server & plates; TakeOut requires customer info & packages; behavior also drives kitchen
+routing), Square (Orders API = PICKUP/DELIVERY/SHIPMENT only — dine-in is POS-app-only), Olo ("handoff
+modes" pickup/curbside/dine-in/delivery; dine-in can carry a table #; items restrictable per mode). Industry
+pattern = **a location configures a SET of options; the customer/staff picks one per order** (auto if only
+one). BUT Toast/Olo are restaurant-centric (they bundle dine-in = table service) — they CANNOT cleanly model
+the SEA foodcourt "eat-in but **self-collect**". So CIP **decouples two behavior axes** (this is the M4 SEA
+moat, not a copy of Toast):
+- **Dining context: `eat_in` | `takeaway`** → plate vs **package**; whether a **table** applies.
+- **Hand-off: `self_pickup` | `served`** (waiter/runner) → **self_pickup** = order/pickup number + the diner's
+  **"ready for pick-up" notification**; **served** = needs table, runner brings it, **NO diner notification**.
+
+**The 2×2 generates every scenario** — foodcourt eat-in self-collect (eat_in×self_pickup, table=no, diner
+alerted) · foodcourt takeaway (takeaway×self_pickup) · restaurant dine-in waiter (eat_in×served, table=yes,
+no alert) · restaurant takeaway (takeaway×self_pickup) · foodcourt with runners (eat_in×served).
+**KEY RULE: the diner "ready for pick-up" alert keys off `self_pickup`, NOT "dine-in"** (the bug in the old
+single-axis model). The **storefront configures its enabled set** (cascade like the module flags — a foodcourt
+sets it once high, stalls inherit); the **diner/staff selects one per order** if >1, else it's auto.
+
+- **Already built (the "ready" half):** KDS "mark ready" + `fulfilment_status` (queued→preparing→ready→
+  collected) + the customer pick-up tracker — all key off the order's hand-off, so they light up once service
+  options drive it. (Current code keys off `order_type !== "dine_in"`; that becomes the `self_pickup` axis.)
+- **NOT built:** the per-storefront enabled-options config (cascade-resolved on `org_nodes`) + the two
+  behavior axes on the `Order` (today only `order_type` = dine_in/takeaway/manual; needs the hand-off axis) +
+  per-order selection in the QR app (today `t/[token]` hardcodes `dine_in`) + the console control + pickup
+  number + conditional table (eat_in only) + (later) per-item availability by option (Olo-style).
+Full design → `docs/architecture-fulfilment-modes.md` + memory [[fulfilment-modes]] (UPDATE both to this
+two-axis model — the old "dine_in vs pickup single mode" framing is superseded).
 
 ## Stack
 - **Backend** `apps/api` — FastAPI + SQLAlchemy 2.0 (typed `Mapped`/`mapped_column`) + Alembic.
