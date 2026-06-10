@@ -1,6 +1,19 @@
 // Utility helpers for formatting and cart calculations
 
 /**
+ * Human-callable order number derived from the order id. The LAST 3 chars are numeric so staff can
+ * call out a number at the counter. Deterministic + stable per order — used on the KDS AND every
+ * customer-facing screen so the kitchen and the diner always see the SAME code.
+ * e.g. "a1b2c3…" → "A1B042"
+ */
+export function orderNo(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  const num = (h % 1000).toString().padStart(3, "0");
+  return id.slice(0, 3).toUpperCase() + num;
+}
+
+/**
  * Format a number as SGD currency string.
  * e.g. 12.5 → "S$12.50"
  */

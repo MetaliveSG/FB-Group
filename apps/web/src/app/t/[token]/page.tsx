@@ -21,7 +21,7 @@ import {
   getCustomerData,
   setCustomerData,
 } from "@/lib/auth";
-import { formatSGD } from "@/lib/format";
+import { formatSGD, orderNo } from "@/lib/format";
 import { filterMenuItems } from "@/lib/menu";
 import { Button, Card, Sheet, EmptyState, Skeleton, Icons } from "@/components/ui";
 import CustomerTabBar from "@/components/CustomerTabBar";
@@ -546,7 +546,7 @@ export default function TablePage() {
             </div>
             <div style={{ fontSize: "var(--text-2xl)", fontWeight: 900 }}>Payment Successful!</div>
             <p style={{ color: "var(--color-text-muted)", fontSize: "var(--text-sm)", marginTop: 4 }}>
-              Order #{checkoutResult.order_id.slice(0, 8)} · {checkoutResult.payment.method.toUpperCase()} · Ref {checkoutResult.payment.reference}
+              Order #{orderNo(checkoutResult.order_id)} · {checkoutResult.payment.method.toUpperCase()} · Ref {checkoutResult.payment.reference}
             </p>
             {/* Live PICK-UP tracker (pick-up orders only — dine-in is table service, no diner action).
                 Populated only when polling runs, which is gated to pick-up orders above. */}
@@ -554,7 +554,7 @@ export default function TablePage() {
               <div style={{ margin: "var(--space-3) 0", padding: "var(--space-4)", background: "var(--color-success-bg)", border: "2px solid var(--color-success)", borderRadius: "var(--radius-lg)" }}>
                 <div style={{ fontSize: "var(--text-2xl)", fontWeight: 900, color: "var(--color-success)" }}>🔔 Ready for pick-up!</div>
                 <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)", marginTop: 2 }}>
-                  Collect order #{checkoutResult.order_id.slice(0, 8).toUpperCase()} from the stall.
+                  Collect order #{orderNo(checkoutResult.order_id)} from the stall.
                 </div>
               </div>
             ) : pickupStatus && pickupStatus !== "collected" ? (

@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { listKitchenOrders, advanceFulfilment, getApiBase } from "@/lib/api";
 import { getStaffToken, getOperatorMerchant } from "@/lib/auth";
+import { orderNo } from "@/lib/format";
 import type { KitchenOrder, FulfilmentStatus } from "@fbgroup/api-client";
 
 const STATUS_STYLE: Record<FulfilmentStatus, { bg: string; bar: string; label: string }> = {
@@ -126,7 +127,7 @@ export default function KdsPage() {
                     </span>
                   </div>
                   <div style={{ fontSize: 12, color: "#94a3b8", display: "flex", justifyContent: "space-between" }}>
-                    <span>{o.customer_name ?? "Guest"}</span>
+                    <span style={{ fontWeight: 800, color: "#e2e8f0", letterSpacing: 0.5 }}>#{orderNo(o.id)}</span>
                     <span>⏱ {waited(o.created_at)}</span>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingTop: 2 }}>

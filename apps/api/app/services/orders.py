@@ -206,7 +206,8 @@ def kitchen_ticket(db: Session, order: Order) -> dict:
         "channel": order.channel,
         "created_at": order.created_at,
         "total": float(order.total),
-        "customer_name": (customer.full_name or customer.phone) if customer else None,
+        # KDS shows the order number, not PII — never expose the diner's phone to the kitchen.
+        "customer_name": customer.full_name if customer else None,
         "table_label": table.label if table else None,
         "items": order.items,
     }

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { resolveQr, getMyOrders, getOrder, getApiBase, installAuthHandler } from "@/lib/api";
 import { getCustomerToken } from "@/lib/auth";
-import { formatSGD, relativeTime } from "@/lib/format";
+import { formatSGD, relativeTime, orderNo } from "@/lib/format";
 import { Card, Badge, Skeleton, EmptyState, Button, Icons } from "@/components/ui";
 import CustomerTabBar from "@/components/CustomerTabBar";
 import type { MyOrder, OrderOut } from "@fbgroup/api-client";
@@ -155,7 +155,7 @@ export default function OrdersPage() {
                   style={{ all: "unset", cursor: "pointer", display: "block", width: "100%" }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-2)" }}>
-                    <div style={{ fontWeight: 800 }}>Order #{o.id.slice(0, 8)}</div>
+                    <div style={{ fontWeight: 800 }}>Order #{orderNo(o.id)}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                       {/* Keep an explicit "✓ Paid" confirmation when the badge shows the pick-up journey
                           (self-collect) instead of the word "Paid" (served orders already say "Paid"). */}

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   formatSGD,
+  orderNo,
   calcCartSubtotal,
   round2,
   churnColor,
@@ -171,5 +172,19 @@ describe("relativeTime", () => {
 
   it("handles null", () => {
     expect(relativeTime(null, now)).toBe("—");
+  });
+});
+
+describe("orderNo", () => {
+  it("last 3 chars are numeric", () => {
+    for (const id of ["a1b2c3d4e5f6", "deadbeefcafe0001", "ffffffffffff", "x"]) {
+      expect(orderNo(id).slice(-3)).toMatch(/^\d{3}$/);
+    }
+  });
+  it("is deterministic + stable per id", () => {
+    expect(orderNo("a1b2c3d4e5f6")).toBe(orderNo("a1b2c3d4e5f6"));
+  });
+  it("different ids generally differ", () => {
+    expect(orderNo("a1b2c3d4e5f6")).not.toBe(orderNo("0a0b0c0d0e0f"));
   });
 });

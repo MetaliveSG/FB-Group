@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { BottomNav, Icons } from "./ui";
 import { getCustomerToken } from "@/lib/auth";
 import { getApiBase, resolveQr, getLoyalty, getWheel, getJackpot, getMyOrders } from "@/lib/api";
+import { orderNo } from "@/lib/format";
 import type { MyOrder } from "@fbgroup/api-client";
 
 type Tab = "menu" | "rewards" | "orders" | "me";
@@ -108,7 +109,7 @@ export default function CustomerTabBar({ token, active }: { token: string; activ
             <div style={{ fontSize: 48, lineHeight: 1, display: "inline-block", transformOrigin: "50% 12%", animation: "cipBellRing 1.5s ease-in-out infinite" }}>🔔</div>
             <div style={{ fontSize: "var(--text-2xl)", fontWeight: 900, marginTop: "var(--space-2)", color: "var(--color-success, #16a34a)" }}>Ready for collection!</div>
             <p style={{ color: "var(--color-text-muted)", fontSize: "var(--text-sm)", margin: "var(--space-2) 0 var(--space-4)" }}>
-              Order #{popup.id.slice(0, 8).toUpperCase()}{popup.outlet_name ? ` · ${popup.outlet_name}` : ""} is ready — please collect from the stall.
+              Order #{orderNo(popup.id)}{popup.outlet_name ? ` · ${popup.outlet_name}` : ""} is ready — please collect from the stall.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
               <button onClick={() => { router.push(`/t/${t}/orders`); setPopup(null); }}
@@ -135,7 +136,7 @@ export default function CustomerTabBar({ token, active }: { token: string; activ
           }}
         >
           <span style={{ display: "inline-block", transformOrigin: "50% 12%", animation: "cipBellRing 1.5s ease-in-out infinite" }}>🔔</span>
-          Order #{readyOrder!.id.slice(0, 8).toUpperCase()} is ready
+          Order #{orderNo(readyOrder!.id)} is ready
         </button>
       )}
       <BottomNav
