@@ -100,6 +100,7 @@ def my_orders(db: Session, *, customer_id: str, merchant_id: str, limit: int = 2
             "status": o.status,
             "fulfilment_status": o.fulfilment_status,
             "order_type": o.order_type,
+            "hand_off": o.hand_off,
             "total": float(o.total),
             "items_count": sum(i.quantity for i in items),
             "summary": summary,

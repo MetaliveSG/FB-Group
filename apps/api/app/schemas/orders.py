@@ -18,7 +18,8 @@ class OrderItemInputSchema(BaseModel):
 class QrOrderCreate(BaseModel):
     qr_token: str
     items: list[OrderItemInputSchema] = Field(min_length=1)
-    order_type: OrderType = OrderType.DINE_IN
+    order_type: OrderType = OrderType.DINE_IN          # legacy; superseded by service_option on the QR path
+    service_option: str | None = None                  # the diner's chosen service option (key); auto if one
 
 
 class ManualOrderCreate(BaseModel):
@@ -47,6 +48,7 @@ class OrderOut(ORMModel):
     customer_id: str | None = None
     channel: str
     order_type: str
+    hand_off: str = "served"            # self_pickup (diner collects + alert) | served (waiter brings it)
     status: str
     fulfilment_status: str = "queued"   # kitchen/pick-up state — lets the diner track "ready for pick-up"
     subtotal: float
@@ -61,6 +63,7 @@ class MerchantOrderOut(BaseModel):
     id: str
     status: str
     fulfilment_status: str = FulfilmentStatus.QUEUED.value
+    hand_off: str = "served"
     channel: str
     created_at: UtcDatetime
     subtotal: float
@@ -79,6 +82,7 @@ class KitchenOrderOut(BaseModel):
     status: str
     fulfilment_status: str
     order_type: str
+    hand_off: str = "served"
     channel: str
     created_at: UtcDatetime
     total: float

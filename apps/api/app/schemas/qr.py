@@ -61,3 +61,6 @@ class QrContextOut(BaseModel):
     # off (but rewards on) → a rewards-only landing instead of menu+cart.
     ordering_enabled: bool = True
     rewards_enabled: bool = True
+    # The storefront's enabled service options (fulfilment), each {key, label, hand_off}. The diner picks
+    # one at checkout (auto if only one). hand_off=self_pickup → diner collects + "ready" alert.
+    service_options: list[dict] = []

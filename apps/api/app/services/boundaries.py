@@ -94,6 +94,46 @@ def resolve_modules_for_outlet(db: Session, *, outlet_id: str | None, merchant_i
     return resolve_modules(db, node=node_for_outlet(db, outlet_id), merchant_id=merchant_id)
 
 
+# --- Service options (fulfilment) — the storefront's enabled set (cascade) ----------------------
+def resolve_service_options(db: Session, *, node: OrgNode | None) -> list[str]:
+    """The enabled service-option keys for a node — the **nearest declaring ancestor's** non-empty list
+    wins (cascade like the module flags); falls back to the default (restaurant table service). Foodcourt
+    sets `["dine_in_pickup","takeaway"]` once high and stalls inherit."""
+    from app.models.enums import DEFAULT_SERVICE_OPTIONS, SERVICE_OPTIONS
+    if node is not None:
+        for n in _node_chain(db, node):
+            opts = getattr(n, "service_options", None)
+            if opts:
+                return [k for k in opts if k in SERVICE_OPTIONS] or list(DEFAULT_SERVICE_OPTIONS)
+    return list(DEFAULT_SERVICE_OPTIONS)
+
+
+def resolve_service_options_for_outlet(db: Session, *, outlet_id: str | None) -> list[str]:
+    """The enabled service-option keys for the node an outlet maps to (cascade + fallback)."""
+    return resolve_service_options(db, node=node_for_outlet(db, outlet_id))
+
+
+def get_node_service_options(db: Session, node: OrgNode) -> dict:
+    """The node's OWN enabled set (null = inherit) + the RESOLVED set (cascade) + the full catalog."""
+    from app.models.enums import SERVICE_OPTIONS
+    return {
+        "own": node.service_options,
+        "resolved": resolve_service_options(db, node=node),
+        "catalog": [{"key": k, **v} for k, v in SERVICE_OPTIONS.items()],
+    }
+
+
+def set_node_service_options(db: Session, node: OrgNode, options: list[str] | None) -> dict:
+    """Set the node's enabled service options (validated to known keys). `None`/empty = inherit (clear)."""
+    from app.models.enums import SERVICE_OPTIONS
+    if not options:
+        node.service_options = None
+    else:
+        node.service_options = [k for k in options if k in SERVICE_OPTIONS] or None
+    db.flush()
+    return get_node_service_options(db, node)
+
+
 # --- per-node toggle get/set (the NodeDetailDrawer "Modules" section) ---------------------------
 
 def _parent_enabled(db: Session, node: OrgNode) -> dict:

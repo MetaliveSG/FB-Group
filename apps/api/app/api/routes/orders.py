@@ -107,7 +107,7 @@ def create_qr_order(
     order = orders_service.create_order(
         db, outlet_id=qr.outlet_id, items=_to_inputs(body.items),
         customer_id=customer.id, table_id=qr.table_id,
-        channel=OrderChannel.QR, order_type=body.order_type,
+        channel=OrderChannel.QR, order_type=body.order_type, service_option=body.service_option,
     )
     db.commit()
     db.refresh(order)

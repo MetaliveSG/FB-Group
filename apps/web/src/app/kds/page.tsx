@@ -84,7 +84,7 @@ export default function KdsPage() {
   // COLLECTED by the diner; a dine-in order is SERVED by a waiter. (PREPARING still exists in the
   // model for kitchens that want a "Start" step — re-add a button to use it.)
   const nextAction = (o: KitchenOrder): { to: FulfilmentStatus; label: string } | null => {
-    const pickup = o.order_type !== "dine_in";
+    const pickup = o.hand_off === "self_pickup";
     switch (o.fulfilment_status) {
       case "queued":
       case "preparing": return { to: "ready", label: pickup ? "Ready for pick-up" : "Ready to serve" };
@@ -107,7 +107,7 @@ export default function KdsPage() {
           {orders.map((o) => {
             const s = STATUS_STYLE[o.fulfilment_status];
             const adv = nextAction(o);
-            const isPickup = o.order_type !== "dine_in";
+            const isPickup = o.hand_off === "self_pickup";
             return (
               <div key={o.id} style={{ background: s.bg, borderRadius: 12, overflow: "hidden", border: `1px solid ${s.bar}55`, display: "flex", flexDirection: "column" }}>
                 <div style={{ height: 4, background: s.bar }} />

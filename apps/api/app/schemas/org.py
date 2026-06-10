@@ -238,6 +238,17 @@ class NodeModulesOut(BaseModel):
     parent_enabled: dict                 # each module's value at the parent (drives grey/lock); {..._enabled}
 
 
+class NodeServiceOptionsIn(BaseModel):
+    """Set a storefront's enabled service options (fulfilment). null/empty = inherit (clear → cascade)."""
+    options: list[str] | None = None
+
+
+class NodeServiceOptionsOut(BaseModel):
+    own: list[str] | None = None         # the node's OWN enabled set (null = inherit)
+    resolved: list[str]                  # effective after cascade
+    catalog: list[dict]                  # all options: {key, label, order_type, hand_off}
+
+
 class NodeAccountCreateIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)

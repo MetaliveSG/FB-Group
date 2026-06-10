@@ -276,6 +276,7 @@ export default function TablePage() {
   const [qrData, setQrData] = useState<QrResolution | null>(null);
   const [cart, setCart] = useState<CartEntry[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [serviceOption, setServiceOption] = useState<string | null>(null);  // chosen fulfilment option (auto if SF offers one)
   const [resumeCheckout, setResumeCheckout] = useState(false);
   // Where to return after an expiry-triggered re-login ("payment" → back to the pay screen).
   const [resumeStep, setResumeStep] = useState<AppStep | null>(null);
@@ -322,6 +323,7 @@ export default function TablePage() {
     resolveQr(base, token)
       .then((data) => {
         setQrData(data);
+        setServiceOption(data.service_options?.[0]?.key ?? null);  // default to the SF's first option
         setStep((prev) => (prev === "auth" ? prev : "menu"));
       })
       .catch((err) => {
@@ -352,7 +354,7 @@ export default function TablePage() {
   // PICK-UP only: track the kitchen so the diner knows WHEN to collect. Dine-in is table service —
   // the waiter brings the food, the diner does nothing, so we show no fulfilment notification for it.
   useEffect(() => {
-    const isPickup = (order?.order_type ?? "dine_in") !== "dine_in";
+    const isPickup = order?.hand_off === "self_pickup";   // diner collects → track + alert (vs served)
     if (step !== "success" || !checkoutResult || !customerToken || !isPickup) return;
     let active = true;
     const poll = async () => {
@@ -439,7 +441,7 @@ export default function TablePage() {
     setError(null);
     try {
       const items = cart.map((e) => ({ menu_item_id: e.item.id, quantity: e.quantity, modifier_ids: e.selectedModifierIds }));
-      const orderRes = await createOrder(base, customerToken, { qr_token: token, items, order_type: "dine_in" });
+      const orderRes = await createOrder(base, customerToken, { qr_token: token, items, service_option: serviceOption ?? undefined });
       setOrder(orderRes);
       setCartOpen(false);
       setStep("payment");
@@ -797,6 +799,26 @@ export default function TablePage() {
             <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", marginBottom: "var(--space-3)" }}>
               Service charge &amp; GST applied at checkout
             </div>
+            {/* Service option picker — only when the storefront offers more than one (else it's auto). */}
+            {(qrData?.service_options?.length ?? 0) > 1 && (
+              <div style={{ marginBottom: "var(--space-3)" }}>
+                <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, marginBottom: 6 }}>How would you like it?</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {qrData!.service_options.map((o) => {
+                    const sel = serviceOption === o.key;
+                    return (
+                      <button key={o.key} type="button" onClick={() => setServiceOption(o.key)}
+                        style={{ flex: "1 1 40%", padding: "10px 12px", borderRadius: "var(--radius-md)", fontWeight: 700, fontSize: "var(--text-sm)", cursor: "pointer",
+                          border: `2px solid ${sel ? "var(--color-primary)" : "var(--color-border)"}`,
+                          background: sel ? "var(--color-primary-bg, #fff1f0)" : "#fff",
+                          color: sel ? "var(--color-primary)" : "var(--color-text)" }}>
+                        {o.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {customerToken ? (
               <Button block variant="primary" size="lg" loading={placingOrder} onClick={placeOrder}>Place Order</Button>
             ) : (

@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from sqlalchemy import Boolean, ForeignKey, Index, Integer, Numeric, String
+from sqlalchemy import Boolean, ForeignKey, Index, Integer, JSON, Numeric, String
 from sqlalchemy import false
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -71,6 +71,11 @@ class OrgNode(PKMixin, TimestampMixin, Base):
     # Wallet (stored-value) — opt-in (default OFF) and gated by Table QR (money to spend on orders →
     # no ordering channel ⇒ no wallet). Effective wallet = (AND of mod_wallet up the path) AND qr_ordering.
     mod_wallet: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false(), default=False)         # Wallet
+
+    # Service options (fulfilment) — the SET of (dining-context × hand-off) options this storefront offers,
+    # as a JSON list of SERVICE_OPTIONS keys. NULL = inherit (nearest declaring ancestor wins → default
+    # restaurant table-service). A foodcourt sets ["dine_in_pickup","takeaway"] once high; stalls inherit.
+    service_options: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
     # resolved boundary pointers (nearest declaring ancestor; both = merchant today)
     loyalty_domain_id: Mapped[str] = mapped_column(String(32), nullable=False)

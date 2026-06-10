@@ -11,11 +11,11 @@ import type { MyOrder, OrderOut } from "@fbgroup/api-client";
 
 // The badge a DINER sees: once an order is paid (status=completed), show the KITCHEN/pick-up state
 // (so "completed" payment doesn't masquerade as "done") — otherwise show the payment state.
-function pickupBadge(o: { status: string; fulfilment_status?: string; order_type?: string }):
+function pickupBadge(o: { status: string; fulfilment_status?: string; hand_off?: string }):
   { label: string; tone: "success" | "warning" | "danger" | "default" } {
   if (o.status === "completed") {
-    // Dine-in is table service — the waiter serves it, the diner tracks nothing → just "Paid".
-    if (o.order_type === "dine_in") return { label: "Paid", tone: "success" };
+    // Served (waiter brings it) → the diner tracks nothing → just "Paid". Self-pickup → show the journey.
+    if (o.hand_off !== "self_pickup") return { label: "Paid", tone: "success" };
     // Pick-up: surface the collection journey so the diner knows when to collect.
     switch (o.fulfilment_status) {
       case "ready": return { label: "🔔 Ready for pick-up", tone: "success" };

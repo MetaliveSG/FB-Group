@@ -56,9 +56,29 @@ class OrderChannel(str, Enum):
 
 
 class OrderType(str, Enum):
-    DINE_IN = "dine_in"
-    TAKEAWAY = "takeaway"
-    MANUAL = "manual"
+    DINE_IN = "dine_in"        # dining context: eat in
+    TAKEAWAY = "takeaway"      # dining context: take away
+    MANUAL = "manual"          # cashier/walk-in channel (no diner-chosen context)
+
+
+class HandOff(str, Enum):
+    """The SECOND fulfilment axis (orthogonal to OrderType/dining-context): how the food reaches the diner.
+    `self_pickup` → diner collects when ready (pickup number + a "ready for pick-up" alert);
+    `served` → a waiter/runner brings it to the table (needs a table; NO diner alert)."""
+    SELF_PICKUP = "self_pickup"
+    SERVED = "served"
+
+
+# The diner-facing service options = a (dining-context × hand-off) pair the storefront can offer.
+# `order_type` = the dining context; `hand_off` = the second axis. A storefront enables a SET of these
+# (cascade-resolved); the diner/staff picks one per order (auto if only one). Default = restaurant table
+# service (back-compat). Delivery is a later third hand-off.
+SERVICE_OPTIONS: dict[str, dict] = {
+    "dine_in_served": {"label": "Dine in — served", "order_type": "dine_in", "hand_off": "served"},
+    "dine_in_pickup": {"label": "Dine in — self-collect", "order_type": "dine_in", "hand_off": "self_pickup"},
+    "takeaway": {"label": "Takeaway", "order_type": "takeaway", "hand_off": "self_pickup"},
+}
+DEFAULT_SERVICE_OPTIONS = ["dine_in_served"]   # nearest-ancestor cascade falls back here (restaurant)
 
 
 class OrderStatus(str, Enum):

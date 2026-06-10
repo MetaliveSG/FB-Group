@@ -8,7 +8,7 @@ from sqlalchemy import ForeignKey, Integer, JSON, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, PKMixin, TimestampMixin
-from app.models.enums import FulfilmentStatus, OrderChannel, OrderStatus, OrderType
+from app.models.enums import FulfilmentStatus, HandOff, OrderChannel, OrderStatus, OrderType
 
 
 class Order(PKMixin, TimestampMixin, Base):
@@ -22,7 +22,10 @@ class Order(PKMixin, TimestampMixin, Base):
     created_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
 
     channel: Mapped[str] = mapped_column(String(12), default=OrderChannel.QR.value)
-    order_type: Mapped[str] = mapped_column(String(12), default=OrderType.DINE_IN.value)
+    order_type: Mapped[str] = mapped_column(String(12), default=OrderType.DINE_IN.value)   # dining context
+    # Hand-off axis (orthogonal to order_type): self_pickup (diner collects + "ready" alert) | served (waiter
+    # brings it). Default served = back-compat (the existing table-QR flow was implicitly table service).
+    hand_off: Mapped[str] = mapped_column(String(12), default=HandOff.SERVED.value)
     status: Mapped[str] = mapped_column(String(12), default=OrderStatus.PENDING.value, index=True)
     # Kitchen/ticket state, SEPARATE from `status` (payment). The KDS owns it; READY = ready for pick-up.
     fulfilment_status: Mapped[str] = mapped_column(String(12), default=FulfilmentStatus.QUEUED.value, index=True)

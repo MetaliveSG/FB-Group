@@ -15,9 +15,12 @@ from app.db.base import utcnow
 from app.loyalty.engine import accrue_on_transaction
 from app.models.catalog import Menu, MenuCategory, MenuItem, MenuModifier
 from app.models.enums import (
+    DEFAULT_SERVICE_OPTIONS,
     FULFILMENT_TRANSITIONS,
     ORDER_TRANSITIONS,
+    SERVICE_OPTIONS,
     FulfilmentStatus,
+    HandOff,
     OrderChannel,
     OrderStatus,
     OrderType,
@@ -63,6 +66,7 @@ def create_order(
     table_id: str | None = None,
     channel: OrderChannel = OrderChannel.QR,
     order_type: OrderType = OrderType.DINE_IN,
+    service_option: str | None = None,
     created_by_user_id: str | None = None,
     source: str | None = None,
     external_id: str | None = None,
@@ -82,6 +86,18 @@ def create_order(
     if channel == OrderChannel.QR and not boundaries.resolve_modules_for_outlet(
             db, outlet_id=outlet.id, merchant_id=outlet.merchant_id)["qr_ordering_enabled"]:
         raise ConflictError("Online ordering is not enabled here", code="ordering_disabled")
+    # Resolve the fulfilment axes. On the QR (diner) channel the storefront's enabled SERVICE OPTIONS decide:
+    # the diner picks one (auto if only one); it sets both order_type (dining context) AND hand_off. Other
+    # channels (cashier/manual) keep the passed order_type + a `served` hand-off (staff hand it over).
+    hand_off = HandOff.SERVED.value
+    if channel == OrderChannel.QR:
+        enabled = boundaries.resolve_service_options_for_outlet(db, outlet_id=outlet.id)
+        key = service_option or (enabled[0] if enabled else DEFAULT_SERVICE_OPTIONS[0])
+        if key not in enabled:
+            raise ConflictError("That service option isn't offered here", code="service_option_unavailable")
+        spec = SERVICE_OPTIONS[key]
+        order_type = OrderType(spec["order_type"])
+        hand_off = spec["hand_off"]
     order = Order(
         merchant_id=outlet.merchant_id,
         brand_id=outlet.brand_id,
@@ -91,6 +107,7 @@ def create_order(
         created_by_user_id=created_by_user_id,
         channel=channel.value,
         order_type=order_type.value,
+        hand_off=hand_off,
         status=OrderStatus.PENDING.value,
         placed_at=utcnow(),
         source=source,
@@ -185,6 +202,7 @@ def kitchen_ticket(db: Session, order: Order) -> dict:
         "status": order.status,
         "fulfilment_status": order.fulfilment_status,
         "order_type": order.order_type,
+        "hand_off": order.hand_off,
         "channel": order.channel,
         "created_at": order.created_at,
         "total": float(order.total),
@@ -390,6 +408,7 @@ def list_merchant_orders(
             "id": o.id,
             "status": o.status,
             "fulfilment_status": o.fulfilment_status,
+            "hand_off": o.hand_off,
             "channel": o.channel,
             "created_at": o.created_at,
             "subtotal": float(o.subtotal),

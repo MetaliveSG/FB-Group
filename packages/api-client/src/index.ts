@@ -81,6 +81,15 @@ export interface QrResolution {
   // Module flags (Phase 2): ordering_enabled off (rewards on) → rewards-only landing.
   ordering_enabled: boolean;
   rewards_enabled: boolean;
+  // The storefront's enabled service options (fulfilment); diner picks one at checkout (auto if one).
+  service_options: ServiceOption[];
+}
+
+export interface ServiceOption {
+  key: string;          // dine_in_served | dine_in_pickup | takeaway
+  label: string;        // diner-facing, e.g. "Dine in — self-collect"
+  order_type: string;   // dining context: dine_in | takeaway
+  hand_off: string;     // self_pickup (collect + alert) | served (waiter brings it)
 }
 
 export interface TokenResponse {
@@ -130,6 +139,7 @@ export interface OrderOut {
   status: string;
   fulfilment_status?: FulfilmentStatus;   // kitchen/pick-up state — lets the diner track "ready for pick-up"
   order_type?: string;
+  hand_off?: string;                      // self_pickup (diner collects + alert) | served (waiter brings it)
   items: OrderItem[];
 }
 
@@ -156,6 +166,7 @@ export interface KitchenOrder {
   status: string;
   fulfilment_status: FulfilmentStatus;
   order_type: string;
+  hand_off: string;                      // self_pickup (diner collects) | served (waiter brings it)
   channel: string;
   created_at: string;
   total: number;
@@ -342,6 +353,7 @@ export interface MyOrder {
   status: string;
   fulfilment_status: FulfilmentStatus;   // kitchen/pick-up state: queued→preparing→ready→collected
   order_type: string;
+  hand_off: string;                      // self_pickup (diner collects + alert) | served
   total: number;
   items_count: number;
   summary: string;
@@ -1278,6 +1290,7 @@ export function createOrder(
     qr_token: string;
     items: { menu_item_id: string; quantity: number; modifier_ids?: string[] }[];
     order_type?: string;
+    service_option?: string;   // the diner's chosen service option key (auto if the SF offers one)
   }
 ): Promise<OrderOut> {
   return request(baseUrl, "/orders", { method: "POST", body: JSON.stringify(data) }, token);
@@ -2612,6 +2625,21 @@ export function setNodeModules(
   body: Partial<Record<ModuleKey, boolean>>
 ): Promise<OrgNodeModules> {
   return request(baseUrl, `/org/nodes/${nodeId}/modules`, { method: "PUT", body: JSON.stringify(body) }, token);
+}
+
+export interface NodeServiceOptions {
+  own: string[] | null;       // the storefront's OWN enabled set (null = inherit)
+  resolved: string[];         // effective after cascade
+  catalog: ServiceOption[];   // every option {key, label, order_type, hand_off}
+}
+export function getNodeServiceOptions(baseUrl: string, token: string, nodeId: string): Promise<NodeServiceOptions> {
+  return request(baseUrl, `/org/nodes/${nodeId}/service-options`, {}, token);
+}
+export function setNodeServiceOptions(
+  baseUrl: string, token: string, nodeId: string, options: string[] | null
+): Promise<NodeServiceOptions> {
+  return request(baseUrl, `/org/nodes/${nodeId}/service-options`,
+    { method: "PUT", body: JSON.stringify({ options }) }, token);
 }
 
 // Leases — stalls leased INTO a venue node (foodcourt GTO vs coffeeshop FIXED).

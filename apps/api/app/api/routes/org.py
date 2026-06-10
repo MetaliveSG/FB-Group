@@ -25,6 +25,8 @@ from app.schemas.org import (
     NodeAccountOut,
     NodeModulesIn,
     NodeModulesOut,
+    NodeServiceOptionsIn,
+    NodeServiceOptionsOut,
     OrgNodeCreateIn,
     OrgNodeCreateOut,
     OrgNodeOut,
@@ -235,6 +237,25 @@ def update_node_modules(node_id: str, body: NodeModulesIn,
     out = boundaries.set_node_modules(db, node, **body.model_dump(exclude_unset=True))
     audit_record(db, action="org.node_modules_set", actor_id=scope.user_id,
                  entity_type="org_node", entity_id=node_id, meta=body.model_dump(exclude_unset=True))
+    db.commit()
+    return out
+
+
+@router.get("/nodes/{node_id}/service-options", response_model=NodeServiceOptionsOut)
+def read_node_service_options(node_id: str, scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """The storefront's OWN enabled service options (null=inherit) + the resolved set + the full catalog."""
+    node = org_tree.get_managed_node(db, scope, node_id)
+    return boundaries.get_node_service_options(db, node)
+
+
+@router.put("/nodes/{node_id}/service-options", response_model=NodeServiceOptionsOut)
+def update_node_service_options(node_id: str, body: NodeServiceOptionsIn,
+                                scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """Set the storefront's enabled service options (cascades to its subtree). Empty/null = inherit."""
+    node = org_tree.get_managed_node(db, scope, node_id)
+    out = boundaries.set_node_service_options(db, node, body.options)
+    audit_record(db, action="org.node_service_options_set", actor_id=scope.user_id,
+                 entity_type="org_node", entity_id=node_id, meta={"options": body.options})
     db.commit()
     return out
 

@@ -18,6 +18,14 @@ from app.services import qr as qr_service
 router = APIRouter(prefix="/qr", tags=["qr"])
 
 
+def _service_options_for(db: Session, outlet_id: str) -> list[dict]:
+    """The storefront's enabled service options (cascade-resolved) as {key, label, hand_off, order_type}
+    for the diner's picker. Preserves the configured order; defaults to restaurant table service."""
+    from app.models.enums import SERVICE_OPTIONS
+    keys = boundaries.resolve_service_options_for_outlet(db, outlet_id=outlet_id)
+    return [{"key": k, **SERVICE_OPTIONS[k]} for k in keys if k in SERVICE_OPTIONS]
+
+
 @router.get("/{token}", response_model=QrContextOut)
 def resolve_qr(token: str, db: Session = Depends(get_db)):
     qr = qr_service.resolve_token(db, token)
@@ -61,6 +69,7 @@ def resolve_qr(token: str, db: Session = Depends(get_db)):
         menu=inline_menu,
         ordering_enabled=ordering_enabled,
         rewards_enabled=flags["rewards_enabled"],
+        service_options=_service_options_for(db, qr.outlet_id),
     )
 
 

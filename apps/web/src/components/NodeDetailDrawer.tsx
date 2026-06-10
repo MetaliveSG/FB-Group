@@ -9,6 +9,8 @@ import {
   revokeNodeAccount,
   getNodeModules,
   setNodeModules,
+  getNodeServiceOptions,
+  setNodeServiceOptions,
   listVenueLeases,
   createLease,
   updateLease,
@@ -17,7 +19,7 @@ import {
 } from "@/lib/api";
 import { getStaffToken } from "@/lib/auth";
 import { Toggle } from "@/components/ui";
-import type { OrgTreeNode, OrgNodeAccount, MerchantKpi, Lease, OrgNodeCreated, PosStaffSecret, OrgNodeModules, ModuleKey } from "@fbgroup/api-client";
+import type { OrgTreeNode, OrgNodeAccount, MerchantKpi, Lease, OrgNodeCreated, PosStaffSecret, OrgNodeModules, ModuleKey, NodeServiceOptions } from "@fbgroup/api-client";
 
 const ROLE_STYLE: Record<string, { bg: string; fg: string }> = {
   CHAIN: { bg: "#dbeafe", fg: "#1e40af" },
@@ -77,6 +79,7 @@ export default function NodeDetailDrawer({
   const [posReveal, setPosReveal] = useState<PosStaffSecret[] | null>(null);  // show-once team PINs on SF create
 
   const [modules, setModules] = useState<OrgNodeModules | null>(null);
+  const [svcOpts, setSvcOpts] = useState<NodeServiceOptions | null>(null);
   const [accounts, setAccounts] = useState<OrgNodeAccount[] | null>(null);
   const [acOpen, setAcOpen] = useState(false);
   const [acEmail, setAcEmail] = useState("");
@@ -110,6 +113,7 @@ export default function NodeDetailDrawer({
     const tok = getStaffToken();
     if (tok && canManage) {
       getNodeModules(base, tok, node.id).then(setModules).catch(() => setModules(null));
+      getNodeServiceOptions(base, tok, node.id).then(setSvcOpts).catch(() => setSvcOpts(null));
       listNodeAccounts(base, tok, node.id).then(setAccounts).catch(() => setAccounts([]));
       if (!node.sells) {
         listVenueLeases(base, tok, node.id)
@@ -143,6 +147,16 @@ export default function NodeDetailDrawer({
   const changeModule = (key: ModuleKey, val: boolean) =>
     run(() => setNodeModules(base, tok(), node.id, { [key]: val } as Partial<Record<ModuleKey, boolean>>),
         (m) => setModules(m as OrgNodeModules));
+
+  // Toggle a service option on/off in the node's OWN set (empty → inherit/cascade).
+  const toggleServiceOption = (key: string) => {
+    if (!svcOpts) return;
+    const cur = svcOpts.own ?? svcOpts.resolved;   // editing starts from the effective set
+    const next = cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key];
+    run(() => setNodeServiceOptions(base, tok(), node.id, next), (o) => setSvcOpts(o as NodeServiceOptions));
+  };
+  const resetServiceOptions = () =>
+    run(() => setNodeServiceOptions(base, tok(), node.id, null), (o) => setSvcOpts(o as NodeServiceOptions));
 
   // Candidate stalls to lease in: any Storefront not under THIS venue (those are house stalls,
   // no lease needed) and not already leased here.
@@ -402,6 +416,39 @@ export default function NodeDetailDrawer({
                 })
               )}
               <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>A node can be ON only if its parent is ON; turning a node OFF locks its whole subtree OFF. Wallet also needs Table QR ON.</span>
+            </div>
+          )}
+
+          {/* Service options (fulfilment) — which dine-in/self-collect/takeaway options this node offers.
+              Cascades like the module flags (a foodcourt sets it once high; stalls inherit). */}
+          {canManage && svcOpts && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--color-border,#e5e7eb)", paddingTop: 14 }}>
+              {label("Service options (fulfilment)")}
+              {svcOpts.catalog.map((opt) => {
+                const on = (svcOpts.own ?? svcOpts.resolved).includes(opt.key);
+                return (
+                  <div key={opt.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ flex: 1, fontSize: 13, color: "var(--color-text)" }}>
+                      {opt.label}
+                      <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: opt.hand_off === "self_pickup" ? "#b45309" : "#475569" }}>
+                        {opt.hand_off === "self_pickup" ? "SELF-COLLECT" : "SERVED"}
+                      </span>
+                    </span>
+                    <Toggle on={on} onChange={() => toggleServiceOption(opt.key)} disabled={busy} />
+                  </div>
+                );
+              })}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
+                  {svcOpts.own == null ? "Inheriting from parent (cascade)." : "Set here; cascades to the subtree. Diner picks if >1."}
+                </span>
+                {svcOpts.own != null && (
+                  <button type="button" onClick={resetServiceOptions} disabled={busy}
+                    style={{ background: "none", border: "none", color: "var(--color-primary,#dc2626)", fontSize: 11, fontWeight: 700, cursor: busy ? "default" : "pointer" }}>
+                    Reset to inherit
+                  </button>
+                )}
+              </div>
             </div>
           )}
 

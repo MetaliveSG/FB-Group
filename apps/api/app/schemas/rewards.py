@@ -33,6 +33,7 @@ class MyOrderOut(ORMModel):
     status: str
     fulfilment_status: str = "queued"   # kitchen/pick-up state: queued→preparing→ready→collected
     order_type: str = "dine_in"
+    hand_off: str = "served"            # self_pickup (diner collects + alert) | served
     total: float
     items_count: int
     summary: str
