@@ -8,6 +8,26 @@ Maps to the 3-module engine (Table QR · **Intelligence** · POS) on one core �
 Overview + capture-loop diagram in `README.md`; this file = operating guidance for Claude.
 **Pitch · growth model · GTM** → `docs/positioning.md` (or `/my-bizdev`).
 
+## Customer-scan domains (QR · LOCKED 2026-06-10)
+**The customer-scan surface is served per-tenant on a CIP subdomain: `{slug}.mycip.io`** (e.g.
+`breadtalk.mycip.io`, `fsg.mycip.io`). **Apex/root brand domain = `mycip.io`.** A printed QR therefore
+encodes **`https://{slug}.mycip.io/t/{token}`** (a Storefront) or `…/t/node/{id}` (a group browse).
+- **The QR host comes from PER-TENANT config, never the browser.** *Current gap:* `apps/web/.../merchant/
+  tables/page.tsx` builds the URL from `window.location.origin` (→ `localhost:3001` in dev) — that's
+  PoC-only and MUST be replaced by a tenant-resolved scan base before any real QR is printed (printed codes
+  are permanent). Same for the `/platform` "QR Menu" button + on-screen preview. Backend `qr_path` stays a
+  relative `/t/{token}` — only the web layer prepends the origin, so the fix lives there (+ a backend
+  resolver that emits the canonical `{slug}.mycip.io` host per tenant).
+- **`slug`** = a new per-tenant field (settlement-boundary node / `Merchant`), unique, → its subdomain. NOT
+  built yet.
+- **Routing:** wildcard `*.mycip.io` DNS → ONE CIP edge → the same Next app serves `/t/{token}` regardless
+  of `Host`; the **token alone identifies the outlet** (host = branding + trust). Validate the token's
+  tenant matches the host's tenant (so a competitor's QR can't resolve on your branded subdomain).
+- **TLS:** one wildcard cert `*.mycip.io` covers every tenant subdomain.
+- **DEFERRED (Tier 3, post-MVP):** BYO **custom domains** (e.g. `order.fairprice.sg`) — tenant CNAMEs to CIP
+  + per-domain cert automation (ACM/Caddy) + a `tenant_domains` verification table. Subdomain is the locked
+  default; custom-domain is later config on the same resolver, never a reprint. Keep retired hosts 301-ing.
+
 ## Stack
 - **Backend** `apps/api` — FastAPI + SQLAlchemy 2.0 (typed `Mapped`/`mapped_column`) + Alembic.
   Own Python venv at `apps/api/.venv` (NOT in the JS workspace). PyJWT HS256, bcrypt direct.
