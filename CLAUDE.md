@@ -48,6 +48,21 @@ credentials on a toggle flip — it cascades + churns PINs).
   the station-token issue/revoke is the hardening step (deferred). Launched standalone (new window) from the
   `/platform` tree-grid "Open Kitchen" (gated on Table-QR) + `/merchant/orders`.
 
+## Fulfilment mode = STOREFRONT setting, not a customer choice (LOCKED 2026-06-10)
+**Dine-in vs pick-up is chosen by the STOREFRONT (cascading), NEVER by the diner.** A restaurant SF =
+`dine_in` (table QR + table number); a **foodcourt** stall = `pickup` (order-ahead + pay + collect, order
+number, NO table). For a foodcourt, set `pickup` once high in the tree and stalls inherit (cascade like the
+module flags — nearest declaring ancestor wins → default `dine_in`). Full design → `docs/architecture-
+fulfilment-modes.md` + memory [[fulfilment-modes]]; sub-config of the Ordering/"Table QR" module.
+- **`Order.order_type` is DERIVED from the storefront's resolved mode at order time** — the customer app must
+  NOT dictate it (today `t/[token]` hardcodes `dine_in` on `createOrder` — that's the PoC gap to replace).
+- **Already built (the "ready" half):** the KDS "mark ready" screen + `fulfilment_status` + the customer
+  pick-up tracker all key off `order_type`, so they light up automatically once the SF mode drives it.
+- **NOT built (the remaining gap):** per-storefront `fulfilment_mode` config (a cascade-resolved `org_nodes`
+  column + resolver) · `OrderType.PICKUP` value · order_type derived from it in `create_order` · expose it on
+  the QR context · a Dine-in/Pick-up control in the console (NodeDetailDrawer) · pickup_number + conditional
+  table (dine-in only). Customer NEVER sees a "ready for pick-up" prompt for dine-in (waiter serves).
+
 ## Stack
 - **Backend** `apps/api` — FastAPI + SQLAlchemy 2.0 (typed `Mapped`/`mapped_column`) + Alembic.
   Own Python venv at `apps/api/.venv` (NOT in the JS workspace). PyJWT HS256, bcrypt direct.
