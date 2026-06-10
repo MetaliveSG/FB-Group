@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.models.enums import OrderStatus, OrderType, PaymentMethod
+from app.models.enums import FulfilmentStatus, OrderStatus, OrderType, PaymentMethod
 from app.schemas.common import ORMModel, UtcDatetime
 
 
@@ -59,6 +59,7 @@ class MerchantOrderOut(BaseModel):
     """Row in the merchant-wide orders feed — order + items + resolved labels."""
     id: str
     status: str
+    fulfilment_status: str = FulfilmentStatus.QUEUED.value
     channel: str
     created_at: UtcDatetime
     subtotal: float
@@ -71,8 +72,26 @@ class MerchantOrderOut(BaseModel):
     items: list[OrderItemOut] = []
 
 
+class KitchenOrderOut(BaseModel):
+    """One ticket on the kitchen display (KDS) — a paid, not-yet-collected order for the outlet."""
+    id: str
+    status: str
+    fulfilment_status: str
+    order_type: str
+    channel: str
+    created_at: UtcDatetime
+    total: float
+    customer_name: str | None = None
+    table_label: str | None = None
+    items: list[OrderItemOut] = []
+
+
 class OrderStatusUpdate(BaseModel):
     status: OrderStatus
+
+
+class FulfilmentStatusUpdate(BaseModel):
+    status: FulfilmentStatus
 
 
 class CheckoutRequest(BaseModel):

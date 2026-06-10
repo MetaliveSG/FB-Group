@@ -15,6 +15,8 @@ from app.models.tenancy import Outlet
 from app.schemas.orders import (
     CheckoutRequest,
     CheckoutResponse,
+    FulfilmentStatusUpdate,
+    KitchenOrderOut,
     ManualOrderCreate,
     MerchantOrderOut,
     OrderOut,
@@ -56,6 +58,42 @@ def list_orders(
     return orders_service.list_merchant_orders(
         db, merchant_id=mid, scope=scope, status=status, outlet_id=outlet_id, limit=limit
     )
+
+
+# --- Kitchen display (KDS): the paid, not-yet-collected queue for one outlet -----------------
+@router.get("/kitchen", response_model=list[KitchenOrderOut])
+def kitchen_orders(
+    outlet_id: str = Query(...),
+    scope=Depends(get_scope),
+    db: Session = Depends(get_db),
+):
+    outlet = db.get(Outlet, outlet_id)
+    if not outlet:
+        raise NotFoundError("Outlet not found", code="outlet_not_found")
+    require(scope, "order.view", outlet.merchant_id)
+    if not scope.can_view_outlet(outlet.merchant_id, outlet.id):
+        raise ForbiddenError("Outside your outlet scope", code="outlet_scope")
+    return orders_service.list_kitchen_orders(db, outlet_id=outlet_id)
+
+
+# --- Kitchen display (KDS): advance a ticket (queued→preparing→ready→collected) --------------
+@router.patch("/{order_id}/fulfilment", response_model=KitchenOrderOut)
+def advance_fulfilment(
+    order_id: str, body: FulfilmentStatusUpdate, scope=Depends(get_scope), db: Session = Depends(get_db)
+):
+    order = db.get(Order, order_id)
+    if not order:
+        raise NotFoundError("Order not found", code="order_not_found")
+    require(scope, "order.manage", order.merchant_id)
+    if not scope.can_view_outlet(order.merchant_id, order.outlet_id):
+        raise ForbiddenError("Outside your outlet scope", code="outlet_scope")
+    orders_service.advance_fulfilment(db, order, body.status)
+    audit_record(db, action="order.fulfilment_change", actor_id=scope.user_id,
+                 merchant_id=order.merchant_id, entity_type="order", entity_id=order.id,
+                 meta={"fulfilment_status": body.status.value})
+    db.commit()
+    db.refresh(order)
+    return orders_service.kitchen_ticket(db, order)
 
 
 # --- Customer QR order -------------------------------------------------

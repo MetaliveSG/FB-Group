@@ -82,6 +82,24 @@ ORDER_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
 }
 
 
+class FulfilmentStatus(str, Enum):
+    """The KITCHEN/ticket state — separate from `OrderStatus` (which tracks payment: COMPLETED = paid).
+    The kitchen display (KDS) owns this. READY = ready for pick-up (customer collects from the stall)."""
+    QUEUED = "queued"            # paid, waiting for the kitchen to start
+    PREPARING = "preparing"      # being made
+    READY = "ready"              # ready for pick-up / collection
+    COLLECTED = "collected"      # handed to the customer — leaves the KDS queue
+
+
+# Allowed forward transitions for the kitchen/fulfilment lifecycle.
+FULFILMENT_TRANSITIONS: dict[FulfilmentStatus, set[FulfilmentStatus]] = {
+    FulfilmentStatus.QUEUED: {FulfilmentStatus.PREPARING, FulfilmentStatus.READY},
+    FulfilmentStatus.PREPARING: {FulfilmentStatus.READY},
+    FulfilmentStatus.READY: {FulfilmentStatus.COLLECTED},
+    FulfilmentStatus.COLLECTED: set(),
+}
+
+
 class PaymentMethod(str, Enum):
     CASH = "cash"
     CARD = "card"

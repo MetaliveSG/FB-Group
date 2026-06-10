@@ -884,6 +884,17 @@ export default function OperatorConsolePage() {
                             Open POS
                           </button>
                         )}
+                        {/* Open Kitchen — KDS for this storefront; needs Table QR effective-ON + an outlet. */}
+                        {n.sells && n.outlet_id && effOn(n, NODE_MODS[0]) && (
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: "4px 12px", fontWeight: 600 }}
+                            onClick={() => window.open(`/kds?outlet_id=${encodeURIComponent(n.outlet_id!)}`, "_blank", "noopener,noreferrer")}
+                            title="Open the kitchen screen (KDS) for this storefront"
+                          >
+                            Open Kitchen
+                          </button>
+                        )}
                         {n.is_settlement_boundary && kpi && (
                           <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{formatSGD(kpi.revenue)}</span>
                         )}

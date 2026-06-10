@@ -15,7 +15,9 @@ from app.db.base import utcnow
 from app.loyalty.engine import accrue_on_transaction
 from app.models.catalog import Menu, MenuCategory, MenuItem, MenuModifier
 from app.models.enums import (
+    FULFILMENT_TRANSITIONS,
     ORDER_TRANSITIONS,
+    FulfilmentStatus,
     OrderChannel,
     OrderStatus,
     OrderType,
@@ -157,6 +159,55 @@ def update_status(db: Session, order: Order, new_status: OrderStatus) -> Order:
         order.completed_at = utcnow()
     db.flush()
     return order
+
+
+def advance_fulfilment(db: Session, order: Order, new_status: FulfilmentStatus) -> Order:
+    """Advance the KITCHEN/ticket state (queued→preparing→ready→collected) — separate from payment.
+    READY = ready for pick-up. Validated forward-only via FULFILMENT_TRANSITIONS."""
+    current = FulfilmentStatus(order.fulfilment_status)
+    if new_status not in FULFILMENT_TRANSITIONS[current]:
+        raise ConflictError(
+            f"Cannot move kitchen ticket from {current.value} to {new_status.value}",
+            code="invalid_fulfilment_transition",
+        )
+    order.fulfilment_status = new_status.value
+    db.flush()
+    return order
+
+
+def kitchen_ticket(db: Session, order: Order) -> dict:
+    """Serialize ONE order as a KDS ticket (works whether or not it's still in the queue —
+    used for the PATCH response after a COLLECTED move drops it from the list)."""
+    customer = db.get(Customer, order.customer_id) if order.customer_id else None
+    table = db.get(DiningTable, order.table_id) if order.table_id else None
+    return {
+        "id": order.id,
+        "status": order.status,
+        "fulfilment_status": order.fulfilment_status,
+        "order_type": order.order_type,
+        "channel": order.channel,
+        "created_at": order.created_at,
+        "total": float(order.total),
+        "customer_name": (customer.full_name or customer.phone) if customer else None,
+        "table_label": table.label if table else None,
+        "items": order.items,
+    }
+
+
+def list_kitchen_orders(db: Session, *, outlet_id: str, limit: int = 100) -> list[dict]:
+    """The KDS queue for one outlet: PAID orders (`status=COMPLETED`) not yet COLLECTED, **oldest-first**
+    (FIFO — the kitchen works the earliest ticket next). Items + table/customer labels + fulfilment_status."""
+    stmt = (
+        select(Order)
+        .where(
+            Order.outlet_id == outlet_id,
+            Order.status == OrderStatus.COMPLETED.value,
+            Order.fulfilment_status != FulfilmentStatus.COLLECTED.value,
+        )
+        .order_by(Order.created_at.asc())
+        .limit(min(limit, 200))
+    )
+    return [kitchen_ticket(db, o) for o in db.scalars(stmt).all()]
 
 
 @dataclass
@@ -338,6 +389,7 @@ def list_merchant_orders(
         out.append({
             "id": o.id,
             "status": o.status,
+            "fulfilment_status": o.fulfilment_status,
             "channel": o.channel,
             "created_at": o.created_at,
             "subtotal": float(o.subtotal),

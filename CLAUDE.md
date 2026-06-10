@@ -28,6 +28,26 @@ encodes **`https://{slug}.mycip.io/t/{token}`** (a Storefront) or `…/t/node/{i
   + per-domain cert automation (ACM/Caddy) + a `tenant_domains` verification table. Subdomain is the locked
   default; custom-domain is later config on the same resolver, never a reprint. Keep retired hosts 301-ing.
 
+## Kitchen display (KDS · LOCKED 2026-06-10)
+**The kitchen screen (`/kds`) is a back-of-house DISPLAY, not a dashboard.** Auth model = **station binding,
+NOT a web/email login and NOT a per-person password** (a kitchen tablet is a shared station; per-cook
+attribution is not needed for MVP). The "role" (view this outlet's open tickets + advance ticket status) is
+**baked into a private, revocable per-outlet station token** issued from the console — NOT the public QR
+token (that's semi-public; a separate private token so nobody with a table's QR can open the kitchen). A
+`RoleName.KITCHEN` PIN role on the **POS palette** (`kind="pos"`, never web) is the LATER upgrade only if
+per-person attribution is wanted. **Gate = Table QR effective-ON** (`resolve_modules`) controls whether the
+kitchen screen is reachable; the module flag gates ACCESS, never credential lifecycle (don't mint/destroy
+credentials on a toggle flip — it cascades + churns PINs).
+- **Fulfilment vs payment are SEPARATE statuses (decided 2026-06-10).** `checkout()` sets `order.status`
+  COMPLETED on pay (COMPLETED = *paid*, drives reports/void — do NOT repurpose it). The kitchen owns a
+  separate additive **`fulfilment_status`** (QUEUED→PREPARING→READY→COLLECTED) — the ticket/KDS state,
+  orthogonal to payment. **"Pick up" button = mark READY** (customer collects from the stall — the
+  order-ahead+pay+collect model). KDS queue = paid orders (`status=COMPLETED`) where
+  `fulfilment_status≠COLLECTED`, oldest-first (FIFO).
+- **Preview slice (built 2026-06-10):** `/kds` runs in the MERCHANT/operator session (owner previews it);
+  the station-token issue/revoke is the hardening step (deferred). Launched standalone (new window) from the
+  `/platform` tree-grid "Open Kitchen" (gated on Table-QR) + `/merchant/orders`.
+
 ## Stack
 - **Backend** `apps/api` — FastAPI + SQLAlchemy 2.0 (typed `Mapped`/`mapped_column`) + Alembic.
   Own Python venv at `apps/api/.venv` (NOT in the JS workspace). PyJWT HS256, bcrypt direct.

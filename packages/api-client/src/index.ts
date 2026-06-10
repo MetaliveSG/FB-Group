@@ -134,6 +134,7 @@ export interface OrderOut {
 export interface MerchantOrder {
   id: string;
   status: string;
+  fulfilment_status: string;
   channel: string;
   created_at: string;
   subtotal: number;
@@ -141,6 +142,21 @@ export interface MerchantOrder {
   tax: number;
   total: number;
   outlet_name: string;
+  customer_name: string | null;
+  table_label: string | null;
+  items: OrderItem[];
+}
+
+// Kitchen display (KDS) ticket state — separate from payment `status`. READY = ready for pick-up.
+export type FulfilmentStatus = "queued" | "preparing" | "ready" | "collected";
+export interface KitchenOrder {
+  id: string;
+  status: string;
+  fulfilment_status: FulfilmentStatus;
+  order_type: string;
+  channel: string;
+  created_at: string;
+  total: number;
   customer_name: string | null;
   table_label: string | null;
   items: OrderItem[];
@@ -1312,6 +1328,19 @@ export function createManualOrder(
   }
 ): Promise<OrderOut> {
   return request(baseUrl, "/orders/manual", { method: "POST", body: JSON.stringify(data) }, token);
+}
+
+/** Kitchen display (KDS): the paid, not-yet-collected queue for one outlet (oldest-first). */
+export function listKitchenOrders(baseUrl: string, token: string, outletId: string): Promise<KitchenOrder[]> {
+  return request(baseUrl, `/orders/kitchen?outlet_id=${encodeURIComponent(outletId)}`, {}, token);
+}
+
+/** Kitchen display (KDS): advance a ticket (queued→preparing→ready→collected). */
+export function advanceFulfilment(
+  baseUrl: string, token: string, orderId: string, status: FulfilmentStatus
+): Promise<KitchenOrder> {
+  return request(baseUrl, `/orders/${orderId}/fulfilment`,
+    { method: "PATCH", body: JSON.stringify({ status }) }, token);
 }
 
 /** Staff takes payment for a walk-in order (mock). */
