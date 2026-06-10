@@ -160,7 +160,9 @@ export default function TablesQrPage() {
         @media print {
           body * { visibility: hidden !important; }
           #qr-print-area, #qr-print-area * { visibility: visible !important; }
-          #qr-print-area { position: absolute; left: 0; top: 0; width: 100%; }
+          /* !important so it overrides the inline left:-99999 (off-screen on screen) — without it the
+             cards print off-page → blank sheets. */
+          #qr-print-area { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; }
           .qr-print-card { page-break-inside: avoid; break-inside: avoid; }
         }
       `}</style>
