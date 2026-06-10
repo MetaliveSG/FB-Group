@@ -93,6 +93,8 @@ export default function CustomerTabBar({ token, active }: { token: string; activ
 
   return (
     <>
+      {/* Swinging-bell keyframe — used by the popup + the banner. */}
+      <style>{"@keyframes cipBellRing{0%,60%,100%{transform:rotate(0)}5%,25%,45%{transform:rotate(16deg)}15%,35%,55%{transform:rotate(-16deg)}}"}</style>
       {/* One-time full-screen "ready to collect" popup (fires once per order; banner persists after). */}
       {popup && (
         <div
@@ -103,7 +105,6 @@ export default function CustomerTabBar({ token, active }: { token: string; activ
           <div onClick={(e) => e.stopPropagation()}
             style={{ background: "#fff", borderRadius: "var(--radius-xl, 18px)", padding: "var(--space-5)", width: "100%", maxWidth: 360, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.35)" }}>
             {/* Swinging bell — rings to grab attention. */}
-            <style>{"@keyframes cipBellRing{0%,60%,100%{transform:rotate(0)}5%,25%,45%{transform:rotate(16deg)}15%,35%,55%{transform:rotate(-16deg)}}"}</style>
             <div style={{ fontSize: 48, lineHeight: 1, display: "inline-block", transformOrigin: "50% 12%", animation: "cipBellRing 1.5s ease-in-out infinite" }}>🔔</div>
             <div style={{ fontSize: "var(--text-2xl)", fontWeight: 900, marginTop: "var(--space-2)", color: "var(--color-success, #16a34a)" }}>Ready for collection!</div>
             <p style={{ color: "var(--color-text-muted)", fontSize: "var(--text-sm)", margin: "var(--space-2) 0 var(--space-4)" }}>
@@ -133,7 +134,8 @@ export default function CustomerTabBar({ token, active }: { token: string; activ
             boxShadow: "0 6px 20px rgba(0,0,0,0.18)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}
         >
-          🔔 Order #{readyOrder!.id.slice(0, 8).toUpperCase()} is ready — tap to collect
+          <span style={{ display: "inline-block", transformOrigin: "50% 12%", animation: "cipBellRing 1.5s ease-in-out infinite" }}>🔔</span>
+          Order #{readyOrder!.id.slice(0, 8).toUpperCase()} is ready
         </button>
       )}
       <BottomNav
