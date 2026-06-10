@@ -37,8 +37,10 @@ Token response: `{access_token, refresh_token, token_type, actor, customer?, use
 ## Orders + Checkout (Modules 4, 5)
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| POST | `/api/v1/orders` | customer | `{qr_token, items:[{menu_item_id,quantity,modifier_ids?}], order_type?}` |
+| POST | `/api/v1/orders` | customer | `{qr_token, items:[…], service_option?}` — `service_option` picks the storefront's enabled fulfilment option (auto if one); derives `order_type` + `hand_off` |
 | GET | `/api/v1/orders` | staff `order.view` | merchant-wide orders feed: order+items+breakdown+outlet/customer/table labels; filters `?status=&outlet_id=&limit=`; outlet-scoped users see only their outlets |
+| GET | `/api/v1/orders/kitchen` | staff `order.view` | **KDS** queue for `?outlet_id=`: paid (`status=completed`), not-yet-collected orders, oldest-first; items + table/order number (no PII) |
+| PATCH | `/api/v1/orders/{id}/fulfilment` | staff `order.manage` | **KDS** advance the kitchen ticket `{status}` (queued→preparing→ready→collected); validated forward-only |
 | POST | `/api/v1/orders/manual` | staff `order.manage` | cashier/walk-in order (`{outlet_id, items, customer_phone?}`) |
 | GET | `/api/v1/orders/{id}` | customer (own) | order detail |
 | PATCH | `/api/v1/orders/{id}/status` | staff `order.manage` | `{status}` — validated lifecycle |
@@ -181,7 +183,8 @@ Finance) are now created + listed + revoked per member-tree node via
 | GET/PUT | `/api/v1/org/loyalty` | loyalty program (standing earn rules): `{points_per_dollar, welcome_bonus, birthday_bonus}` — 0 disables a rule; **owner-only** (GET **and** PUT need `merchant.manage`, audited) |
 | GET | `/api/v1/org/tree` | the caller's visible slice of the **member tree** (Chain/Storefront nodes, flat — client assembles via `parent_id`); each node has `can_manage`. Scope-aware (no `merchant_id`): a node-assigned user sees its subtree, a platform operator sees the whole forest. Drives the **Platform Console** directory drill-down |
 | POST/PATCH | `/api/v1/org/nodes[/{id}]` | create a child node (`{parent_id, role:CHAIN\|STOREFRONT, name, chain_stopped?, subscription_fee?}`) / rename·(de)activate·set fee·stop-chain. Downline-gated (`org.manage`); a child only attaches under a Chain; a chain-stopped node takes Storefronts only; suspending a tenant mirrors `Merchant.is_active` |
-| GET/PUT | `/api/v1/org/nodes/{id}/modules` | per-node **module toggles** — 3-state `{rewards, qr_ordering, pos}` each `inherit\|on\|off`; GET returns the explicit setting **and** the resolved effective state (via `boundaries.resolve_modules`: nearest explicit ancestor → `Merchant.settings` fallback). Downline-gated |
+| GET/PUT | `/api/v1/org/nodes/{id}/modules` | per-node **module toggles** — **binary** `{rewards, qr_ordering, pos, wallet}` each `on\|off`, **parent-gated** (a node is ON only if it AND every ancestor are ON; wallet additionally needs Table-QR). GET returns own + resolved effective + `parent_enabled` (drives grey/lock). Downline-gated |
+| GET/PUT | `/api/v1/org/nodes/{id}/service-options` | per-storefront **fulfilment** options — GET own (`null`=inherit) + resolved (cascade) + catalog; PUT `{options:[dine_in_served\|dine_in_pickup\|takeaway]}` (empty/null=inherit). Cascades to the subtree. Downline-gated |
 | GET/POST/DELETE | `/api/v1/org/nodes/{id}/accounts[/{assignment_id}]` | **web logins** (dashboard, email+password) — list (web-palette roles only) / create (`{email, password, full_name?, role:manager\|viewer\|finance}`) / revoke staff at the node; cascade-gated. POS operators (cashier/supervisor) excluded from the listing |
 | GET/POST/DELETE | `/api/v1/org/nodes/{id}/pos-staff[/{user_id}]` | **POS operators** (PIN-only, `kind="pos"`) — list (incl. the readable `pin`) / create (`{full_name, role:supervisor\|cashier, pin?}` → returns the PIN) / remove. PINs encrypted at rest, unique per storefront |
 | POST | `/api/v1/org/nodes/{id}/pos-staff/{user_id}/reset-pin` | set a chosen PIN (`{pin}`) or auto-generate; returns it. Cascade-gated |

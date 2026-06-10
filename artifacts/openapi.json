@@ -814,6 +814,136 @@
         }
       }
     },
+    "/api/v1/orders/kitchen": {
+      "get": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Kitchen Orders",
+        "operationId": "kitchen_orders_api_v1_orders_kitchen_get",
+        "parameters": [
+          {
+            "name": "outlet_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Outlet Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KitchenOrderOut"
+                  },
+                  "title": "Response Kitchen Orders Api V1 Orders Kitchen Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{order_id}/fulfilment": {
+      "patch": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Advance Fulfilment",
+        "operationId": "advance_fulfilment_api_v1_orders__order_id__fulfilment_patch",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FulfilmentStatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KitchenOrderOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/orders/manual": {
       "post": {
         "tags": [
@@ -7641,7 +7771,7 @@
           "org"
         ],
         "summary": "Update Node Modules",
-        "description": "Toggle the 3 modules at a node (inherit/on/off); cascades to the subtree (resolve_modules).",
+        "description": "Toggle the 3 modules at a node (binary on/off); parent-gated \u2014 OFF cascades to the subtree.",
         "operationId": "update_node_modules_api_v1_org_nodes__node_id__modules_put",
         "parameters": [
           {
@@ -7687,6 +7817,132 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NodeModulesOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/org/nodes/{node_id}/service-options": {
+      "get": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Read Node Service Options",
+        "description": "The storefront's OWN enabled service options (null=inherit) + the resolved set + the full catalog.",
+        "operationId": "read_node_service_options_api_v1_org_nodes__node_id__service_options_get",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeServiceOptionsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Update Node Service Options",
+        "description": "Set the storefront's enabled service options (cascades to its subtree). Empty/null = inherit.",
+        "operationId": "update_node_service_options_api_v1_org_nodes__node_id__service_options_put",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NodeServiceOptionsIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeServiceOptionsOut"
                 }
               }
             }
@@ -11301,6 +11557,29 @@
         ],
         "title": "CustomerSummaryOut"
       },
+      "FulfilmentStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "preparing",
+          "ready",
+          "collected"
+        ],
+        "title": "FulfilmentStatus",
+        "description": "The KITCHEN/ticket state \u2014 separate from `OrderStatus` (which tracks payment: COMPLETED = paid).\nThe kitchen display (KDS) owns this. READY = ready for pick-up (customer collects from the stall)."
+      },
+      "FulfilmentStatusUpdate": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/FulfilmentStatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "FulfilmentStatusUpdate"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -11574,6 +11853,85 @@
         ],
         "title": "JackpotWinOut"
       },
+      "KitchenOrderOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "fulfilment_status": {
+            "type": "string",
+            "title": "Fulfilment Status"
+          },
+          "order_type": {
+            "type": "string",
+            "title": "Order Type"
+          },
+          "hand_off": {
+            "type": "string",
+            "title": "Hand Off",
+            "default": "served"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "total": {
+            "type": "number",
+            "title": "Total"
+          },
+          "customer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Name"
+          },
+          "table_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Table Label"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/app__schemas__orders__OrderItemOut"
+            },
+            "type": "array",
+            "title": "Items",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "fulfilment_status",
+          "order_type",
+          "channel",
+          "created_at",
+          "total"
+        ],
+        "title": "KitchenOrderOut",
+        "description": "One ticket on the kitchen display (KDS) \u2014 a paid, not-yet-collected order for the outlet."
+      },
       "LeaseCreateIn": {
         "properties": {
           "tenant_node_id": {
@@ -11792,6 +12150,16 @@
             "type": "array",
             "title": "Recent",
             "default": []
+          },
+          "wallet_balance": {
+            "type": "number",
+            "title": "Wallet Balance",
+            "default": 0.0
+          },
+          "wallet_currency": {
+            "type": "string",
+            "title": "Wallet Currency",
+            "default": "SGD"
           }
         },
         "type": "object",
@@ -12142,6 +12510,16 @@
             "type": "string",
             "title": "Status"
           },
+          "fulfilment_status": {
+            "type": "string",
+            "title": "Fulfilment Status",
+            "default": "queued"
+          },
+          "hand_off": {
+            "type": "string",
+            "title": "Hand Off",
+            "default": "served"
+          },
           "channel": {
             "type": "string",
             "title": "Channel"
@@ -12362,6 +12740,21 @@
             "type": "string",
             "title": "Status"
           },
+          "fulfilment_status": {
+            "type": "string",
+            "title": "Fulfilment Status",
+            "default": "queued"
+          },
+          "order_type": {
+            "type": "string",
+            "title": "Order Type",
+            "default": "dine_in"
+          },
+          "hand_off": {
+            "type": "string",
+            "title": "Hand Off",
+            "default": "served"
+          },
           "total": {
             "type": "number",
             "title": "Total"
@@ -12546,6 +12939,11 @@
             "title": "Pos Enabled",
             "default": true
           },
+          "wallet_enabled": {
+            "type": "boolean",
+            "title": "Wallet Enabled",
+            "default": false
+          },
           "can_manage_merchant": {
             "type": "boolean",
             "title": "Can Manage Merchant",
@@ -12695,12 +13093,7 @@
           "rewards": {
             "anyOf": [
               {
-                "type": "string",
-                "enum": [
-                  "inherit",
-                  "on",
-                  "off"
-                ]
+                "type": "boolean"
               },
               {
                 "type": "null"
@@ -12711,12 +13104,7 @@
           "qr_ordering": {
             "anyOf": [
               {
-                "type": "string",
-                "enum": [
-                  "inherit",
-                  "on",
-                  "off"
-                ]
+                "type": "boolean"
               },
               {
                 "type": "null"
@@ -12727,56 +13115,55 @@
           "pos": {
             "anyOf": [
               {
-                "type": "string",
-                "enum": [
-                  "inherit",
-                  "on",
-                  "off"
-                ]
+                "type": "boolean"
               },
               {
                 "type": "null"
               }
             ],
             "title": "Pos"
+          },
+          "wallet": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wallet"
           }
         },
         "type": "object",
         "title": "NodeModulesIn",
-        "description": "Set a node's per-module tri-state. Omitted fields are left unchanged."
+        "description": "Set a node's per-module on/off. Omitted fields are left unchanged. A child can be ON only if\nits parent is ON (parent-gated); turning a node OFF cascades OFF to its subtree. Wallet is\nadditionally gated by Table QR."
       },
       "NodeModulesOut": {
         "properties": {
           "rewards": {
-            "type": "string",
-            "enum": [
-              "inherit",
-              "on",
-              "off"
-            ],
+            "type": "boolean",
             "title": "Rewards"
           },
           "qr_ordering": {
-            "type": "string",
-            "enum": [
-              "inherit",
-              "on",
-              "off"
-            ],
+            "type": "boolean",
             "title": "Qr Ordering"
           },
           "pos": {
-            "type": "string",
-            "enum": [
-              "inherit",
-              "on",
-              "off"
-            ],
+            "type": "boolean",
             "title": "Pos"
+          },
+          "wallet": {
+            "type": "boolean",
+            "title": "Wallet"
           },
           "resolved": {
             "type": "object",
             "title": "Resolved"
+          },
+          "parent_enabled": {
+            "type": "object",
+            "title": "Parent Enabled"
           }
         },
         "type": "object",
@@ -12784,9 +13171,70 @@
           "rewards",
           "qr_ordering",
           "pos",
-          "resolved"
+          "wallet",
+          "resolved",
+          "parent_enabled"
         ],
         "title": "NodeModulesOut"
+      },
+      "NodeServiceOptionsIn": {
+        "properties": {
+          "options": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options"
+          }
+        },
+        "type": "object",
+        "title": "NodeServiceOptionsIn",
+        "description": "Set a storefront's enabled service options (fulfilment). null/empty = inherit (clear \u2192 cascade)."
+      },
+      "NodeServiceOptionsOut": {
+        "properties": {
+          "own": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Own"
+          },
+          "resolved": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Resolved"
+          },
+          "catalog": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Catalog"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resolved",
+          "catalog"
+        ],
+        "title": "NodeServiceOptionsOut"
       },
       "NoteCreate": {
         "properties": {
@@ -13244,9 +13692,19 @@
             "type": "string",
             "title": "Order Type"
           },
+          "hand_off": {
+            "type": "string",
+            "title": "Hand Off",
+            "default": "served"
+          },
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "fulfilment_status": {
+            "type": "string",
+            "title": "Fulfilment Status",
+            "default": "queued"
           },
           "subtotal": {
             "type": "number",
@@ -13461,6 +13919,26 @@
             ],
             "title": "Outlet Id"
           },
+          "mod_rewards": {
+            "type": "boolean",
+            "title": "Mod Rewards",
+            "default": false
+          },
+          "mod_qr_ordering": {
+            "type": "boolean",
+            "title": "Mod Qr Ordering",
+            "default": false
+          },
+          "mod_pos": {
+            "type": "boolean",
+            "title": "Mod Pos",
+            "default": false
+          },
+          "mod_wallet": {
+            "type": "boolean",
+            "title": "Mod Wallet",
+            "default": false
+          },
           "pos_team": {
             "items": {
               "$ref": "#/components/schemas/PosStaffSecret"
@@ -13571,6 +14049,26 @@
               }
             ],
             "title": "Outlet Id"
+          },
+          "mod_rewards": {
+            "type": "boolean",
+            "title": "Mod Rewards",
+            "default": false
+          },
+          "mod_qr_ordering": {
+            "type": "boolean",
+            "title": "Mod Qr Ordering",
+            "default": false
+          },
+          "mod_pos": {
+            "type": "boolean",
+            "title": "Mod Pos",
+            "default": false
+          },
+          "mod_wallet": {
+            "type": "boolean",
+            "title": "Mod Wallet",
+            "default": false
           }
         },
         "type": "object",
@@ -14530,6 +15028,14 @@
             "type": "boolean",
             "title": "Rewards Enabled",
             "default": true
+          },
+          "service_options": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Service Options",
+            "default": []
           }
         },
         "type": "object",
@@ -14559,6 +15065,17 @@
           "order_type": {
             "$ref": "#/components/schemas/OrderType",
             "default": "dine_in"
+          },
+          "service_option": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Option"
           }
         },
         "type": "object",
@@ -15072,6 +15589,11 @@
             "title": "Pos Enabled",
             "default": false
           },
+          "wallet_enabled": {
+            "type": "boolean",
+            "title": "Wallet Enabled",
+            "default": false
+          },
           "timezone": {
             "type": "string",
             "title": "Timezone",
@@ -15163,6 +15685,17 @@
               }
             ],
             "title": "Pos Enabled"
+          },
+          "wallet_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wallet Enabled"
           },
           "timezone": {
             "anyOf": [

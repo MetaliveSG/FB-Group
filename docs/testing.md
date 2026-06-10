@@ -6,10 +6,10 @@ cd apps/api && .venv/bin/python -m pytest -v      # full backend suite
 ```
 Tests use an isolated in-memory SQLite DB (StaticPool) shared between the test
 session and the FastAPI `TestClient`, with RBAC seeded and rate-limiter/OTP reset per
-test (`app/tests/conftest.py`). Latest run: **291 passed** (see
-`artifacts/pytest_results.txt`). Frontend: **63 Vitest tests**.
+test (`app/tests/conftest.py`). Latest run: **312 passed** (see
+`artifacts/pytest_results.txt`). Frontend: **66 Vitest tests**.
 
-## Coverage by file (291 backend tests across 49 files)
+## Coverage by file (312 backend tests across 52 files)
 | File | Module(s) | What it proves |
 |---|---|---|
 | `test_health.py` | 12 | health endpoint + secure headers |
@@ -60,6 +60,9 @@ test (`app/tests/conftest.py`). Latest run: **291 passed** (see
 | `test_logging.py` | infra | structured JSON logging behaviour |
 | `test_serialization.py` | infra | schema/serialization contracts |
 | `test_permissions.py` | 1, 10 | super admin all, **merchant can't see another**, **outlet manager scoped**, staff lacks CRM, **audit log** |
+| `test_module_cascade.py` | org | **binary parent-gated** module flags (effective = AND up the path; child can't override parent OFF; wallet gated by Table-QR; per-node endpoint + nav-flags) |
+| `test_kds.py` | fulfilment | **KDS** paid-order queue (FIFO, paid & ≠collected) + `fulfilment_status` transitions queued→preparing→ready→collected; invalid transition 409; staff-only |
+| `test_service_options.py` | fulfilment | **two-axis service options**: SEA-first default (self-service+takeaway), storefront set drives order_type+hand_off, unavailable-option 409, QR-context list, cascade get/set on a node |
 | `test_e2e_capture_loop.py` | 1-11 | golden flow end-to-end (below) |
 
 ## Required test flows → where verified
@@ -76,7 +79,7 @@ test (`app/tests/conftest.py`). Latest run: **291 passed** (see
 11. Permission boundaries → `test_e2e`, `test_permissions`, `test_platform`
 
 ## Frontend tests
-`apps/web` — **63 Vitest tests** (format helpers, auth-resilience, stage/role/campaign-type contracts, wheel math, menu filtering, **module-gated nav** `merchantNav.test.ts`). Run `npm test` in `apps/web`.
+`apps/web` — **66 Vitest tests** (format helpers incl. **`orderNo`** call-out codes, auth-resilience, stage/role/campaign-type contracts, wheel math, menu filtering, **module-gated nav** `merchantNav.test.ts`). Run `npm test` in `apps/web`.
 
 ## Regression checklist (run before any release)
 - [ ] `pytest` green

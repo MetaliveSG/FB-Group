@@ -40,4 +40,6 @@ tables
 transactions
 user_roles
 users
+wallet_accounts
+wallet_ledger
 wheel_segments

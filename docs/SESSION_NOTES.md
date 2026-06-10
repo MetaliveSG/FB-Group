@@ -6,6 +6,49 @@
 
 ---
 
+# Session — 2026-06-11
+
+## What changed
+- **Member-tree table redesign:** the 3 module flags went **3-state → binary + parent-gated**
+  (`effective = AND of own-flags up the path`; a child can't override a parent's OFF). Added **`mod_wallet`**
+  as a 4th toggle (binary, parent-gated, gated by Table-QR). Rebuilt the **`/platform` Merchant Directory as a
+  tree-grid** with inline capability toggles, name=Enter, "N inside"=walk-down, QR-Menu gated on Table-QR.
+- **KDS — kitchen display** (`/kds`): paid-order queue + a separate **`fulfilment_status`**
+  (queued→preparing→ready→collected), "mark ready" flow, launched from the tree-grid + merchant orders.
+- **Two-axis service options (fulfilment):** dining context (`order_type` dine_in|takeaway) × **hand-off**
+  (`hand_off` self_pickup|served). Storefront configures the enabled SET (cascade); diner picks per order.
+  **SEA-first default = Self-Service + Takeaway.** Drawer config = Dine-in [Self-Service|Served] + Takeaway
+  on/off. KDS shows **🍽 plate / 📦 package**. Studied Toast/Square/Olo to get the model right.
+- **Customer ready-to-collect notification:** full-screen **popup** (once per order, swinging 🔔) + **sticky
+  banner** + **Orders-tab badge** — app-wide (CustomerTabBar polls 6s; auto-closes on collected). My Orders
+  shows the pick-up journey + a **✓ Paid** cue. Order# = 8 chars with a **forced 3-digit numeric tail**.
+- **Auth:** customer access token → **1 week** (staff stay 8h); on expiry → "Session expired" → re-login →
+  **resume at the pay screen**.
+- **Fixes:** wallet model-drift (NOT-NULL cols); **QR codes printed blank** (CSS specificity); KDS leaked the
+  diner's **phone** → now shows the order number (PII fix). Recovered the stack from a **Docker disk-full**
+  Postgres crash (WAL-recovered, data intact; pruned 35GB→4.9GB).
+
+## Decisions
+- **Scan domains** = per-tenant CIP subdomains **`{slug}.mycip.io`** (apex `mycip.io`); QR host from per-tenant
+  config, never `window.location.origin`. BYO custom domains = Tier-3, deferred.
+- **KDS auth** = station binding (private per-outlet token), **no login / no password**; gate on Table-QR.
+- **Fulfilment = two orthogonal axes**, not one mode (Toast/Olo bundle dine-in=table-service; CIP decouples →
+  the SEA foodcourt "eat-in self-collect" — an M4 moat). The **"ready" alert keys off `self_pickup`, not dine-in**.
+- **Per-stall service options in a foodcourt = NOT needed, deferred into M2** — foodcourt orders attribute to the
+  venue outlet, so per-stall can't take effect until M2 stall-outlet attribution; real foodcourts are uniform
+  self-service → venue cascade default is correct.
+- **Service charge SHOULD key off `hand_off==served`** (not `order_type==dine_in`) so foodcourt self-collect
+  isn't wrongly charged — noted, **parked** (one-liner).
+
+## Still open / next session
+- **Real-time push** for ready-to-collect (SSE/WebSocket + Web Push) — today in-app poll ≤6s (KIV).
+- **HitPay** real payment (mock→real on the existing `payment_providers` seam); wallet connector + checkout-as-tender.
+- Fulfilment polish: **`pickup_number`**, conditional table (hide for self-pickup-only), **service-charge fix**.
+- Scan-domain **`slug` resolver** (swap QR off `window.location.origin`); KDS **station-token** hardening.
+- Webapp aesthetics pass; turn on real AI for the demo.
+
+---
+
 # Session — 2026-06-08
 
 ## What changed

@@ -3,8 +3,8 @@
 ## Overview
 A modular-monolith FastAPI backend serves every client (customer web app, merchant
 CRM, operator console, and the staff POS) over one versioned REST API
-(**136 endpoints, 43 tables**). State lives in PostgreSQL via SQLAlchemy 2.0; Alembic
-manages schema (26 migrations). The Next.js frontend (App Router, **30 routes**) serves
+(**140 endpoints, 45 tables**). State lives in PostgreSQL via SQLAlchemy 2.0; Alembic
+manages schema (32 migrations). The Next.js frontend (App Router, **31 routes**) serves
 four surfaces: **customer** (`/t/[token]`, rewards), **merchant** (CRM, AI insights,
 pipeline, campaigns, RFM, menu/team/tables/settings admin), **operator** (`/platform`),
 and the **staff POS** (`/pos`, PIN login).
