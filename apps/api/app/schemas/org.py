@@ -250,7 +250,8 @@ class NodeServiceOptionsOut(BaseModel):
 
 
 class NodeThemeIn(BaseModel):
-    """Set a node's brand theme. null/empty = inherit (clear). Keys: primary, accent, logo_url."""
+    """Set a node's brand kit. null/empty = inherit (clear). Keys: primary, accent, logo_url,
+    hero_image_url, tagline."""
     theme: dict | None = None
 
 

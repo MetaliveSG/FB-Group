@@ -113,8 +113,10 @@ def resolve_service_options_for_outlet(db: Session, *, outlet_id: str | None) ->
     return resolve_service_options(db, node=node_for_outlet(db, outlet_id))
 
 
-# --- Brand theme (customer-app theming) — cascade-MERGED (partial per-key override) ---------------
-_THEME_KEYS = ("primary", "accent", "logo_url")
+# --- Brand kit (customer-app theming) — cascade-MERGED (partial per-key override) ---------------
+# Colours (primary/accent) drive CSS-var overrides; logo_url/hero_image_url/tagline are media/copy the
+# customer app's hero consumes. Adding a key here auto-flows through resolve/get/set + the QR context.
+_THEME_KEYS = ("primary", "accent", "logo_url", "hero_image_url", "tagline")
 
 
 def resolve_theme(db: Session, *, node: OrgNode | None) -> dict:
@@ -140,7 +142,8 @@ def get_node_theme(db: Session, node: OrgNode) -> dict:
 
 
 def set_node_theme(db: Session, node: OrgNode, theme: dict | None) -> dict:
-    """Set the node's own theme (known keys only: primary/accent/logo_url). Empty/null = inherit (clear)."""
+    """Set the node's own theme (known keys only: primary/accent/logo_url/hero_image_url/tagline).
+    Empty/null = inherit (clear)."""
     if not theme:
         node.theme = None
     else:

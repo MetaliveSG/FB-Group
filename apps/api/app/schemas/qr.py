@@ -29,6 +29,9 @@ class StallRef(BaseModel):
     logo: str | None = None
     is_open: bool = True
     item_count: int = 0
+    # The stall's branded signboard image (the real retro enamel sign) shown on its directory card; the
+    # emoji `logo` is the fallback. Set per-stall on the Menu (id == node).
+    signboard_url: str | None = None
     # The stall's own full-ordering page, when it's a dedicated storefront venue (its outlet hosts
     # one menu + has its own table QR) — the group browse navigates here on tap. Null for a stall
     # in a shared foodcourt outlet (no per-stall token): the browse opens its read-only sheet instead.
@@ -52,6 +55,9 @@ class NodeBrowseOut(BaseModel):
     name: str
     is_group: bool = True
     stalls: list[StallRef] = []
+    # Resolved brand kit {primary?, accent?, logo_url?, hero_image_url?, tagline?} for the group landing —
+    # so the foodcourt directory carries the brand hero, same as a storefront page.
+    theme: dict = {}
 
 
 class QrContextOut(BaseModel):
@@ -73,7 +79,8 @@ class QrContextOut(BaseModel):
     # The storefront's enabled service options (fulfilment), each {key, label, hand_off}. The diner picks
     # one at checkout (auto if only one). hand_off=self_pickup → diner collects + "ready" alert.
     service_options: list[dict] = []
-    # Resolved brand theme {primary, accent, logo_url} — the customer app injects these as CSS-var overrides.
+    # Resolved brand kit {primary?, accent?, logo_url?, hero_image_url?, tagline?} — the customer app injects
+    # the colours as CSS-var overrides and renders the hero (logo + photo + tagline) when present.
     theme: dict = {}
     # i18n/currency: `locale` = the resolved UI language for this view (a PERSON fact); `currency` = the
     # outlet's settlement currency ISO 4217 (a SETTLEMENT fact). The app formats money with

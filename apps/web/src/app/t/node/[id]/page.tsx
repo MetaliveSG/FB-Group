@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { resolveNodeBrowse, resolveNodeMenu, getApiBase } from "@/lib/api";
+import BrandTheme from "@/components/BrandTheme";
 import type { NodeBrowse, StallRef, Menu } from "@fbgroup/api-client";
 
 /**
@@ -50,21 +51,37 @@ export default function NodeBrowsePage() {
       .finally(() => setMenuLoading(false));
   }
 
+  const hero = data?.theme?.hero_image_url;
+  const logo = data?.theme?.logo_url;
+  const tagline = data?.theme?.tagline;
+  const kicker = data && data.is_group && data.stalls.length > 1 ? "Food hall" : "Menu";
+  const subline = data ? `${data.stalls.length} stall${data.stalls.length === 1 ? "" : "s"} · tap to order` : "";
+
   return (
     <main style={{ minHeight: "100vh", background: "var(--color-bg, #f8fafc)", paddingBottom: 40 }}>
-      {/* Header */}
-      <header style={{ background: "var(--color-primary, #ea580c)", color: "#fff", padding: "28px 20px 22px",
-                       borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, opacity: 0.85, letterSpacing: 0.4, textTransform: "uppercase" }}>
-          {data && data.is_group && data.stalls.length > 1 ? "Group Menu" : "Menu"}
-        </div>
-        <h1 style={{ margin: "4px 0 0", fontSize: 24, fontWeight: 800 }}>{data?.name ?? "Loading…"}</h1>
-        {data && (
-          <div style={{ marginTop: 6, fontSize: 13, opacity: 0.9 }}>
-            {data.stalls.length} location{data.stalls.length === 1 ? "" : "s"} · tap to order
+      <BrandTheme theme={data?.theme} />
+      {/* Branded hero (beat-the-4 bar): the foodcourt's photo + logo + tagline when a brand kit is set;
+          otherwise a clean coloured header. */}
+      {hero ? (
+        <header style={{ position: "relative", color: "#fff", overflow: "hidden", borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}>
+          <div style={{ position: "absolute", inset: 0, backgroundImage: `url('${hero}')`, backgroundSize: "cover", backgroundPosition: "center" }} />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.34) 44%, rgba(0,0,0,0.80) 100%)" }} />
+          <div style={{ position: "relative", padding: "26px 20px 20px", minHeight: 188, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 8, maxWidth: 480, margin: "0 auto" }}>
+            {logo
+              ? <img src={logo} alt={data?.name ?? "logo"} style={{ height: 50, alignSelf: "flex-start", maxWidth: "72%", objectFit: "contain", filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.55))" }} />
+              : <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900, textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>{data?.name}</h1>}
+            {tagline && <div style={{ fontSize: 14, fontWeight: 700, opacity: 0.96, textShadow: "0 1px 4px rgba(0,0,0,0.7)" }}>{tagline}</div>}
+            <div style={{ fontSize: 12.5, opacity: 0.92, fontWeight: 600 }}>{subline}</div>
           </div>
-        )}
-      </header>
+        </header>
+      ) : (
+        <header style={{ background: "var(--color-primary, #ea580c)", color: "#fff", padding: "28px 20px 22px",
+                         borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, opacity: 0.85, letterSpacing: 0.4, textTransform: "uppercase" }}>{kicker}</div>
+          <h1 style={{ margin: "4px 0 0", fontSize: 24, fontWeight: 800 }}>{data?.name ?? "Loading…"}</h1>
+          {data && <div style={{ marginTop: 6, fontSize: 13, opacity: 0.9 }}>{subline}</div>}
+        </header>
+      )}
 
       <div style={{ padding: 16, maxWidth: 480, margin: "0 auto" }}>
         {error ? (
@@ -94,10 +111,13 @@ export default function NodeBrowsePage() {
                   padding: 14, cursor: "pointer", boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
                 }}
               >
-                <span style={{ fontSize: 30, width: 48, height: 48, borderRadius: 12, background: "#f1f5f9",
-                               display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  {s.logo || "🍽️"}
-                </span>
+                {s.signboard_url
+                  ? <img src={s.signboard_url} alt={s.stall_name} loading="lazy"
+                         style={{ width: 64, height: 56, flexShrink: 0, objectFit: "contain", borderRadius: 12, background: "#fff", padding: 4, border: "1px solid var(--color-border, #e5e7eb)" }} />
+                  : <span style={{ fontSize: 30, width: 48, height: 48, borderRadius: 12, background: "#f1f5f9",
+                                   display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {s.logo || "🍽️"}
+                    </span>}
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: "block", fontSize: 16, fontWeight: 700, color: "var(--color-text, #0f172a)" }}>
                     {s.stall_name}

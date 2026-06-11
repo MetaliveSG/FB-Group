@@ -83,18 +83,45 @@ const Shell = ({ children, theme }: { children: React.ReactNode; theme?: QrResol
 );
 
 function Banner({ qr, right }: { qr: QrResolution | null; right?: React.ReactNode }) {
+  const hero = qr?.theme?.hero_image_url;
+  const logo = qr?.theme?.logo_url;
+  const tagline = qr?.theme?.tagline;
+
+  // Branded hero (beat-the-4 art-direction bar) — full-bleed photo + bottom scrim + brand logo/tagline,
+  // with the current outlet + table anchored at the base. Falls back to the plain gradient for any
+  // storefront without a hero image set (generic stores are untouched).
+  const contextBar = (
+    <div style={{ display: "flex", alignItems: "flex-end", gap: "var(--space-2)" }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: "var(--text-md)", fontWeight: 800, lineHeight: 1.15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{qr?.outlet.name ?? "Menu"}</div>
+        <div style={{ fontSize: "var(--text-xs)", opacity: 0.85, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {qr ? `Table ${qr.table.label}` : ""}
+        </div>
+      </div>
+      {right && <div style={{ flexShrink: 0 }}>{right}</div>}
+    </div>
+  );
+
+  if (hero) {
+    return (
+      <header style={{ position: "relative", color: "#fff", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: `url('${hero}')`, backgroundSize: "cover", backgroundPosition: "center" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.32) 42%, rgba(0,0,0,0.80) 100%)" }} />
+        <div style={{ position: "relative", padding: "var(--space-4)", minHeight: 196, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: "var(--space-2)" }}>
+          {logo
+            ? <img src={logo} alt={qr?.merchant.name ?? "logo"} style={{ height: 48, alignSelf: "flex-start", maxWidth: "70%", objectFit: "contain", filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.55))" }} />
+            : <div style={{ fontSize: "var(--text-2xl)", fontWeight: 900, textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>{qr?.merchant.name}</div>}
+          {tagline && <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, opacity: 0.96, textShadow: "0 1px 4px rgba(0,0,0,0.7)" }}>{tagline}</div>}
+          {contextBar}
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header style={{ padding: "var(--space-4)", background: "linear-gradient(180deg, var(--brand-600), var(--brand-700))", color: "#fff" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {/* The storefront the diner is AT (the outlet/venue), not the parent group/tenant. */}
-          <div style={{ fontSize: "var(--text-lg)", fontWeight: 900, lineHeight: 1.15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{qr?.outlet.name ?? "Menu"}</div>
-          <div style={{ fontSize: "var(--text-xs)", opacity: 0.85, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {qr ? `Table ${qr.table.label}` : ""}
-          </div>
-        </div>
-        {right && <div style={{ flexShrink: 0 }}>{right}</div>}
-      </div>
+      {/* The storefront the diner is AT (the outlet/venue), not the parent group/tenant. */}
+      {contextBar}
     </header>
   );
 }

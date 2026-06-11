@@ -22,7 +22,10 @@ export default function StallDirectory({
           disabled={!s.is_open}
           onClick={() => s.is_open && onSelect(s)}
         >
-          <div className="stall-card__logo" aria-hidden>{s.logo || "🍽️"}</div>
+          {s.signboard_url
+            ? <img src={s.signboard_url} alt={s.stall_name} loading="lazy"
+                   style={{ width: 56, height: 56, flexShrink: 0, objectFit: "contain", borderRadius: 12, background: "#fff", padding: 4, border: "1px solid var(--color-border, #e5e7eb)" }} />
+            : <div className="stall-card__logo" aria-hidden>{s.logo || "🍽️"}</div>}
           <div className="stall-card__body">
             <div className="stall-card__name">{s.stall_name}</div>
             <div className="stall-card__meta">

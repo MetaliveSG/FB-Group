@@ -12,6 +12,15 @@ def test_single_outlet_returns_one_stall_with_inline_menu(client, db):
     assert len(r["stalls"]) == 1
     assert r["menu"] is not None and r["menu"]["categories"]   # full menu inline (no extra fetch)
     assert r.get("parent_group") is None                       # standalone storefront → no "up" control
+    assert "signboard_url" in r["stalls"][0]                    # field present (null until set)
+
+
+def test_stall_carries_signboard_url(client, db):
+    w = make_world(db)
+    w.menu.signboard_url = "/brands/demo/sign.png"
+    db.commit()
+    r = client.get(f"/api/v1/qr/{w.qr_token}").json()
+    assert r["stalls"][0]["signboard_url"] == "/brands/demo/sign.png"
 
 
 def test_foodcourt_returns_stall_directory_and_null_menu(client, db):

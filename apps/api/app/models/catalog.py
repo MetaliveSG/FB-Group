@@ -21,7 +21,10 @@ class Menu(PKMixin, TimestampMixin, Base):
     # stall directory (null on plain single-menu outlets → they skip the directory).
     stall_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     cuisine: Mapped[str | None] = mapped_column(String(80), nullable=True)
-    logo: Mapped[str | None] = mapped_column(String(16), nullable=True)  # emoji
+    logo: Mapped[str | None] = mapped_column(String(16), nullable=True)  # emoji (fallback for the directory card)
+    # The stall's branded signboard image (real retro enamel sign) shown on its directory card. Null →
+    # the emoji `logo` is used instead. Set per-stall; surfaced in StallRef.
+    signboard_url: Mapped[str | None] = mapped_column(String(400), nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     is_open: Mapped[bool] = mapped_column(Boolean, default=True)
 

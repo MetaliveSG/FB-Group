@@ -61,6 +61,8 @@ export interface StallRef {
   logo: string | null;
   is_open: boolean;
   item_count: number;
+  /** The stall's branded signboard image (real retro sign) for its directory card; emoji `logo` is the fallback. */
+  signboard_url?: string | null;
   /** Full-ordering page for this stall when it's a dedicated storefront venue; null for a
    *  shared-outlet foodcourt stall (the group browse opens its read-only sheet instead). */
   order_path?: string | null;
@@ -95,7 +97,13 @@ export interface QrResolution {
   parent_group?: { node_id: string; name: string; stall_count: number } | null;
 }
 
-export interface BrandTheme { primary?: string; accent?: string; logo_url?: string }
+export interface BrandTheme {
+  primary?: string;
+  accent?: string;
+  logo_url?: string;
+  hero_image_url?: string;   // full-bleed hero photo behind the storefront header
+  tagline?: string;          // brand tagline shown in the hero (e.g. "A Taste of Malaysia")
+}
 
 export interface ServiceOption {
   key: string;          // dine_in_served | dine_in_pickup | takeaway
@@ -987,6 +995,8 @@ export interface NodeBrowse {
   name: string;
   is_group: boolean;
   stalls: StallRef[];
+  /** Resolved brand kit for the group landing (logo/hero/tagline + colours) — same shape as QrResolution.theme. */
+  theme?: BrandTheme;
 }
 
 export interface OrgTree {

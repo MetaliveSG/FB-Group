@@ -58,6 +58,7 @@ def resolve_qr(
             stall_name=m.stall_name or m.name,
             cuisine=m.cuisine,
             logo=m.logo,
+            signboard_url=m.signboard_url,
             is_open=m.is_open,
             item_count=catalog_service.menu_item_count(db, m.id),
         )
@@ -117,12 +118,14 @@ def resolve_node(node_id: str, db: Session = Depends(get_db)):
     order_paths = _stall_order_paths(db, menus)
     stalls = [
         StallRef(menu_id=m.id, stall_name=m.stall_name or m.name, cuisine=m.cuisine, logo=m.logo,
+                 signboard_url=m.signboard_url,
                  is_open=m.is_open, item_count=catalog_service.menu_item_count(db, m.id),
                  order_path=order_paths.get(m.id))
         for m in menus
     ]
     return NodeBrowseOut(node_id=node.id, name=node.name or node.id,
-                         is_group=not node.sells, stalls=stalls)
+                         is_group=not node.sells, stalls=stalls,
+                         theme=boundaries.resolve_theme(db, node=node))
 
 
 def _stall_order_paths(db: Session, menus) -> dict[str, str]:
