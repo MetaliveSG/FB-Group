@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.deps import get_scope, require, resolve_merchant
 from app.auth.permissions import P, WILDCARD
+from app.core.errors import AppError
 from app.db.session import get_db
 from app.models.org import OrgNode
 from app.models.tenancy import Merchant
@@ -25,6 +26,7 @@ from app.schemas.org import (
     NodeAccountOut,
     NodeModulesIn,
     NodeModulesOut,
+    KdsStationOut,
     NodeServiceOptionsIn,
     NodeServiceOptionsOut,
     OrgNodeCreateIn,
@@ -47,6 +49,8 @@ from app.schemas.org import (
 )
 from app.services import (
     boundaries,
+    catalog as catalog_svc,
+    kds_station,
     leasing,
     loyalty_admin,
     merchant_settings,
@@ -56,6 +60,7 @@ from app.services import (
     storefronts,
     users_admin,
 )
+from app.models.tenancy import Outlet
 from app.services.audit import record as audit_record
 
 router = APIRouter(prefix="/org", tags=["org"])
@@ -258,6 +263,56 @@ def update_node_service_options(node_id: str, body: NodeServiceOptionsIn,
                  entity_type="org_node", entity_id=node_id, meta={"options": body.options})
     db.commit()
     return out
+
+
+# --- KDS station token (kitchen-tablet auth) — issue / reveal / rotate / revoke ------------------
+def _storefront_outlet(db, node) -> Outlet:
+    """The storefront node's typed Outlet (menu.id == node.id → outlet). 400 if the node isn't a
+    provisioned storefront — a KDS station belongs to a sellable outlet with a kitchen."""
+    if not node.sells:
+        raise AppError("KDS stations are only for storefronts", code="not_a_storefront", status_code=400)
+    outlet_id = catalog_svc.outlet_of_menu(db, node.id)
+    outlet = db.get(Outlet, outlet_id) if outlet_id else None
+    if outlet is None:
+        raise AppError("This storefront has no outlet yet", code="no_outlet", status_code=400)
+    return outlet
+
+
+def _station_out(outlet_id: str, st) -> KdsStationOut:
+    if st is None:
+        return KdsStationOut(outlet_id=outlet_id, token=None, is_active=False)
+    return KdsStationOut(outlet_id=outlet_id, label=st.label, token=st.token, is_active=st.is_active)
+
+
+@router.get("/nodes/{node_id}/kds-station", response_model=KdsStationOut)
+def read_kds_station(node_id: str, scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """The storefront's current station token (revealable) + active state."""
+    node = org_tree.get_managed_node(db, scope, node_id)
+    outlet = _storefront_outlet(db, node)
+    return _station_out(outlet.id, kds_station.get_station(db, outlet_id=outlet.id))
+
+
+@router.post("/nodes/{node_id}/kds-station", response_model=KdsStationOut)
+def issue_kds_station(node_id: str, scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """Issue or **rotate** the station token (a new token invalidates the old one). Returns the token."""
+    node = org_tree.get_managed_node(db, scope, node_id)
+    outlet = _storefront_outlet(db, node)
+    st = kds_station.issue_station(db, outlet=outlet)
+    audit_record(db, action="org.kds_station_issue", actor_id=scope.user_id,
+                 entity_type="org_node", entity_id=node_id, meta={"outlet_id": outlet.id})
+    db.commit()
+    return _station_out(outlet.id, st)
+
+
+@router.delete("/nodes/{node_id}/kds-station", status_code=204)
+def revoke_kds_station(node_id: str, scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """Revoke (deactivate) the station token — the kitchen tablet stops authenticating until re-issued."""
+    node = org_tree.get_managed_node(db, scope, node_id)
+    outlet = _storefront_outlet(db, node)
+    kds_station.revoke_station(db, outlet_id=outlet.id)
+    audit_record(db, action="org.kds_station_revoke", actor_id=scope.user_id,
+                 entity_type="org_node", entity_id=node_id, meta={"outlet_id": outlet.id})
+    db.commit()
 
 
 @router.get("/nodes/{node_id}/accounts", response_model=list[NodeAccountOut])

@@ -2,12 +2,14 @@
 // Kitchen Display (KDS) — a back-of-house screen showing the outlet's PAID, not-yet-collected
 // orders as tickets, oldest-first. The kitchen advances each: Start → Ready for pick-up → Collected.
 // READY = ready for the customer to collect from the stall. Preview runs in the merchant/operator
-// session; the per-outlet station token is the hardening step (see CLAUDE.md "Kitchen display").
+// session; a bound kitchen tablet uses a private per-outlet STATION TOKEN (?station=… → no login).
 import { useCallback, useEffect, useState } from "react";
-import { listKitchenOrders, advanceFulfilment, getApiBase } from "@/lib/api";
+import { listKitchenOrders, advanceFulfilment, kdsQueue, kdsAdvance, kdsContext, getApiBase } from "@/lib/api";
 import { getStaffToken, getOperatorMerchant } from "@/lib/auth";
 import { orderNo } from "@/lib/format";
 import type { KitchenOrder, FulfilmentStatus } from "@fbgroup/api-client";
+
+const STATION_KEY = "fbgroup_kds_station";   // bound-tablet token (localStorage)
 
 const STATUS_STYLE: Record<FulfilmentStatus, { bg: string; bar: string; label: string }> = {
   queued: { bg: "#0f172a", bar: "#64748b", label: "NEW" },
@@ -24,42 +26,61 @@ function waited(created: string): string {
 export default function KdsPage() {
   const base = getApiBase();
   const [mounted, setMounted] = useState(false);
-  const [outletId, setOutletId] = useState<string | null>(null);
+  const [station, setStation] = useState<string | null>(null);   // bound-tablet token (preferred)
+  const [outletId, setOutletId] = useState<string | null>(null);  // operator/owner preview fallback
   const [orders, setOrders] = useState<KitchenOrder[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
-    const q = new URLSearchParams(window.location.search).get("outlet_id");
-    setOutletId(q || getOperatorMerchant()?.outletId || null);
+    const params = new URLSearchParams(window.location.search);
+    // A station token in the URL binds this device (persist it); else reuse a previously-bound token.
+    const fromUrl = params.get("station");
+    if (fromUrl) { try { localStorage.setItem(STATION_KEY, fromUrl); } catch { /* private mode */ } }
+    let stored: string | null = fromUrl;
+    if (!stored) { try { stored = localStorage.getItem(STATION_KEY); } catch { stored = null; } }
+    setStation(stored);
+    if (!stored) setOutletId(params.get("outlet_id") || getOperatorMerchant()?.outletId || null);
+    // Confirm a stored token is still valid; if revoked, drop it so the operator-preview path shows.
+    if (stored) {
+      kdsContext(base, stored).catch(() => { try { localStorage.removeItem(STATION_KEY); } catch { /* */ } setStation(null); });
+    }
     setMounted(true);
-  }, []);
+  }, [base]);
 
   const refresh = useCallback(async () => {
-    const tok = getStaffToken();
-    if (!tok || !outletId) return;
     try {
-      setOrders(await listKitchenOrders(base, tok, outletId));
+      if (station) {
+        setOrders(await kdsQueue(base, station));
+      } else {
+        const tok = getStaffToken();
+        if (!tok || !outletId) return;
+        setOrders(await listKitchenOrders(base, tok, outletId));
+      }
       setErr(null);
     } catch {
       setErr("Could not load the kitchen queue.");
     }
-  }, [base, outletId]);
+  }, [base, station, outletId]);
 
   // Poll every 5s (a kitchen screen is always live).
   useEffect(() => {
-    if (!mounted || !outletId) return;
+    if (!mounted || (!station && !outletId)) return;
     refresh();
     const t = setInterval(refresh, 5000);
     return () => clearInterval(t);
-  }, [mounted, outletId, refresh]);
+  }, [mounted, station, outletId, refresh]);
 
   async function advance(o: KitchenOrder, to: FulfilmentStatus) {
-    const tok = getStaffToken();
-    if (!tok) return;
     setBusy(o.id);
     try {
-      await advanceFulfilment(base, tok, o.id, to);
+      if (station) {
+        await kdsAdvance(base, station, o.id, to);
+      } else {
+        const tok = getStaffToken();
+        if (!tok) return;
+        await advanceFulfilment(base, tok, o.id, to);
+      }
       await refresh();
     } catch {
       setErr("Could not update the ticket.");
@@ -69,7 +90,7 @@ export default function KdsPage() {
   }
 
   if (!mounted) return null;
-  if (!outletId) {
+  if (!station && !outletId) {
     return (
       <div style={{ minHeight: "100vh", background: "#020617", color: "#e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", padding: 40, textAlign: "center" }}>
         <div>

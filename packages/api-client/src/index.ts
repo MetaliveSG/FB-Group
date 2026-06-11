@@ -1360,6 +1360,31 @@ export function advanceFulfilment(
     { method: "PATCH", body: JSON.stringify({ status }) }, token);
 }
 
+// ─── KDS station token (kitchen-tablet auth — no login) ───────────────
+const KH = (stationToken: string) => ({ "X-KDS-Token": stationToken });
+export interface KdsStation { outlet_id: string; label: string; token: string | null; is_active: boolean; }
+
+/** Station-authed: the kitchen queue for the station's outlet (bearer = the station token). */
+export function kdsQueue(baseUrl: string, stationToken: string): Promise<KitchenOrder[]> {
+  return request(baseUrl, "/kds/queue", { headers: KH(stationToken) });
+}
+export function kdsAdvance(baseUrl: string, stationToken: string, orderId: string, status: FulfilmentStatus): Promise<KitchenOrder> {
+  return request(baseUrl, `/kds/orders/${orderId}/fulfilment`, { method: "PATCH", headers: KH(stationToken), body: JSON.stringify({ status }) });
+}
+export function kdsContext(baseUrl: string, stationToken: string): Promise<{ outlet_id: string; outlet_name: string; label: string }> {
+  return request(baseUrl, "/kds/context", { headers: KH(stationToken) });
+}
+/** Console: read / issue-rotate / revoke a storefront's KDS station token (merchant/operator session). */
+export function getNodeKdsStation(baseUrl: string, token: string, nodeId: string): Promise<KdsStation> {
+  return request(baseUrl, `/org/nodes/${nodeId}/kds-station`, {}, token);
+}
+export function issueNodeKdsStation(baseUrl: string, token: string, nodeId: string): Promise<KdsStation> {
+  return request(baseUrl, `/org/nodes/${nodeId}/kds-station`, { method: "POST" }, token);
+}
+export function revokeNodeKdsStation(baseUrl: string, token: string, nodeId: string): Promise<void> {
+  return request(baseUrl, `/org/nodes/${nodeId}/kds-station`, { method: "DELETE" }, token);
+}
+
 /** Staff takes payment for a walk-in order (mock). */
 export function cashierCheckout(
   baseUrl: string,

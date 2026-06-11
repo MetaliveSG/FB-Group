@@ -249,6 +249,15 @@ class NodeServiceOptionsOut(BaseModel):
     catalog: list[dict]                  # all options: {key, label, order_type, hand_off}
 
 
+class KdsStationOut(BaseModel):
+    """A storefront's KDS station token (kitchen-tablet bearer credential). `token` is the secret,
+    revealable in the console; the tablet opens `/kds?station=<token>`. None/inactive = not set up."""
+    outlet_id: str
+    label: str = "Kitchen"
+    token: str | None = None
+    is_active: bool = False
+
+
 class NodeAccountCreateIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)

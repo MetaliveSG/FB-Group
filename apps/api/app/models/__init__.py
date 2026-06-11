@@ -27,6 +27,7 @@ from app.models.identity import (  # noqa: F401
     UserRoleAssignment,
     role_permissions,
 )
+from app.models.kds import KdsStation  # noqa: F401
 from app.models.leases import Lease  # noqa: F401
 from app.models.loyalty import (  # noqa: F401
     Coalition,

@@ -101,7 +101,7 @@ def create_app() -> FastAPI:
 
 def _register_routers(app: FastAPI) -> None:
     from app.api.routes import (
-        auth, campaigns, catalog, crm, menu_admin, orders, org, platform, promotions,
+        auth, campaigns, catalog, crm, kds, menu_admin, orders, org, platform, promotions,
         qr, reports, rewards, vouchers,
     )
 
@@ -119,6 +119,7 @@ def _register_routers(app: FastAPI) -> None:
     app.include_router(menu_admin.router, prefix=prefix)
     app.include_router(org.router, prefix=prefix)
     app.include_router(vouchers.router, prefix=prefix)
+    app.include_router(kds.router, prefix=prefix)
 
 
 app = create_app()

@@ -11,6 +11,9 @@ import {
   setNodeModules,
   getNodeServiceOptions,
   setNodeServiceOptions,
+  getNodeKdsStation,
+  issueNodeKdsStation,
+  revokeNodeKdsStation,
   listVenueLeases,
   createLease,
   updateLease,
@@ -19,7 +22,7 @@ import {
 } from "@/lib/api";
 import { getStaffToken } from "@/lib/auth";
 import { Toggle } from "@/components/ui";
-import type { OrgTreeNode, OrgNodeAccount, MerchantKpi, Lease, OrgNodeCreated, PosStaffSecret, OrgNodeModules, ModuleKey, NodeServiceOptions } from "@fbgroup/api-client";
+import type { OrgTreeNode, OrgNodeAccount, MerchantKpi, Lease, OrgNodeCreated, PosStaffSecret, OrgNodeModules, ModuleKey, NodeServiceOptions, KdsStation } from "@fbgroup/api-client";
 
 const ROLE_STYLE: Record<string, { bg: string; fg: string }> = {
   CHAIN: { bg: "#dbeafe", fg: "#1e40af" },
@@ -80,6 +83,7 @@ export default function NodeDetailDrawer({
 
   const [modules, setModules] = useState<OrgNodeModules | null>(null);
   const [svcOpts, setSvcOpts] = useState<NodeServiceOptions | null>(null);
+  const [kds, setKds] = useState<KdsStation | null>(null);   // storefront's kitchen-display station token
   const [accounts, setAccounts] = useState<OrgNodeAccount[] | null>(null);
   const [acOpen, setAcOpen] = useState(false);
   const [acEmail, setAcEmail] = useState("");
@@ -114,6 +118,8 @@ export default function NodeDetailDrawer({
     if (tok && canManage) {
       getNodeModules(base, tok, node.id).then(setModules).catch(() => setModules(null));
       getNodeServiceOptions(base, tok, node.id).then(setSvcOpts).catch(() => setSvcOpts(null));
+      setKds(null);
+      if (node.sells) getNodeKdsStation(base, tok, node.id).then(setKds).catch(() => setKds(null));
       listNodeAccounts(base, tok, node.id).then(setAccounts).catch(() => setAccounts([]));
       if (!node.sells) {
         listVenueLeases(base, tok, node.id)
@@ -155,6 +161,12 @@ export default function NodeDetailDrawer({
   };
   const resetServiceOptions = () =>
     run(() => setNodeServiceOptions(base, tok(), node.id, null), (o) => setSvcOpts(o as NodeServiceOptions));
+
+  // KDS station token — issue/rotate, revoke.
+  const issueKds = () => run(() => issueNodeKdsStation(base, tok(), node.id), (s) => setKds(s as KdsStation));
+  const revokeKds = () => run(async () => { await revokeNodeKdsStation(base, tok(), node.id); return null; },
+                              () => setKds((k) => (k ? { ...k, token: null, is_active: false } : k)));
+  const kdsLink = (t: string) => `${typeof window !== "undefined" ? window.location.origin : ""}/kds?station=${encodeURIComponent(t)}`;
 
   // Candidate stalls to lease in: any Storefront not under THIS venue (those are house stalls,
   // no lease needed) and not already leased here.
@@ -467,6 +479,39 @@ export default function NodeDetailDrawer({
               </div>
             );
           })()}
+
+          {/* Kitchen display (KDS) station — a private link the kitchen tablet opens (no login). */}
+          {canManage && node.sells && kds && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--color-border,#e5e7eb)", paddingTop: 14 }}>
+              {label("Kitchen display (KDS)")}
+              {kds.is_active && kds.token ? (
+                <>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <input readOnly value={kdsLink(kds.token)} onFocus={(e) => e.currentTarget.select()}
+                      style={{ flex: 1, fontSize: 11, padding: "6px 8px", border: "1px solid var(--color-border,#e5e7eb)", borderRadius: 6, color: "var(--color-text)", background: "var(--color-surface-alt,#f8fafc)" }} />
+                    <button type="button" className="btn btn-secondary btn-sm" disabled={busy}
+                      onClick={() => navigator.clipboard?.writeText(kdsLink(kds.token!)).catch(() => {})}>Copy</button>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <button type="button" className="btn btn-secondary btn-sm" disabled={busy}
+                      onClick={() => window.open(kdsLink(kds.token!), "_blank", "noopener,noreferrer")}>Open</button>
+                    <button type="button" disabled={busy} onClick={issueKds}
+                      style={{ background: "none", border: "none", color: "var(--color-primary,#dc2626)", fontSize: 11, fontWeight: 700, cursor: busy ? "default" : "pointer" }}>Rotate token</button>
+                    <button type="button" disabled={busy} onClick={revokeKds}
+                      style={{ background: "none", border: "none", color: "#b91c1c", fontSize: 11, fontWeight: 700, cursor: busy ? "default" : "pointer", marginLeft: "auto" }}>Revoke</button>
+                  </div>
+                  <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>Open this link on the kitchen tablet — it stays signed in (no login). Rotate or revoke if a device is lost.</span>
+                </>
+              ) : (
+                <>
+                  <button type="button" className="btn btn-primary btn-sm" style={{ alignSelf: "flex-start", padding: "6px 14px", fontWeight: 700 }} disabled={busy} onClick={issueKds}>
+                    Set up kitchen screen
+                  </button>
+                  <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>Issues a private link for this storefront&apos;s kitchen tablet (no login). Needs Table QR on.</span>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Web logins — dashboard accounts (email + password). POS PINs live in Settings → Staff & PINs. */}
           {canManage && (
