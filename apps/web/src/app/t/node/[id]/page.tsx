@@ -211,10 +211,10 @@ export default function NodeBrowsePage() {
                 <div style={{ fontSize: 13, opacity: 0.95, marginTop: 4, maxWidth: theme?.mascot_url ? "58%" : "78%" }}>Coins at every stall · play for free vouchers &amp; the 888 jackpot.</div>
                 {theme?.mascot_url ? (
                   <>
-                    <style>{"@keyframes cipSteam{0%{opacity:0;transform:translate(-50%,4px) scale(.7)}20%{opacity:.9}60%{opacity:.55}100%{opacity:0;transform:translate(-50%,-22px) scaleX(1.7) scaleY(1.1)}}@media (prefers-reduced-motion:reduce){.cip-steam{animation:none!important;opacity:.45!important}}"}</style>
+                    <style>{"@keyframes cipSteam{0%{opacity:0;transform:translate(-50%,6px) scale(.55)}25%{opacity:1}65%{opacity:.7}100%{opacity:0;transform:translate(-50%,-32px) scaleX(1.9) scaleY(1.25)}}@media (prefers-reduced-motion:reduce){.cip-steam{animation:none!important;opacity:.6!important}}"}</style>
                     <div aria-hidden style={{ position: "absolute", right: 12, top: 0, bottom: 0, width: 84, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {[0, 0.55, 1.15].map((d, i) => (
-                        <span key={i} className="cip-steam" style={{ position: "absolute", top: 18, left: "50%", marginLeft: [-12, -1, 9][i], width: 9, height: i === 1 ? 26 : 22, borderRadius: "50%", background: "radial-gradient(closest-side, rgba(255,255,255,0.95), rgba(255,255,255,0))", filter: "blur(1.6px)", opacity: 0, transformOrigin: "bottom center", animation: `cipSteam 2.6s ease-in-out ${d}s infinite` }} />
+                      {[0, 0.5, 1.0, 1.5].map((d, i) => (
+                        <span key={i} className="cip-steam" style={{ position: "absolute", top: 14, left: "50%", marginLeft: [-15, -5, 6, 15][i], width: 12, height: [24, 30, 26, 22][i], borderRadius: "50%", background: "radial-gradient(closest-side, rgba(255,255,255,1), rgba(255,255,255,0))", filter: "blur(1.3px)", opacity: 0, transformOrigin: "bottom center", animation: `cipSteam 2.8s ease-in-out ${d}s infinite` }} />
                       ))}
                       <img src={theme.mascot_url} alt="" style={{ height: 99, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.22))" }} />
                     </div>
@@ -282,7 +282,15 @@ export default function NodeBrowsePage() {
                       : <h3 style={{ margin: "4px 0 8px", fontSize: 18, fontWeight: 900 }}>{theme.enterprise_name}</h3>}
                     {theme.enterprise_story && <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: "var(--color-text-muted)" }}>{theme.enterprise_story}</p>}
                   </div>
-                  {theme.enterprise_image_url && <img src={theme.enterprise_image_url} alt={`${theme.enterprise_name} outlets`} style={{ width: "100%", display: "block", background: "var(--color-surface-alt)" }} />}
+                  {theme.enterprise_image_url && (
+                    <div style={{ position: "relative" }}>
+                      <style>{"@keyframes cipBlink{0%,100%{opacity:.25;transform:translate(-50%,-50%) scale(.8)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.3)}}@media (prefers-reduced-motion:reduce){.cip-dot{animation:none!important;opacity:.8!important}}"}</style>
+                      <img src={theme.enterprise_image_url} alt={`${theme.enterprise_name} outlets`} style={{ width: "100%", display: "block", background: "var(--color-surface-alt)" }} />
+                      {[[12,55],[18,46],[25,40],[29,53],[34,44],[31,31],[39,58],[43,47],[41,36],[49,46],[47,32],[55,52],[59,42],[63,56],[67,45],[73,38],[79,48],[86,43],[51,61],[21,63]].map(([x, y], i) => (
+                        <span key={i} className="cip-dot" aria-hidden style={{ position: "absolute", left: `${x}%`, top: `${y}%`, width: 8, height: 8, borderRadius: "50%", background: "#ef3b2d", boxShadow: "0 0 7px 1px rgba(239,59,45,0.8)", animation: `cipBlink ${(1.3 + (i % 5) * 0.28).toFixed(2)}s ease-in-out ${((i * 0.37) % 2.2).toFixed(2)}s infinite` }} />
+                      ))}
+                    </div>
+                  )}
                   {theme.enterprise_awards?.length ? (
                     <div style={{ padding: "12px 16px 16px" }}>
                       <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "var(--color-text-muted)", marginBottom: 8 }}>Awards &amp; recognition</div>
