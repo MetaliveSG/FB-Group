@@ -3,8 +3,9 @@
 // a full-bleed heritage hero, a brand-coloured "by the numbers" band, an auto-scrolling brand strip,
 // a feature-led CSR section, a slideshow "Our story" that expands to the full timeline, and an awards
 // banner that links onward. All content is data-driven off the brand kit (theme.enterprise_*).
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { BrandTheme } from "@fbgroup/api-client";
+import StorySection from "./StorySection";
 
 const GOLD = "#e6b54e";
 const SERIF = 'Georgia, "Times New Roman", serif';
@@ -69,20 +70,6 @@ export default function EnterpriseHome({ theme, name, nodeId, onOpenBrand }: {
     return () => { clearInterval(t); clearTimeout(resume); el.removeEventListener("pointerdown", hold); el.removeEventListener("wheel", hold); };
   }, [brands.length]);
 
-  // "Our story" — a slideshow banner that expands to the full timeline.
-  const [storyOpen, setStoryOpen] = useState(false);
-  const [storyIdx, setStoryIdx] = useState(0);
-  useEffect(() => {
-    if (storyOpen || history.length <= 1 || reduceMotion()) return;
-    const t = setInterval(() => setStoryIdx((p) => (p + 1) % history.length), 3500);
-    return () => clearInterval(t);
-  }, [storyOpen, history.length]);
-  const story = history[storyIdx] ?? history[0];
-  const storyRef = useRef<HTMLDivElement>(null);
-  const collapseStory = () => {
-    setStoryOpen(false);
-    requestAnimationFrame(() => storyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
-  };
 
   return (
     <main style={{ minHeight: "100vh", background: "var(--color-bg)" }}>
@@ -131,59 +118,11 @@ export default function EnterpriseHome({ theme, name, nodeId, onOpenBrand }: {
         </Band>
       )}
 
-      {/* ── OUR STORY — slideshow banner → tap to expand the full timeline ─────────────────────── */}
+      {/* ── OUR STORY (shared component; also used on the foodcourt home) ──────────────────────── */}
       {history.length > 0 && (
-        <section ref={storyRef} style={{ background: "transparent", padding: "30px 20px", scrollMarginTop: 6 }}>
-          <div style={{ maxWidth: 480, margin: "0 auto" }}>
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
-              <div><Kicker>Since 1995</Kicker><Title>Our story</Title></div>
-              {storyOpen && (
-                <button type="button" onClick={collapseStory}
-                  style={{ flexShrink: 0, padding: "7px 14px", borderRadius: 999, border: "1px solid var(--color-border)", background: "var(--color-surface)", color: "var(--color-text-muted)", fontWeight: 700, fontSize: 12.5, cursor: "pointer", whiteSpace: "nowrap" }}>
-                  Show less ▲
-                </button>
-              )}
-            </div>
-            {!storyOpen ? (
-            <button type="button" onClick={() => setStoryOpen(true)}
-              style={{ ...card, position: "relative", width: "100%", height: 232, padding: 0, marginTop: 16, cursor: "pointer", color: "#fff", display: "block", textAlign: "left" }}>
-              {history.map((h, i) => (
-                <div key={i} aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url('${h.image}')`, backgroundSize: "cover", backgroundPosition: h.focus ?? "center top", opacity: i === storyIdx ? 1 : 0, transition: "opacity 0.8s ease" }} />
-              ))}
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0) 32%, rgba(0,0,0,0.82) 100%)" }} />
-              <span style={{ position: "absolute", top: 12, right: 12, background: "rgba(0,0,0,0.45)", borderRadius: 999, padding: "5px 11px", fontSize: 11, fontWeight: 700 }}>Tap to explore ›</span>
-              <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "24px 16px 18px" }}>
-                <div style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700 }}>{story.year}</div>
-                <p style={{ margin: "3px 0 0", fontSize: 13, lineHeight: 1.45, opacity: 0.95, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{story.text}</p>
-              </div>
-              <div style={{ position: "absolute", bottom: 7, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 5 }}>
-                {history.map((_, i) => <span key={i} style={{ width: i === storyIdx ? 14 : 5, height: 5, borderRadius: 3, background: i === storyIdx ? "#fff" : "rgba(255,255,255,0.5)", transition: "width 0.3s" }} />)}
-              </div>
-            </button>
-          ) : (
-            <>
-              <div style={{ marginTop: 16 }}>
-                {history.map((h, i) => (
-                  <div key={i} style={{ display: "flex", gap: 14, paddingBottom: i === history.length - 1 ? 0 : 20 }}>
-                    <div style={{ flex: "0 0 46px", position: "relative" }}>
-                      <div style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 700, color: primary, lineHeight: 1 }}>{h.year}</div>
-                      {i !== history.length - 1 && <span style={{ position: "absolute", top: 26, left: 5, bottom: -20, width: 2, background: "var(--color-border)" }} />}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0, ...card }}>
-                      <img src={h.image} alt={h.year} loading="lazy" style={{ width: "100%", height: 132, objectFit: "cover", display: "block", background: "#fff" }} />
-                      <p style={{ margin: 0, padding: "11px 13px", fontSize: 13, lineHeight: 1.55, color: "var(--color-text)" }}>{h.text}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button type="button" onClick={collapseStory}
-                style={{ marginTop: 16, width: "100%", padding: "11px 0", borderRadius: 12, border: "1px solid var(--color-border)", background: "var(--color-surface)", color: "var(--color-text-muted)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                Show less ▲
-              </button>
-            </>
-          )}
-          </div>
-        </section>
+        <Band bg="transparent" pad="30px 20px">
+          <StorySection theme={theme} />
+        </Band>
       )}
 
       {/* ── GIVING BACK — feature + rest ──────────────────────────────────────────────────────── */}

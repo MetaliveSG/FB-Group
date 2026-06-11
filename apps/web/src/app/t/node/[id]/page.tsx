@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { resolveNodeBrowse, resolveNodeMenu, getApiBase } from "@/lib/api";
 import BrandTheme from "@/components/BrandTheme";
 import EnterpriseHome from "@/components/EnterpriseHome";
+import StorySection from "@/components/StorySection";
 import type { NodeBrowse, StallRef, Menu } from "@fbgroup/api-client";
 
 /**
@@ -271,6 +272,9 @@ export default function NodeBrowsePage() {
                   </div>
                 </section>
               )}
+
+              {/* SINCE 1995 · OUR STORY (the enterprise timeline, inherited via the theme cascade) */}
+              {theme?.enterprise_history?.length ? <StorySection theme={theme} /> : null}
 
               {/* GET TO KNOW THE ENTERPRISE */}
               {theme?.enterprise_name && (
