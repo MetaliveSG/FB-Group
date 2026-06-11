@@ -113,7 +113,8 @@ ENTERPRISE_SHOWCASE = {
 # Malaysia Boleh! overrides with its bold Malaysian red + yellow → every stall inherits the red.
 THEMES = {
     FSG: {                                            # Enterprise profile — tenants inherit via the cascade
-        "primary": "#16335b",                         # Fei Siong Group house navy (the default)
+        "primary": "#cc0001",                         # red house style (matches Malaysia Boleh!)
+        "accent": "#ffcc00",
         "enterprise_name": "Fei Siong Group",
         "enterprise_logo_url": "/brands/fsg/logo.png",
         "enterprise_image_url": "/brands/fsg/brands-map.jpg",

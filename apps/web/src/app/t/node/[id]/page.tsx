@@ -176,7 +176,7 @@ export default function NodeBrowsePage() {
     return (
       <>
         <BrandTheme theme={theme} />
-        <EnterpriseHome theme={theme!} name={data.name}
+        <EnterpriseHome theme={theme!} name={data.name} nodeId={id}
           onOpenBrand={(node) => { window.location.href = `/t/node/${encodeURIComponent(node)}`; }} />
       </>
     );
