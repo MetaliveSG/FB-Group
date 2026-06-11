@@ -22,7 +22,7 @@ function cuisineTag(s: StallRef): string {
   if (/noodle|mee|kway teow|pan mee|ban mee/.test(t)) return "Noodles";
   if (/bak kut teh|soup|herbal/.test(t)) return "Soups";
   if (/claypot|rice/.test(t)) return "Rice";
-  if (/chendol|kacang|dessert|kopi|teh|drink|sweet/.test(t)) return "Sweets";
+  if (/chendol|kacang|dessert|kopi|teh|drink|sweet/.test(t)) return "Desserts";
   return "More";
 }
 
