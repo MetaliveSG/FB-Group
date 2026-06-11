@@ -81,21 +81,10 @@ export default function MerchantOrdersPage() {
           <h1 className="page-title">Orders</h1>
           <p className="page-subtitle">All orders across your outlets</p>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {/* Open the kitchen screen (KDS) for the in-scope storefront — needs a specific outlet. */}
-          {getOperatorMerchant()?.outletId && (
-            <button
-              className="btn btn-secondary"
-              onClick={() => window.open(`/kds?outlet_id=${encodeURIComponent(getOperatorMerchant()!.outletId!)}`, "_blank", "noopener,noreferrer")}
-              title="Open the kitchen screen for this storefront"
-            >
-              🍳 Kitchen screen
-            </button>
-          )}
-          <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ maxWidth: 180 }}>
-            {STATUSES.map((s) => <option key={s} value={s}>{s ? s[0].toUpperCase() + s.slice(1) : "All statuses"}</option>)}
-          </select>
-        </div>
+        {/* The kitchen screen is set up + launched from Ordering → Tables & QR (the storefront's hub). */}
+        <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ maxWidth: 180 }}>
+          {STATUSES.map((s) => <option key={s} value={s}>{s ? s[0].toUpperCase() + s.slice(1) : "All statuses"}</option>)}
+        </select>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
