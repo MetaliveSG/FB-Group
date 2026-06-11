@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { resolveNodeBrowse, resolveNodeMenu, getApiBase } from "@/lib/api";
 import BrandTheme from "@/components/BrandTheme";
+import EnterpriseHome from "@/components/EnterpriseHome";
 import type { NodeBrowse, StallRef, Menu } from "@fbgroup/api-client";
 
 /**
@@ -168,6 +169,18 @@ export default function NodeBrowsePage() {
       <span style={{ fontSize: 20, color: "var(--color-text-muted)" }}>›</span>
     </button>
   );
+
+  // Enterprise/group QR (no sellable stalls of its own + carries enterprise content) → the corporate
+  // showcase instead of the foodcourt directory. (Hooks above always run, so this early return is safe.)
+  if (data && stalls.length === 0 && (theme?.enterprise_brands?.length || theme?.enterprise_name)) {
+    return (
+      <>
+        <BrandTheme theme={theme} />
+        <EnterpriseHome theme={theme!} name={data.name}
+          onOpenBrand={(node) => { window.location.href = `/t/node/${encodeURIComponent(node)}`; }} />
+      </>
+    );
+  }
 
   return (
     <main style={{ minHeight: "100vh", background: "var(--color-bg)" }}>

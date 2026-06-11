@@ -62,6 +62,53 @@ NODES = [
 SETTLEMENT_BOUNDARIES = {MB}
 LOYALTY_DOMAINS = {MB}
 
+# --- FSG enterprise showcase content (real, from feisionggroup.com.sg) — powers /t/node/fsg ----------
+_FB = "/brands/fsg"
+_E_BRANDS = [  # (name, logo file) — the brand portfolio
+    ("Encik Tan", "encik-tan.png"), ("Nam Kee Pau", "nam-kee-pau.png"), ("EAT", "eat.png"),
+    ("Popeyes", "popeyes.png"), ("Malaysia Boleh!", "malaysia-boleh.png"), ("Boleh Boleh", "boleh-boleh.png"),
+    ("85 Redhill", "85-redhill.png"), ("SG Hawker", "sg-hawker.png"), ("Malaysia Chiak", "malaysia-chiak.png"),
+    ("Let's Eat", "lets-eat.png"), ("Sabai Sabai", "sabai-sabai.png"), ("Hong Kong Egglet", "hong-kong-egglet.png"),
+    ("Ding Ji", "ding-ji.png"), ("Huang Chao", "huang-chao.png"), ("Fei Siong Social Enterprise", "fsse.png"),
+]
+_E_CSR = [  # (title, date, body, image)
+    ("'Go Out and Learn' Programme", "Oct 2024",
+     "A learning journey for ACS (Junior) P6 students — a factory tour plus hands-on Pau making.", "go-out-learn.jpg"),
+    ("Ramadan with ACMI", "Apr 2024",
+     "Popeyes Singapore × ACMI — food donations to migrant workers in dormitories across three weekends.", "acmi-ramadan.jpg"),
+    ("International Women's Day", "Mar 2024",
+     "With Daughters Of Tomorrow — meals donated to support underprivileged women's empowerment.", "womens-day.jpg"),
+    ("Feed the City 3.0", "Sep 2021",
+     "With The Food Bank Singapore — beneficiaries choose halal / non-halal meals, island-wide.", "feed-the-city.jpg"),
+    ("Helping Hand to Migrant Workers", "May 2020",
+     "With the Ministry of Manpower — 150,000+ meals prepared for migrant workers during COVID-19.", "migrant-workers.jpg"),
+]
+_E_HISTORY = [  # (year, text, image)
+    ("1995", "Humble beginnings — a rented fish-ball-noodle stall outside the old National Library, Stamford Road.", "1995.jpg"),
+    ("2006", "EAT — pioneer F&B hawker brand in retail malls; first outlet at The Rail Mall.", "2006.jpg"),
+    ("2012", "Malaysia Boleh! — a self-operated food atrium, positioned as a thematic dining attraction.", "2012.jpg"),
+    ("2014", "Encik Tan — the first Halal-certified mini food-atrium concept, at Kallang Wave Mall.", "2014.jpg"),
+    ("2017", "Honorary Partner of Tourism Malaysia — promoting Malaysian hawker food.", "2017.jpg"),
+    ("2020", "SkillsFuture Employer Award · 25th in the Enterprise 50 Awards.", "2020.jpg"),
+    ("2021", "Boleh Boleh — a 10,000 sq ft celebration of hawker culture at The Clementi Mall.", "2021.jpg"),
+    ("2022", "Exclusive Singapore franchise agreement for Popeyes.", "2022.jpg"),
+    ("2023", "New HQ with a centralised kitchen at 11 Enterprise Road.", "2023.jpg"),
+    ("2024", "Running integrated hawker centres — Woodleigh & Buangkok.", "2024.jpg"),
+]
+ENTERPRISE_SHOWCASE = {
+    "enterprise_stats": [
+        {"value": "20", "label": "Brands"}, {"value": "205+", "label": "Outlets"},
+        {"value": "4", "label": "Hawker centres"}, {"value": "1995", "label": "Since"},
+    ],
+    "enterprise_brands": [
+        {"name": n, "logo": f"{_FB}/brands/{f}", **({"node": MB} if n == "Malaysia Boleh!" else {})}
+        for n, f in _E_BRANDS
+    ],
+    "enterprise_csr_headline": "Fostering positive change through F&B",
+    "enterprise_csr": [{"title": t, "date": d, "body": b, "image": f"{_FB}/csr/{img}"} for t, d, b, img in _E_CSR],
+    "enterprise_history": [{"year": y, "text": tx, "image": f"{_FB}/history/{img}"} for y, tx, img in _E_HISTORY],
+}
+
 # Brand themes (cascade-merged enterprise → brand → stall). FSG = a corporate navy house style;
 # Malaysia Boleh! overrides with its bold Malaysian red + yellow → every stall inherits the red.
 THEMES = {
@@ -76,6 +123,7 @@ THEMES = {
             "authentic, affordable hawker fare."
         ),
         "enterprise_awards": ["/brands/fsg/award-enterprise50.png", "/brands/fsg/award-skillsfuture.png"],
+        **ENTERPRISE_SHOWCASE,
     },
     MB: {                                             # Malaysia Boleh! — real brand kit (self-hosted assets)
         "primary": "#cc0001", "accent": "#ffcc00",   # Malaysian red + gold

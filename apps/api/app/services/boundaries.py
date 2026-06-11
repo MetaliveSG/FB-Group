@@ -125,6 +125,11 @@ _THEME_KEYS = (
     # powers the "Get to know {enterprise}" section.
     "enterprise_name", "enterprise_logo_url", "enterprise_image_url", "enterprise_story",
     "enterprise_awards",                        # list of award badge image URLs (horizontal scroll)
+    # Enterprise SHOWCASE (the corporate landing at /t/node/{enterprise}) — set on the enterprise node:
+    "enterprise_stats",       # [{value, label}] headline numbers
+    "enterprise_brands",      # [{name, logo}] the brand portfolio (scrollable)
+    "enterprise_csr_headline", "enterprise_csr",   # CSR headline + [{title, date, body, image}]
+    "enterprise_history",     # [{year, text, image}] company timeline
 )
 
 
