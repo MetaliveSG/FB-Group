@@ -81,32 +81,28 @@ export default function EnterpriseHome({ theme, name, nodeId, onOpenBrand }: {
 
   return (
     <main style={{ minHeight: "100vh", background: "var(--color-bg)" }}>
-      {/* ── HERO — light editorial, FSG's watercolour brand illustration ──────────────────────── */}
-      <header style={{ background: "linear-gradient(180deg, #ffffff 0%, var(--color-surface-alt) 100%)", color: "var(--color-text)", overflow: "hidden" }}>
-        <div style={{ maxWidth: 480, margin: "0 auto", padding: "28px 22px 0", textAlign: "center" }}>
-          {theme.enterprise_logo_url && <img src={theme.enterprise_logo_url} alt={name} style={{ height: 52, margin: "0 auto", display: "block" }} />}
-          <div style={{ marginTop: 16, fontSize: 11, fontWeight: 800, letterSpacing: 2, textTransform: "uppercase", color: primary }}>Est. 1995 · Singapore</div>
-          <h1 style={{ margin: "9px 0 0", fontFamily: SERIF, fontSize: 32, fontWeight: 700, lineHeight: 1.1, color: "var(--color-text)" }}>A homegrown hawker story</h1>
-          <p style={{ margin: "11px auto 0", fontSize: 14, color: "var(--color-text-muted)", maxWidth: 300, lineHeight: 1.55 }}>
-            From one fishball-noodle stall to one of Singapore’s leading F&amp;B groups.
-          </p>
+      {/* ── HERO — compact light editorial masthead: text + FSG illustration + stats as one unit ── */}
+      <header style={{ background: "#fff", color: "var(--color-text)", overflow: "hidden" }}>
+        <div style={{ maxWidth: 480, margin: "0 auto", padding: "16px 20px 0", textAlign: "center" }}>
+          {theme.enterprise_logo_url && <img src={theme.enterprise_logo_url} alt={name} style={{ height: 38, margin: "0 auto", display: "block" }} />}
+          <div style={{ marginTop: 9, fontSize: 10.5, fontWeight: 800, letterSpacing: 1.8, textTransform: "uppercase", color: primary }}>Est. 1995 · Singapore</div>
+          <h1 style={{ margin: "5px 0 0", fontFamily: SERIF, fontSize: 25, fontWeight: 700, lineHeight: 1.1, color: "var(--color-text)" }}>A homegrown hawker story</h1>
         </div>
-        {heroArt && <img src={heroArt} alt="" style={{ width: "100%", display: "block", marginTop: 8 }} />}
-      </header>
-
-      {/* ── BY THE NUMBERS ────────────────────────────────────────────────────────────────────── */}
-      {stats.length > 0 && (
-        <section style={{ background: deep, color: "#fff" }}>
-          <div style={{ maxWidth: 480, margin: "0 auto", padding: "22px 20px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-            {stats.map((s, i) => (
-              <div key={i} style={{ textAlign: "center" }}>
-                <div style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700, lineHeight: 1 }}>{s.value}</div>
-                <div style={{ fontSize: 9.5, opacity: 0.7, marginTop: 5, textTransform: "uppercase", letterSpacing: 0.5 }}>{s.label}</div>
-              </div>
-            ))}
+        {heroArt && <img src={heroArt} alt="" style={{ width: "100%", display: "block", marginTop: 2 }} />}
+        {/* stats fused directly onto the hero (no gap) → one masthead */}
+        {stats.length > 0 && (
+          <div style={{ background: deep, color: "#fff" }}>
+            <div style={{ maxWidth: 480, margin: "0 auto", padding: "13px 18px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+              {stats.map((s, i) => (
+                <div key={i} style={{ textAlign: "center" }}>
+                  <div style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 700, lineHeight: 1 }}>{s.value}</div>
+                  <div style={{ fontSize: 9, opacity: 0.7, marginTop: 4, textTransform: "uppercase", letterSpacing: 0.4 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </section>
-      )}
+        )}
+      </header>
 
       {/* ── OUR BRANDS — auto-scroll, edge-to-edge logo tiles ─────────────────────────────────── */}
       {brands.length > 0 && (
