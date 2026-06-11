@@ -131,42 +131,9 @@ export default function EnterpriseHome({ theme, name, nodeId, onOpenBrand }: {
         </Band>
       )}
 
-      {/* ── GIVING BACK — feature + rest ──────────────────────────────────────────────────────── */}
-      {csr.length > 0 && (
-        <Band pad="30px 20px">
-          <Kicker>Community</Kicker>
-          <Title>{theme.enterprise_csr_headline ?? "Giving back"}</Title>
-          {feature && (
-            <div style={{ ...card, marginTop: 16, position: "relative" }}>
-              <img src={feature.image} alt={feature.title} loading="lazy" style={{ width: "100%", height: 196, objectFit: "cover", display: "block" }} />
-              <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "26px 16px 14px", color: "#fff",
-                background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.78) 100%)" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.85 }}>{feature.date}</div>
-                <div style={{ fontSize: 17, fontWeight: 800, marginTop: 2 }}>{feature.title}</div>
-                <p style={{ margin: "4px 0 0", fontSize: 12.5, lineHeight: 1.5, opacity: 0.92 }}>{feature.body}</p>
-              </div>
-            </div>
-          )}
-          {restCsr.length > 0 && (
-            <div style={{ ...rail, marginTop: 12 }}>
-              {restCsr.map((c, i) => (
-                <article key={i} style={{ ...card, flex: "0 0 230px" }}>
-                  <img src={c.image} alt={c.title} loading="lazy" style={{ width: "100%", height: 118, objectFit: "cover", display: "block", background: "var(--color-surface-alt)" }} />
-                  <div style={{ padding: 12 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-muted)" }}>{c.date}</div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: "var(--color-text)", margin: "2px 0 4px", lineHeight: 1.25 }}>{c.title}</div>
-                    <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--color-text-muted)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{c.body}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </Band>
-      )}
-
       {/* ── OUR STORY — slideshow banner → tap to expand the full timeline ─────────────────────── */}
       {history.length > 0 && (
-        <section ref={storyRef} style={{ background: "var(--color-surface-alt)", padding: "30px 20px", scrollMarginTop: 6 }}>
+        <section ref={storyRef} style={{ background: "transparent", padding: "30px 20px", scrollMarginTop: 6 }}>
           <div style={{ maxWidth: 480, margin: "0 auto" }}>
             <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
               <div><Kicker>Since 1995</Kicker><Title>Our story</Title></div>
@@ -217,6 +184,39 @@ export default function EnterpriseHome({ theme, name, nodeId, onOpenBrand }: {
           )}
           </div>
         </section>
+      )}
+
+      {/* ── GIVING BACK — feature + rest ──────────────────────────────────────────────────────── */}
+      {csr.length > 0 && (
+        <Band bg="var(--color-surface-alt)" pad="30px 20px">
+          <Kicker>Community</Kicker>
+          <Title>{theme.enterprise_csr_headline ?? "Giving back"}</Title>
+          {feature && (
+            <div style={{ ...card, marginTop: 16, position: "relative" }}>
+              <img src={feature.image} alt={feature.title} loading="lazy" style={{ width: "100%", height: 196, objectFit: "cover", display: "block" }} />
+              <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "26px 16px 14px", color: "#fff",
+                background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.78) 100%)" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.85 }}>{feature.date}</div>
+                <div style={{ fontSize: 17, fontWeight: 800, marginTop: 2 }}>{feature.title}</div>
+                <p style={{ margin: "4px 0 0", fontSize: 12.5, lineHeight: 1.5, opacity: 0.92 }}>{feature.body}</p>
+              </div>
+            </div>
+          )}
+          {restCsr.length > 0 && (
+            <div style={{ ...rail, marginTop: 12 }}>
+              {restCsr.map((c, i) => (
+                <article key={i} style={{ ...card, flex: "0 0 230px" }}>
+                  <img src={c.image} alt={c.title} loading="lazy" style={{ width: "100%", height: 118, objectFit: "cover", display: "block", background: "var(--color-surface-alt)" }} />
+                  <div style={{ padding: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-muted)" }}>{c.date}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: "var(--color-text)", margin: "2px 0 4px", lineHeight: 1.25 }}>{c.title}</div>
+                    <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--color-text-muted)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{c.body}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </Band>
       )}
 
       {/* ── AWARDS — a banner that links onward ───────────────────────────────────────────────── */}
