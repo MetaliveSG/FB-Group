@@ -61,6 +61,9 @@ export interface StallRef {
   logo: string | null;
   is_open: boolean;
   item_count: number;
+  /** Directory-card richness: price floor + up to 3 dish names ("what they sell" preview). */
+  price_from?: number | null;
+  top_items?: string[];
   /** The stall's branded signboard image (real retro sign) for its directory card; emoji `logo` is the fallback. */
   signboard_url?: string | null;
   /** Full-ordering page for this stall when it's a dedicated storefront venue; null for a

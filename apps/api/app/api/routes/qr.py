@@ -52,6 +52,7 @@ def resolve_qr(
     # resolved through the org spine (Phase 1b); behaviour-identical for the current tree.
     menus = catalog_service.list_outlet_stalls(db, qr.outlet_id)
     is_foodcourt = len(menus) > 1
+    _prev = {m.id: catalog_service.menu_preview(db, m.id) for m in menus}
     stalls = [
         StallRef(
             menu_id=m.id,
@@ -60,7 +61,9 @@ def resolve_qr(
             logo=m.logo,
             signboard_url=m.signboard_url,
             is_open=m.is_open,
-            item_count=catalog_service.menu_item_count(db, m.id),
+            item_count=_prev[m.id][0],
+            price_from=_prev[m.id][1],
+            top_items=_prev[m.id][2],
         )
         for m in menus
     ]
@@ -116,10 +119,11 @@ def resolve_node(node_id: str, db: Session = Depends(get_db)):
         raise NotFoundError("Location not found", code="node_not_found")
     menus = catalog_service.direct_storefronts(db, node)   # direct children only (not nested SF)
     order_paths = _stall_order_paths(db, menus)
+    _prev = {m.id: catalog_service.menu_preview(db, m.id) for m in menus}
     stalls = [
         StallRef(menu_id=m.id, stall_name=m.stall_name or m.name, cuisine=m.cuisine, logo=m.logo,
-                 signboard_url=m.signboard_url,
-                 is_open=m.is_open, item_count=catalog_service.menu_item_count(db, m.id),
+                 signboard_url=m.signboard_url, is_open=m.is_open,
+                 item_count=_prev[m.id][0], price_from=_prev[m.id][1], top_items=_prev[m.id][2],
                  order_path=order_paths.get(m.id))
         for m in menus
     ]

@@ -150,6 +150,22 @@ def menu_item_count(db: Session, menu_id: str) -> int:
     ) or 0
 
 
+def menu_preview(db: Session, menu_id: str) -> tuple[int, float | None, list[str]]:
+    """For a stall directory card: (available item count, price-from, up to 3 dish names). Excludes
+    'Add:'-prefixed add-ons from the price floor + dish preview so 'from $X' reflects real dishes."""
+    rows = db.execute(
+        select(MenuItem.name, MenuItem.price)
+        .join(MenuCategory, MenuItem.category_id == MenuCategory.id)
+        .where(MenuCategory.menu_id == menu_id, MenuItem.is_available.is_(True))
+        .order_by(MenuItem.sort_order, MenuItem.id)
+    ).all()
+    if not rows:
+        return 0, None, []
+    mains = [r for r in rows if not r.name.startswith("Add:")] or rows
+    price_from = float(min(r.price for r in mains))
+    return len(rows), price_from, [r.name for r in mains[:3]]
+
+
 def get_outlet_menu(db: Session, outlet_id: str, menu_id: str) -> Menu:
     """Full menu (categories+items+modifiers) for a specific stall, validated to belong
     to the given outlet — so a QR token can only reach menus at its own outlet."""

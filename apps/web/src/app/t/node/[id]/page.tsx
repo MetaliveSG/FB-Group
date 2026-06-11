@@ -26,6 +26,16 @@ function cuisineTag(s: StallRef): string {
   return "More";
 }
 
+// A small personality chip derived from the stall (no faux data — keyword-based).
+function stallTag(s: StallRef): { label: string; bg: string; fg: string } | null {
+  const t = `${s.cuisine ?? ""} ${s.stall_name}`.toLowerCase();
+  // savoury/heritage first so "Bak Kut Teh" isn't caught by the drinks "teh" keyword
+  if (/bak kut teh|herbal|claypot|duck|hokkien/.test(t)) return { label: "Signature", bg: "#fff1d6", fg: "#b06b00" };
+  if (/chilli|spicy|tom yam|mala|prawn|sambal/.test(t)) return { label: "🌶️ Spicy", bg: "#ffe9e2", fg: "#cc0001" };
+  if (/chendol|kacang|dessert|sweet|kopi|drink/.test(t)) return { label: "Sweet treat", bg: "#e7f4ec", fg: "#1c8a4e" };
+  return null;
+}
+
 // ── Hero slideshow (auto-rotating; dots; reduced-motion safe) ────────────────────────────────
 function HeroCarousel({ images, logo, tagline, subline, name }: {
   images: string[]; logo?: string; tagline?: string; subline?: string; name: string;
@@ -156,19 +166,35 @@ export default function NodeBrowsePage() {
     return () => { clearInterval(tick); clearTimeout(resume); el.removeEventListener("pointerdown", hold); el.removeEventListener("wheel", hold); };
   }, [recommended.length, seg]);
 
-  const stallRow = (s: StallRef) => (
-    <button key={s.menu_id} onClick={() => selectStall(s)}
-      style={{ ...card, display: "flex", alignItems: "center", gap: 14, width: "100%", textAlign: "left", padding: 12, cursor: "pointer" }}>
-      {s.signboard_url
-        ? <img src={s.signboard_url} alt={s.stall_name} loading="lazy" style={{ width: 64, height: 56, flexShrink: 0, objectFit: "contain", borderRadius: 12, background: "#fff", padding: 4, border: "1px solid var(--color-border)" }} />
-        : <span style={{ fontSize: 30, width: 56, height: 56, borderRadius: 12, background: "var(--color-surface-alt)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{s.logo || "🍽️"}</span>}
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: 16, fontWeight: 800, color: "var(--color-text)" }}>{s.stall_name}</span>
-        <span style={{ display: "block", fontSize: 13, color: "var(--color-text-muted)", marginTop: 2 }}>{s.cuisine || "Food"} · {s.item_count} item{s.item_count === 1 ? "" : "s"}</span>
-      </span>
-      <span style={{ fontSize: 20, color: "var(--color-primary)" }}>›</span>
-    </button>
-  );
+  const stallRow = (s: StallRef) => {
+    const tag = stallTag(s);
+    return (
+      <button key={s.menu_id} onClick={() => selectStall(s)}
+        style={{ ...card, display: "flex", alignItems: "stretch", gap: 13, width: "100%", textAlign: "left", padding: 12, cursor: "pointer", borderRadius: 18 }}>
+        {s.signboard_url
+          ? <img src={s.signboard_url} alt={s.stall_name} loading="lazy" style={{ width: 76, height: 56, flexShrink: 0, boxSizing: "border-box", objectFit: "contain", borderRadius: 12, background: "#fff", padding: 3, border: "1px solid var(--color-border)", alignSelf: "flex-start" }} />
+          : <span style={{ fontSize: 30, width: 76, height: 56, borderRadius: 12, background: "var(--color-surface-alt)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "flex-start" }}>{s.logo || "🍽️"}</span>}
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+          <span style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <span style={{ flex: 1, minWidth: 0, fontSize: 16, fontWeight: 800, lineHeight: 1.15, color: "var(--color-text)" }}>{s.stall_name}</span>
+            {s.price_from != null && (
+              <span style={{ flexShrink: 0, fontSize: 13, fontWeight: 800, color: "var(--color-primary)" }}>
+                <span style={{ fontWeight: 600, color: "var(--color-text-muted)", fontSize: 10.5 }}>from </span>{`S$${s.price_from.toFixed(2)}`}
+              </span>
+            )}
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 3, fontSize: 12.5, color: "var(--color-text-muted)" }}>
+            {s.cuisine || "Food"}
+            {tag && <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 999, background: tag.bg, color: tag.fg }}>{tag.label}</span>}
+          </span>
+          {s.top_items && s.top_items.length > 0 && (
+            <span style={{ marginTop: 6, fontSize: 12, color: "#9a9189", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.top_items.join(" · ")}</span>
+          )}
+        </span>
+        <span aria-hidden style={{ alignSelf: "center", flexShrink: 0, width: 30, height: 30, borderRadius: "50%", background: "#fff2ee", color: "var(--color-primary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 800 }}>›</span>
+      </button>
+    );
+  };
 
   // Enterprise/group QR (no sellable stalls of its own + carries enterprise content) → the corporate
   // showcase instead of the foodcourt directory. (Hooks above always run, so this early return is safe.)

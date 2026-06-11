@@ -29,6 +29,9 @@ class StallRef(BaseModel):
     logo: str | None = None
     is_open: bool = True
     item_count: int = 0
+    # Directory-card richness: a price floor + up to 3 dish names (a "what they sell" preview).
+    price_from: float | None = None
+    top_items: list[str] = []
     # The stall's branded signboard image (the real retro enamel sign) shown on its directory card; the
     # emoji `logo` is the fallback. Set per-stall on the Menu (id == node).
     signboard_url: str | None = None

@@ -163,7 +163,7 @@ STALL_SIGNBOARDS = {
     S_CHILLI: "damansara-chilli-pan-mee.png", S_CKT: "penang-char-kuay-teow.png",
     S_BKT: "klang-bak-kut-teh.png", S_PRAWN: "penang-prawn-mee.png",
     S_CLAYPOT: "petaling-claypot-rice.png", S_CHENDOL: "penang-road-chendol.png",
-    S_HUANGCHAO: "huang-chao-teochew.png", S_WANTON: "kl-wanton-mee.jpg", S_SEINGANZAI: "sei-ngan-zai.png",
+    S_HUANGCHAO: "huang-chao-teochew.png", S_WANTON: "kl-wanton-mee.png", S_SEINGANZAI: "sei-ngan-zai.png",
 }
 
 # Curated stall display order (Menu.sort_order; directory + storefront listings order by it).
