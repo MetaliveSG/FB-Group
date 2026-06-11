@@ -96,6 +96,7 @@ _E_HISTORY = [  # (year, text, image)
     ("2024", "Running integrated hawker centres — Woodleigh & Buangkok.", "2024.jpg"),
 ]
 ENTERPRISE_SHOWCASE = {
+    "enterprise_hero_image": f"{_FB}/brand-hero.jpg",   # FSG's watercolour brand illustration (from /brand/)
     "enterprise_stats": [
         {"value": "20", "label": "Brands"}, {"value": "205+", "label": "Outlets"},
         {"value": "4", "label": "Hawker centres"}, {"value": "1995", "label": "Since"},

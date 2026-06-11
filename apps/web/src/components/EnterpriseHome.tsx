@@ -44,7 +44,7 @@ export default function EnterpriseHome({ theme, name, nodeId, onOpenBrand }: {
   const csr = theme.enterprise_csr ?? [];
   const history = theme.enterprise_history ?? [];
   const awards = theme.enterprise_awards ?? [];
-  const heroPhoto = history[0]?.image ?? theme.enterprise_image_url;
+  const heroArt = theme.enterprise_hero_image ?? history[0]?.image ?? theme.enterprise_image_url;
   const feature = csr[0];
   const restCsr = csr.slice(1);
   const primary = theme.primary || "#cc0001";
@@ -81,26 +81,17 @@ export default function EnterpriseHome({ theme, name, nodeId, onOpenBrand }: {
 
   return (
     <main style={{ minHeight: "100vh", background: "var(--color-bg)" }}>
-      {/* ── HERO ──────────────────────────────────────────────────────────────────────────────── */}
-      <header style={{ position: "relative", color: "#fff", overflow: "hidden", minHeight: 420 }}>
-        {heroPhoto && <div style={{ position: "absolute", inset: 0, backgroundImage: `url('${heroPhoto}')`, backgroundSize: "cover", backgroundPosition: "center", filter: "saturate(0.92)" }} />}
-        <div style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.26) 38%, ${deep}cc 78%, ${deep} 100%)` }} />
-        <div style={{ position: "relative", maxWidth: 480, margin: "0 auto", minHeight: 420, padding: "26px 22px 30px", display: "flex", flexDirection: "column" }}>
-          {theme.enterprise_logo_url && (
-            <span style={{ alignSelf: "flex-start", background: "#fff", borderRadius: 12, padding: "7px 11px", boxShadow: "0 6px 18px rgba(0,0,0,0.3)" }}>
-              <img src={theme.enterprise_logo_url} alt={name} style={{ height: 40, display: "block" }} />
-            </span>
-          )}
-          <div style={{ marginTop: "auto" }}>
-            <Kicker light>Est. 1995 · Singapore</Kicker>
-            <h1 style={{ margin: "8px 0 0", fontFamily: SERIF, fontSize: 34, fontWeight: 700, lineHeight: 1.08, textShadow: "0 2px 14px rgba(0,0,0,0.5)" }}>
-              A homegrown<br />hawker story
-            </h1>
-            <p style={{ margin: "12px 0 0", fontSize: 14.5, fontWeight: 500, opacity: 0.92, maxWidth: 320, lineHeight: 1.55, textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}>
-              From one fishball-noodle stall to one of Singapore’s leading F&amp;B groups.
-            </p>
-          </div>
+      {/* ── HERO — light editorial, FSG's watercolour brand illustration ──────────────────────── */}
+      <header style={{ background: "linear-gradient(180deg, #ffffff 0%, var(--color-surface-alt) 100%)", color: "var(--color-text)", overflow: "hidden" }}>
+        <div style={{ maxWidth: 480, margin: "0 auto", padding: "28px 22px 0", textAlign: "center" }}>
+          {theme.enterprise_logo_url && <img src={theme.enterprise_logo_url} alt={name} style={{ height: 52, margin: "0 auto", display: "block" }} />}
+          <div style={{ marginTop: 16, fontSize: 11, fontWeight: 800, letterSpacing: 2, textTransform: "uppercase", color: primary }}>Est. 1995 · Singapore</div>
+          <h1 style={{ margin: "9px 0 0", fontFamily: SERIF, fontSize: 32, fontWeight: 700, lineHeight: 1.1, color: "var(--color-text)" }}>A homegrown hawker story</h1>
+          <p style={{ margin: "11px auto 0", fontSize: 14, color: "var(--color-text-muted)", maxWidth: 300, lineHeight: 1.55 }}>
+            From one fishball-noodle stall to one of Singapore’s leading F&amp;B groups.
+          </p>
         </div>
+        {heroArt && <img src={heroArt} alt="" style={{ width: "100%", display: "block", marginTop: 8 }} />}
       </header>
 
       {/* ── BY THE NUMBERS ────────────────────────────────────────────────────────────────────── */}

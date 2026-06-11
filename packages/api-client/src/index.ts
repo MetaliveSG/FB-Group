@@ -114,6 +114,7 @@ export interface BrandTheme {
   enterprise_story?: string;
   enterprise_awards?: string[];   // award badge image URLs (horizontal scroll)
   // Enterprise SHOWCASE (the corporate landing at /t/node/{enterprise}).
+  enterprise_hero_image?: string;
   enterprise_stats?: { value: string; label: string }[];
   enterprise_brands?: { name: string; logo: string; node?: string }[];   // node = a browsable org node id
   enterprise_csr_headline?: string;
