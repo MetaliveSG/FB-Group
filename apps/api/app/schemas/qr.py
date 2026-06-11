@@ -64,3 +64,11 @@ class QrContextOut(BaseModel):
     # The storefront's enabled service options (fulfilment), each {key, label, hand_off}. The diner picks
     # one at checkout (auto if only one). hand_off=self_pickup → diner collects + "ready" alert.
     service_options: list[dict] = []
+    # Resolved brand theme {primary, accent, logo_url} — the customer app injects these as CSS-var overrides.
+    theme: dict = {}
+    # i18n/currency: `locale` = the resolved UI language for this view (a PERSON fact); `currency` = the
+    # outlet's settlement currency ISO 4217 (a SETTLEMENT fact). The app formats money with
+    # Intl.NumberFormat(locale, {currency}) — so 0-decimal currencies (IDR/VND) render correctly. Decoupled:
+    # the diner's language never changes the currency or the time.
+    locale: str = "en"
+    currency: str = "SGD"

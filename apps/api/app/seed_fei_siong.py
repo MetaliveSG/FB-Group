@@ -62,6 +62,13 @@ NODES = [
 SETTLEMENT_BOUNDARIES = {MB}
 LOYALTY_DOMAINS = {MB}
 
+# Brand themes (cascade-merged enterprise → brand → stall). FSG = a corporate navy house style;
+# Malaysia Boleh! overrides with its bold Malaysian red + yellow → every stall inherits the red.
+THEMES = {
+    FSG: {"primary": "#16335b"},                      # Fei Siong Group house navy (the default)
+    MB: {"primary": "#cc0001", "accent": "#ffcc00"},  # Malaysia Boleh! — Malaysian red + yellow
+}
+
 ACCOUNTS = [("owner@malaysiaboleh.sg", "Malaysia Boleh Owner", MB)]
 
 # Per-stall menu: {cuisine, logo, items:[(name, description, price)]}. Real Malaysian hawker dishes.
@@ -182,6 +189,7 @@ def build_fei_siong(db: Session) -> dict:
         # Foodcourt stalls are self-service (collect from the stall) + takeaway — the SEA-first set.
         if kind == STOREFRONT:
             node.service_options = ["dine_in_pickup", "takeaway"]
+        node.theme = THEMES.get(nid)   # brand theme (cascades; stalls inherit Malaysia Boleh!'s red)
         db.add(node)
     db.flush()
 

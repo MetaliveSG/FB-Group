@@ -16,6 +16,7 @@ export default defineConfig({
         __dirname,
         "../../packages/api-client/src/index.ts"
       ),
+      "@fbgroup/i18n": resolve(__dirname, "../../packages/i18n/src/index.tsx"),
     },
   },
 });

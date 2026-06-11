@@ -1,0 +1,15 @@
+{
+  "_comment": "Partial — missing keys fall back to en. Coverage is reported by scripts/check-catalogs.mjs.",
+  "action.add_to_cart": "加入购物车",
+  "action.checkout": "结账",
+  "action.pay": "付款",
+  "cart.title": "您的订单",
+  "cart.total": "总计",
+  "menu.unavailable": "已售完",
+  "order.status.ready": "可领取",
+  "order.collect.title": "可以取餐了！",
+  "service.eat_in": "堂食",
+  "service.takeaway": "外带",
+  "session.expired.title": "登录已过期",
+  "common.language": "语言"
+}

@@ -1,7 +1,7 @@
 """Public QR resolution -> dining context + outlet menu (no auth, no app download)."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -12,10 +12,15 @@ from app.schemas.catalog import MenuOut
 from app.schemas.qr import NodeBrowseOut, QrContextOut, StallRef
 from app.services import boundaries
 from app.services import catalog as catalog_service
+from app.services import i18n
 from app.services import org_tree
 from app.services import qr as qr_service
 
 router = APIRouter(prefix="/qr", tags=["qr"])
+
+
+def _tenant_default_locale(merchant: Merchant | None) -> str | None:
+    return (merchant.settings or {}).get("locale") if merchant else None
 
 
 def _service_options_for(db: Session, outlet_id: str) -> list[dict]:
@@ -27,12 +32,19 @@ def _service_options_for(db: Session, outlet_id: str) -> list[dict]:
 
 
 @router.get("/{token}", response_model=QrContextOut)
-def resolve_qr(token: str, db: Session = Depends(get_db)):
+def resolve_qr(
+    token: str,
+    db: Session = Depends(get_db),
+    lang: str | None = Query(default=None),
+    accept_language: str | None = Header(default=None),
+):
     qr = qr_service.resolve_token(db, token)
     merchant = db.get(Merchant, qr.merchant_id)
     outlet = db.get(Outlet, qr.outlet_id)
     brand = db.get(Brand, outlet.brand_id)
     table = db.get(DiningTable, qr.table_id)
+    locale = i18n.resolve_locale(override=lang, tenant_default=_tenant_default_locale(merchant),
+                                 accept_language=accept_language)
 
     # An outlet may host many stalls (menus). One → restaurant (inline menu, backward
     # compat); many → foodcourt (stall directory, fetch a menu on tap). The sellable set is
@@ -56,7 +68,8 @@ def resolve_qr(token: str, db: Session = Depends(get_db)):
     ordering_enabled = flags["qr_ordering_enabled"] and merchant.is_active
     inline_menu = None
     if ordering_enabled and not is_foodcourt and menus:
-        inline_menu = MenuOut.model_validate(catalog_service.get_outlet_menu(db, qr.outlet_id, menus[0].id))
+        full = catalog_service.get_outlet_menu(db, qr.outlet_id, menus[0].id)
+        inline_menu = MenuOut.model_validate(i18n.localize_menu(full, locale))
 
     return QrContextOut(
         qr_token=qr.token,
@@ -70,6 +83,9 @@ def resolve_qr(token: str, db: Session = Depends(get_db)):
         ordering_enabled=ordering_enabled,
         rewards_enabled=flags["rewards_enabled"],
         service_options=_service_options_for(db, qr.outlet_id),
+        theme=boundaries.resolve_theme_for_outlet(db, outlet_id=qr.outlet_id),
+        locale=locale,
+        currency=(merchant.currency if merchant else "SGD"),
     )
 
 
@@ -121,7 +137,9 @@ def _stall_order_paths(db: Session, menus) -> dict[str, str]:
 
 
 @router.get("/node/{node_id}/menu/{menu_id}", response_model=MenuOut)
-def resolve_node_menu(node_id: str, menu_id: str, db: Session = Depends(get_db)):
+def resolve_node_menu(node_id: str, menu_id: str, db: Session = Depends(get_db),
+                      lang: str | None = Query(default=None),
+                      accept_language: str | None = Header(default=None)):
     """Full menu for a stall reachable in the node's scope — validated so a node link can only
     reach stalls actually within that node (its leaves or stalls leased into it)."""
     node = org_tree.node_for(db, node_id)
@@ -129,14 +147,20 @@ def resolve_node_menu(node_id: str, menu_id: str, db: Session = Depends(get_db))
         raise NotFoundError("Location not found", code="node_not_found")
     if menu_id not in {m.id for m in catalog_service.node_scope_stalls(db, node)}:
         raise NotFoundError("Stall menu not found", code="menu_not_found")
-    return MenuOut.model_validate(catalog_service.get_menu_full(db, menu_id))
+    locale = i18n.resolve_locale(override=lang, accept_language=accept_language)
+    return MenuOut.model_validate(i18n.localize_menu(catalog_service.get_menu_full(db, menu_id), locale))
 
 
 @router.get("/{token}/menu/{menu_id}", response_model=MenuOut)
-def resolve_stall_menu(token: str, menu_id: str, db: Session = Depends(get_db)):
+def resolve_stall_menu(token: str, menu_id: str, db: Session = Depends(get_db),
+                       lang: str | None = Query(default=None),
+                       accept_language: str | None = Header(default=None)):
     """Full menu for one stall reachable at the token's venue — the venue's own stalls OR stalls
     leased in from another owner. A menu that is neither at the venue nor leased in is rejected,
     so a QR code can never reach an arbitrary outlet's menu."""
     qr = qr_service.resolve_token(db, token)
     menu = catalog_service.get_venue_stall_menu(db, qr.outlet_id, menu_id)
-    return MenuOut.model_validate(menu)
+    merchant = db.get(Merchant, qr.merchant_id)
+    locale = i18n.resolve_locale(override=lang, tenant_default=_tenant_default_locale(merchant),
+                                 accept_language=accept_language)
+    return MenuOut.model_validate(i18n.localize_menu(menu, locale))

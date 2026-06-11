@@ -83,7 +83,16 @@ export interface QrResolution {
   rewards_enabled: boolean;
   // The storefront's enabled service options (fulfilment); diner picks one at checkout (auto if one).
   service_options: ServiceOption[];
+  // Resolved brand theme {primary?, accent?, logo_url?} — the customer app injects these as CSS-var overrides.
+  theme: BrandTheme;
+  // i18n/currency (decoupled axes): `locale` = resolved UI language for this view (PERSON fact); `currency`
+  // = the outlet's settlement currency ISO 4217 (SETTLEMENT fact). Format money with
+  // formatMoney(amt, { locale, currency }) — handles 0-decimal currencies (IDR/VND) automatically.
+  locale: string;
+  currency: string;
 }
+
+export interface BrandTheme { primary?: string; accent?: string; logo_url?: string }
 
 export interface ServiceOption {
   key: string;          // dine_in_served | dine_in_pickup | takeaway
@@ -1182,8 +1191,12 @@ export function mq(merchantId?: string): string {
 
 // ─── Public API functions ─────────────────────────────────────
 
-export function resolveQr(baseUrl: string, token: string): Promise<QrResolution> {
-  return fetch(`${baseUrl}/api/v1/qr/${token}`).then(async (res) => {
+// `lang` (optional) localises the inline menu + carries the resolved locale back (a PERSON axis,
+// independent of currency/timezone). Omit it → server resolves tenant default → Accept-Language → en.
+const _langQ = (lang?: string | null) => (lang ? `?lang=${encodeURIComponent(lang)}` : "");
+
+export function resolveQr(baseUrl: string, token: string, lang?: string | null): Promise<QrResolution> {
+  return fetch(`${baseUrl}/api/v1/qr/${token}${_langQ(lang)}`).then(async (res) => {
     if (!res.ok) throw new ApiError(res.status, "QR_ERROR", "Failed to resolve QR token");
     return res.json() as Promise<QrResolution>;
   });
@@ -1197,15 +1210,15 @@ export function resolveNodeBrowse(baseUrl: string, nodeId: string): Promise<Node
   });
 }
 
-export function resolveNodeMenu(baseUrl: string, nodeId: string, menuId: string): Promise<Menu> {
-  return fetch(`${baseUrl}/api/v1/qr/node/${nodeId}/menu/${menuId}`).then(async (res) => {
+export function resolveNodeMenu(baseUrl: string, nodeId: string, menuId: string, lang?: string | null): Promise<Menu> {
+  return fetch(`${baseUrl}/api/v1/qr/node/${nodeId}/menu/${menuId}${_langQ(lang)}`).then(async (res) => {
     if (!res.ok) throw new ApiError(res.status, "MENU_ERROR", "Failed to resolve stall menu");
     return res.json() as Promise<Menu>;
   });
 }
 
-export function resolveStallMenu(baseUrl: string, token: string, menuId: string): Promise<Menu> {
-  return fetch(`${baseUrl}/api/v1/qr/${token}/menu/${menuId}`).then(async (res) => {
+export function resolveStallMenu(baseUrl: string, token: string, menuId: string, lang?: string | null): Promise<Menu> {
+  return fetch(`${baseUrl}/api/v1/qr/${token}/menu/${menuId}${_langQ(lang)}`).then(async (res) => {
     if (!res.ok) throw new ApiError(res.status, "MENU_ERROR", "Failed to resolve stall menu");
     return res.json() as Promise<Menu>;
   });
@@ -2665,6 +2678,14 @@ export function setNodeServiceOptions(
 ): Promise<NodeServiceOptions> {
   return request(baseUrl, `/org/nodes/${nodeId}/service-options`,
     { method: "PUT", body: JSON.stringify({ options }) }, token);
+}
+
+export interface NodeTheme { own: BrandTheme | null; resolved: BrandTheme }
+export function getNodeTheme(baseUrl: string, token: string, nodeId: string): Promise<NodeTheme> {
+  return request(baseUrl, `/org/nodes/${nodeId}/theme`, {}, token);
+}
+export function setNodeTheme(baseUrl: string, token: string, nodeId: string, theme: BrandTheme | null): Promise<NodeTheme> {
+  return request(baseUrl, `/org/nodes/${nodeId}/theme`, { method: "PUT", body: JSON.stringify({ theme }) }, token);
 }
 
 // Leases — stalls leased INTO a venue node (foodcourt GTO vs coffeeshop FIXED).

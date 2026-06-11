@@ -17,8 +17,15 @@ class Merchant(PKMixin, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(160), nullable=False)
     legal_name: Mapped[str | None] = mapped_column(String(200))
     country: Mapped[str] = mapped_column(String(2), default="SG")
+    # The settlement currency for this tenant (a SETTLEMENT fact — money never crosses boundaries in MVP, so
+    # one currency per merchant; FX deferred to the M2 coalition ring). ISO 4217 alpha-3. Display formatting
+    # (incl. 0-decimal currencies like IDR/VND) is done at the edge via Intl.NumberFormat(locale,{currency}) —
+    # backend stays Decimal and never hardcodes "$" or 2 dp. Default SGD (SG-first).
+    currency: Mapped[str] = mapped_column(String(3), default="SGD", server_default="SGD", nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    settings: Mapped[dict] = mapped_column(JSON, default=dict)  # feature toggles (e.g. pipeline_enabled)
+    # feature toggles + tenant defaults; `settings["locale"]` = the tenant's default UI language (menu
+    # fallback when a diner has no locale), `settings["timezone"]` = report tz. See app/services/i18n.py.
+    settings: Mapped[dict] = mapped_column(JSON, default=dict)
 
     brands: Mapped[list["Brand"]] = relationship(back_populates="merchant", cascade="all, delete-orphan")
 

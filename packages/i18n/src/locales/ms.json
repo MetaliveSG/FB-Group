@@ -1,0 +1,15 @@
+{
+  "_comment": "Partial — missing keys fall back to en. Coverage is reported by scripts/check-catalogs.mjs.",
+  "action.add_to_cart": "Tambah ke troli",
+  "action.checkout": "Bayar",
+  "action.pay": "Bayar",
+  "cart.title": "Pesanan anda",
+  "cart.total": "Jumlah",
+  "menu.unavailable": "Habis dijual",
+  "order.status.ready": "Sedia untuk diambil",
+  "order.collect.title": "Sedia untuk diambil!",
+  "service.eat_in": "Makan di sini",
+  "service.takeaway": "Bungkus",
+  "session.expired.title": "Sesi tamat",
+  "common.language": "Bahasa"
+}

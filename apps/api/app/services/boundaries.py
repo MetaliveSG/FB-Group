@@ -113,6 +113,43 @@ def resolve_service_options_for_outlet(db: Session, *, outlet_id: str | None) ->
     return resolve_service_options(db, node=node_for_outlet(db, outlet_id))
 
 
+# --- Brand theme (customer-app theming) — cascade-MERGED (partial per-key override) ---------------
+_THEME_KEYS = ("primary", "accent", "logo_url")
+
+
+def resolve_theme(db: Session, *, node: OrgNode | None) -> dict:
+    """The effective theme for a node — **merged down the path** (root→node, nearest wins per key), so an
+    enterprise's house style is inherited and a brand/outlet overrides only the keys it sets. Empty dict =
+    no overrides (the customer app falls back to its default design tokens)."""
+    out: dict = {}
+    if node is not None:
+        for n in reversed(_node_chain(db, node)):   # root → node, so nearer nodes overwrite
+            t = getattr(n, "theme", None)
+            if isinstance(t, dict):
+                out.update({k: v for k, v in t.items() if k in _THEME_KEYS and v})
+    return out
+
+
+def resolve_theme_for_outlet(db: Session, *, outlet_id: str | None) -> dict:
+    return resolve_theme(db, node=node_for_outlet(db, outlet_id))
+
+
+def get_node_theme(db: Session, node: OrgNode) -> dict:
+    """The node's OWN theme (null = inherit) + the RESOLVED (merged) theme."""
+    return {"own": node.theme, "resolved": resolve_theme(db, node=node)}
+
+
+def set_node_theme(db: Session, node: OrgNode, theme: dict | None) -> dict:
+    """Set the node's own theme (known keys only: primary/accent/logo_url). Empty/null = inherit (clear)."""
+    if not theme:
+        node.theme = None
+    else:
+        clean = {k: str(v) for k, v in theme.items() if k in _THEME_KEYS and v}
+        node.theme = clean or None
+    db.flush()
+    return get_node_theme(db, node)
+
+
 def get_node_service_options(db: Session, node: OrgNode) -> dict:
     """The node's OWN enabled set (null = inherit) + the RESOLVED set (cascade) + the full catalog."""
     from app.models.enums import SERVICE_OPTIONS

@@ -77,6 +77,11 @@ class OrgNode(PKMixin, TimestampMixin, Base):
     # restaurant table-service). A foodcourt sets ["dine_in_pickup","takeaway"] once high; stalls inherit.
     service_options: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
+    # Brand theme — partial customer-app theming {primary, accent, logo_url}. NULL = inherit; resolved by
+    # MERGING down the path (enterprise house style → brand override → outlet), so per-key partial overrides
+    # cascade (FSG sets a default; Malaysia Boleh! overrides the colour, inherits the rest).
+    theme: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
     # resolved boundary pointers (nearest declaring ancestor; both = merchant today)
     loyalty_domain_id: Mapped[str] = mapped_column(String(32), nullable=False)
     settlement_account_id: Mapped[str] = mapped_column(String(32), nullable=False)

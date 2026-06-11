@@ -89,6 +89,10 @@ class Customer(PKMixin, TimestampMixin, Base):
     # PDPA: marketing is EXPRESS opt-in → default False. The audit trail lives in `customer_consents`;
     # this is the current quick flag campaigns filter on. See app/services/consent.py.
     marketing_consent: Mapped[bool] = mapped_column(Boolean, default=False)
+    # i18n: the diner's preferred UI language (a PERSON fact — independent of the outlet's timezone/currency,
+    # which are PLACE/settlement facts). BCP-47-ish tag (e.g. "en", "zh", "ms", "en-SG"). NULL → resolve from
+    # tenant default → Accept-Language → "en" (app/services/i18n.py::resolve_locale).
+    locale: Mapped[str | None] = mapped_column(String(8))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     identities: Mapped[list["CustomerAuthIdentity"]] = relationship(

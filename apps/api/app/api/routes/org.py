@@ -29,6 +29,8 @@ from app.schemas.org import (
     KdsStationOut,
     NodeServiceOptionsIn,
     NodeServiceOptionsOut,
+    NodeThemeIn,
+    NodeThemeOut,
     OrgNodeCreateIn,
     OrgNodeCreateOut,
     OrgNodeOut,
@@ -261,6 +263,25 @@ def update_node_service_options(node_id: str, body: NodeServiceOptionsIn,
     out = boundaries.set_node_service_options(db, node, body.options)
     audit_record(db, action="org.node_service_options_set", actor_id=scope.user_id,
                  entity_type="org_node", entity_id=node_id, meta={"options": body.options})
+    db.commit()
+    return out
+
+
+@router.get("/nodes/{node_id}/theme", response_model=NodeThemeOut)
+def read_node_theme(node_id: str, scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """The node's OWN brand theme (null=inherit) + the resolved (cascade-merged) theme."""
+    node = org_tree.get_managed_node(db, scope, node_id)
+    return boundaries.get_node_theme(db, node)
+
+
+@router.put("/nodes/{node_id}/theme", response_model=NodeThemeOut)
+def update_node_theme(node_id: str, body: NodeThemeIn,
+                      scope=Depends(get_scope), db: Session = Depends(get_db)):
+    """Set the node's brand theme (cascades to the subtree, per-key merge). Empty/null = inherit."""
+    node = org_tree.get_managed_node(db, scope, node_id)
+    out = boundaries.set_node_theme(db, node, body.theme)
+    audit_record(db, action="org.node_theme_set", actor_id=scope.user_id,
+                 entity_type="org_node", entity_id=node_id, meta=body.theme or {})
     db.commit()
     return out
 

@@ -58,7 +58,8 @@ def create_category(body: CategoryCreateIn, merchant_id: str | None = Query(None
     mid = _ctx(scope, merchant_id)
     _check_outlet(db, scope, mid, catalog_service.outlet_of_menu(db, body.menu_id))
     cat = catalog_service.create_category(db, merchant_id=mid, menu_id=body.menu_id,
-                                          name=body.name, sort_order=body.sort_order)
+                                          name=body.name, sort_order=body.sort_order,
+                                          translations=body.translations)
     audit_record(db, action="menu.category_create", actor_id=scope.user_id, merchant_id=mid,
                  entity_type="menu_category", entity_id=cat.id)
     db.commit()
@@ -71,7 +72,8 @@ def update_category(category_id: str, body: CategoryUpdateIn, merchant_id: str |
                     scope=Depends(get_scope), db: Session = Depends(get_db)):
     mid = _ctx(scope, merchant_id)
     cat = catalog_service.update_category(db, merchant_id=mid, category_id=category_id,
-                                          name=body.name, sort_order=body.sort_order)
+                                          name=body.name, sort_order=body.sort_order,
+                                          translations=body.translations)
     db.commit()
     db.refresh(cat)
     return MenuCategoryOut.model_validate(cat)
@@ -97,7 +99,8 @@ def create_item(body: ItemCreateIn, merchant_id: str | None = Query(None),
     mid = _ctx(scope, merchant_id)
     _check_outlet(db, scope, mid, _outlet_of_category(db, body.category_id))
     item = catalog_service.create_item(db, merchant_id=mid, category_id=body.category_id, name=body.name,
-                                       price=body.price, description=body.description, sort_order=body.sort_order)
+                                       price=body.price, description=body.description, sort_order=body.sort_order,
+                                       translations=body.translations)
     audit_record(db, action="menu.item_create", actor_id=scope.user_id, merchant_id=mid,
                  entity_type="menu_item", entity_id=item.id)
     db.commit()
@@ -111,7 +114,7 @@ def update_item(item_id: str, body: ItemUpdateIn, merchant_id: str | None = Quer
     mid = _ctx(scope, merchant_id)
     item = catalog_service.update_item(db, merchant_id=mid, item_id=item_id, name=body.name, price=body.price,
                                        description=body.description, is_available=body.is_available,
-                                       sort_order=body.sort_order)
+                                       sort_order=body.sort_order, translations=body.translations)
     db.commit()
     db.refresh(item)
     return MenuItemOut.model_validate(item)

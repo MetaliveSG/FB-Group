@@ -9,6 +9,10 @@ const nextConfig = {
         __dirname,
         "../../packages/api-client/src/index.ts"
       ),
+      "@fbgroup/i18n": require("path").resolve(
+        __dirname,
+        "../../packages/i18n/src/index.tsx"
+      ),
     };
     return config;
   },

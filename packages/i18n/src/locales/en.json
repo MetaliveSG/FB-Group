@@ -1,0 +1,47 @@
+{
+  "action.add_to_cart": "Add to cart",
+  "action.checkout": "Checkout",
+  "action.pay": "Pay",
+  "action.back": "Back",
+  "action.cancel": "Cancel",
+  "action.confirm": "Confirm",
+  "action.continue": "Continue",
+  "action.retry": "Try again",
+  "action.dismiss": "Dismiss",
+
+  "cart.title": "Your order",
+  "cart.empty": "Your cart is empty",
+  "cart.subtotal": "Subtotal",
+  "cart.total": "Total",
+  "cart.add_more": "Add more items",
+  "cart.item_count": "{count} item",
+  "cart.item_count_plural": "{count} items",
+
+  "menu.unavailable": "Sold out",
+  "menu.search": "Search the menu",
+  "menu.browse_stalls": "Browse stalls",
+
+  "order.placed": "Order placed",
+  "order.number": "Order #{number}",
+  "order.status.new": "Received",
+  "order.status.preparing": "Preparing",
+  "order.status.ready": "Ready to collect",
+  "order.status.collected": "Collected",
+  "order.collect.title": "Ready for collection!",
+  "order.collect.body": "Order #{number} is ready — please collect from the stall.",
+  "order.collect.view": "View order",
+  "order.ready_banner": "Order #{number} is ready",
+
+  "service.eat_in": "Dine in",
+  "service.takeaway": "Takeaway",
+  "service.self_pickup": "Self-collect",
+  "service.served": "Served to table",
+  "service.choose": "How would you like it?",
+
+  "session.expired.title": "Session expired",
+  "session.expired.body": "Please sign in again to continue.",
+
+  "common.loading": "Loading…",
+  "common.error": "Something went wrong",
+  "common.language": "Language"
+}

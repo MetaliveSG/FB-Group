@@ -7,6 +7,7 @@ import { getCustomerToken, getCustomerData, setCustomerData, clearCustomerToken 
 import { Card, Button, Skeleton, Icons } from "@/components/ui";
 import CustomerTabBar from "@/components/CustomerTabBar";
 import CountrySelect, { DEFAULT_REGION } from "@/components/CountrySelect";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import type { MyProfile } from "@fbgroup/api-client";
 
 const GENDERS = [
@@ -222,6 +223,10 @@ export default function MePage() {
           <Button block variant="primary" size="lg" leftIcon={Icons.Check} loading={saving} onClick={save}>
             Save Changes
           </Button>
+        </Card>
+
+        <Card pad style={{ marginTop: "var(--space-4)" }}>
+          <LanguageSwitcher />
         </Card>
 
         <div style={{ marginTop: "var(--space-4)" }}>

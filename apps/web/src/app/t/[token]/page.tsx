@@ -22,9 +22,11 @@ import {
   setCustomerData,
 } from "@/lib/auth";
 import { formatSGD, orderNo } from "@/lib/format";
+import { useLocale } from "@fbgroup/i18n";
 import { filterMenuItems } from "@/lib/menu";
 import { Button, Card, Sheet, EmptyState, Skeleton, Icons } from "@/components/ui";
 import CustomerTabBar from "@/components/CustomerTabBar";
+import BrandTheme from "@/components/BrandTheme";
 import MenuCategoryNav from "@/components/MenuCategoryNav";
 import CustomiseSheet from "@/components/CustomiseSheet";
 import CountrySelect, { DEFAULT_REGION } from "@/components/CountrySelect";
@@ -73,8 +75,9 @@ function cartCount(cart: CartEntry[]): number {
   return cart.reduce((s, e) => s + e.quantity, 0);
 }
 
-const Shell = ({ children }: { children: React.ReactNode }) => (
+const Shell = ({ children, theme }: { children: React.ReactNode; theme?: QrResolution["theme"] }) => (
   <div className="t-shell">
+    <BrandTheme theme={theme} />
     {children}
   </div>
 );
@@ -267,6 +270,7 @@ export default function TablePage() {
   const router = useRouter();
   const token = decodeURIComponent(params.token as string);
   const base = getApiBase();
+  const { locale } = useLocale();   // diner's language (person axis) — drives menu-content localisation only
 
   const [step, setStep] = useState<AppStep>("loading");
   // Mirror `step` into a ref so the (stale-closure) session-expiry handler can read where the
@@ -400,8 +404,27 @@ export default function TablePage() {
     setStallMenu(null);
     setSearch("");
     setActiveCat(null);
-    resolveStallMenu(base, token, stall.menu_id).then(setStallMenu).catch(() => setStallMenu(null));
-  }, [base, token]);
+    resolveStallMenu(base, token, stall.menu_id, locale).then(setStallMenu).catch(() => setStallMenu(null));
+  }, [base, token, locale]);
+
+  // Re-localise menu CONTENT when the diner switches language. UI strings flip instantly via the catalog;
+  // item names/descriptions are localised server-side, so refetch them — WITHOUT touching cart or step
+  // (language is a person fact; it must never move the order along or reset the flow). Skips the first run
+  // (the initial fetch already ran); only the inline single-stall menu or the open foodcourt stall is
+  // refetched. Prices/times are unaffected — they're settlement/place facts, not language.
+  const localeReady = useRef(false);
+  useEffect(() => {
+    if (!qrData) return;
+    if (!localeReady.current) { localeReady.current = true; return; }
+    if (selectedStall) {
+      resolveStallMenu(base, token, selectedStall.menu_id, locale).then(setStallMenu).catch(() => {});
+    } else if (qrData.menu) {
+      resolveQr(base, token, locale)
+        .then((d) => setQrData((prev) => (prev ? { ...prev, menu: d.menu, locale: d.locale, currency: d.currency } : d)))
+        .catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locale]);
 
   const backToStalls = useCallback(() => {
     setSelectedStall(null);
@@ -471,7 +494,7 @@ export default function TablePage() {
   // ── Loading ──
   if (step === "loading") {
     return (
-      <Shell>
+      <Shell theme={qrData?.theme}>
         <Banner qr={null} />
         <main style={{ flex: 1, padding: "var(--space-4)", color: "var(--color-text-muted)" }}>Loading menu…</main>
         <CustomerTabBar token={token} active="menu" />
@@ -482,7 +505,7 @@ export default function TablePage() {
   // ── Error ──
   if (step === "error") {
     return (
-      <Shell>
+      <Shell theme={qrData?.theme}>
         <main style={{ flex: 1, display: "flex", alignItems: "center", padding: "var(--space-5)" }}>
           <Card pad style={{ width: "100%", textAlign: "center" }}>
             <Icons.X size={44} color="var(--color-danger)" style={{ marginBottom: 8 }} />
@@ -498,7 +521,7 @@ export default function TablePage() {
   // ── Auth ──
   if (step === "auth") {
     return (
-      <Shell>
+      <Shell theme={qrData?.theme}>
         <Banner
           qr={qrData}
           right={
@@ -538,7 +561,7 @@ export default function TablePage() {
   // ── Success ──
   if (step === "success" && checkoutResult) {
     return (
-      <Shell>
+      <Shell theme={qrData?.theme}>
         <main style={{ flex: 1, display: "flex", alignItems: "center", padding: "var(--space-5)" }}>
           <Card pad style={{ width: "100%", textAlign: "center" }}>
             <div style={{ width: 72, height: 72, borderRadius: "50%", background: "var(--color-success-bg)", display: "grid", placeItems: "center", margin: "0 auto var(--space-3)" }}>
@@ -589,7 +612,7 @@ export default function TablePage() {
   if (step === "payment" && order) {
     const methods: PaymentMethod[] = ["cash", "card", "nets", "paywave", "paynow"];
     return (
-      <Shell>
+      <Shell theme={qrData?.theme}>
         <Banner
           qr={qrData}
           right={
@@ -661,7 +684,7 @@ export default function TablePage() {
   const orderingDisabled = qrData?.ordering_enabled === false;    // rewards-only merchant (Phase 2)
 
   return (
-    <Shell>
+    <Shell theme={qrData?.theme}>
       <Banner
         qr={qrData}
         right={

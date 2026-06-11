@@ -6,13 +6,16 @@ import { BottomNav, Icons } from "./ui";
 import { getCustomerToken } from "@/lib/auth";
 import { getApiBase, resolveQr, getLoyalty, getWheel, getJackpot, getMyOrders } from "@/lib/api";
 import { orderNo } from "@/lib/format";
-import type { MyOrder } from "@fbgroup/api-client";
+import BrandTheme from "./BrandTheme";
+import { useT } from "@fbgroup/i18n";
+import type { MyOrder, BrandTheme as Theme } from "@fbgroup/api-client";
 
 type Tab = "menu" | "rewards" | "orders" | "me";
 
 export default function CustomerTabBar({ token, active }: { token: string; active: Tab }) {
   const router = useRouter();
   const t = encodeURIComponent(token);
+  const tr = useT();              // i18n: `tr(key)` (the bare `t` here is the url-encoded token)
 
   // Badge the Rewards tab ONLY when the diner can actually play a game right now —
   // i.e. their coin balance covers the cheapest of the wheel/jackpot spin costs.
@@ -21,10 +24,11 @@ export default function CustomerTabBar({ token, active }: { token: string; activ
   // Adapt tabs to the storefront's resolved modules: Table QR off → no Menu; Engagement off → no Rewards.
   const [showMenu, setShowMenu] = useState(true);
   const [showRewards, setShowRewards] = useState(true);
+  const [theme, setTheme] = useState<Theme | null>(null);   // brand theme → CSS-var override
   useEffect(() => {
     let cancelled = false;
     resolveQr(getApiBase(), token)
-      .then((qr) => { if (!cancelled) { setShowMenu(qr.ordering_enabled !== false); setShowRewards(qr.rewards_enabled !== false); } })
+      .then((qr) => { if (!cancelled) { setShowMenu(qr.ordering_enabled !== false); setShowRewards(qr.rewards_enabled !== false); setTheme(qr.theme ?? null); } })
       .catch(() => {});
     return () => { cancelled = true; };
   }, [token]);
@@ -96,6 +100,7 @@ export default function CustomerTabBar({ token, active }: { token: string; activ
 
   return (
     <>
+      <BrandTheme theme={theme} />
       {/* Swinging-bell keyframe — used by the popup + the banner. */}
       <style>{"@keyframes cipBellRing{0%,60%,100%{transform:rotate(0)}5%,25%,45%{transform:rotate(16deg)}15%,35%,55%{transform:rotate(-16deg)}}"}</style>
       {/* One-time full-screen "ready to collect" popup (fires once per order; banner persists after). */}
@@ -109,18 +114,18 @@ export default function CustomerTabBar({ token, active }: { token: string; activ
             style={{ background: "#fff", borderRadius: "var(--radius-xl, 18px)", padding: "var(--space-5)", width: "100%", maxWidth: 360, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.35)" }}>
             {/* Swinging bell — rings to grab attention. */}
             <div style={{ fontSize: 48, lineHeight: 1, display: "inline-block", transformOrigin: "50% 12%", animation: "cipBellRing 1.5s ease-in-out infinite" }}>🔔</div>
-            <div style={{ fontSize: "var(--text-2xl)", fontWeight: 900, marginTop: "var(--space-2)", color: "var(--color-success, #16a34a)" }}>Ready for collection!</div>
+            <div style={{ fontSize: "var(--text-2xl)", fontWeight: 900, marginTop: "var(--space-2)", color: "var(--color-success, #16a34a)" }}>{tr("order.collect.title")}</div>
             <p style={{ color: "var(--color-text-muted)", fontSize: "var(--text-sm)", margin: "var(--space-2) 0 var(--space-4)" }}>
-              Order #{orderNo(popup.id)}{popup.outlet_name ? ` · ${popup.outlet_name}` : ""} is ready — please collect from the stall.
+              {tr("order.collect.body", { number: orderNo(popup.id) })}{popup.outlet_name ? ` · ${popup.outlet_name}` : ""}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
               <button onClick={() => { router.push(`/t/${t}/orders`); setPopup(null); }}
                 style={{ width: "100%", padding: "12px 0", border: "none", borderRadius: "var(--radius-lg, 12px)", background: "var(--color-success, #16a34a)", color: "#fff", fontWeight: 800, fontSize: "var(--text-md)", cursor: "pointer" }}>
-                View order
+                {tr("order.collect.view")}
               </button>
               <button onClick={() => setPopup(null)}
                 style={{ width: "100%", padding: "10px 0", border: "none", background: "none", color: "var(--color-text-muted)", fontWeight: 700, fontSize: "var(--text-sm)", cursor: "pointer" }}>
-                Dismiss
+                {tr("action.dismiss")}
               </button>
             </div>
           </div>
@@ -138,7 +143,7 @@ export default function CustomerTabBar({ token, active }: { token: string; activ
           }}
         >
           <span style={{ display: "inline-block", transformOrigin: "50% 12%", animation: "cipBellRing 1.5s ease-in-out infinite" }}>🔔</span>
-          Order #{orderNo(readyOrder!.id)} is ready
+          {tr("order.ready_banner", { number: orderNo(readyOrder!.id) })}
         </button>
       )}
       <BottomNav

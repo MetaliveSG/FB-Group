@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String
+from sqlalchemy import JSON, Boolean, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, PKMixin, TimestampMixin
@@ -36,6 +36,11 @@ class MenuCategory(PKMixin, TimestampMixin, Base):
     menu_id: Mapped[str] = mapped_column(ForeignKey("menus.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    # i18n: `name` is the CANONICAL locale (source of truth). `translations` is an OPTIONAL override/cache
+    # layer keyed by locale → {"name": ...} (Grab pattern: author once, present many, fall back to canonical
+    # when a locale is missing). May hold merchant-entered overrides OR machine-translation cache. NULL = no
+    # translations → always shows `name`. Localised at read by app/services/i18n.py.
+    translations: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     menu: Mapped["Menu"] = relationship(back_populates="categories")
     items: Mapped[list["MenuItem"]] = relationship(
@@ -53,6 +58,9 @@ class MenuItem(PKMixin, TimestampMixin, Base):
     image_url: Mapped[str | None] = mapped_column(String(400), nullable=True)
     is_available: Mapped[bool] = mapped_column(Boolean, default=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    # i18n override/cache layer keyed by locale → {"name": ..., "description": ...}; canonical = `name`/
+    # `description`. Missing locale or key → falls back to canonical. See MenuCategory.translations + i18n.py.
+    translations: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     category: Mapped["MenuCategory"] = relationship(back_populates="items")
     modifiers: Mapped[list["MenuModifier"]] = relationship(

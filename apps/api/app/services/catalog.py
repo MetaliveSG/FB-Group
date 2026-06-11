@@ -205,20 +205,24 @@ def list_outlets_with_menu(db: Session, *, merchant_id: str) -> list[dict]:
     return rows
 
 
-def create_category(db: Session, *, merchant_id: str, menu_id: str, name: str, sort_order: int = 0) -> MenuCategory:
+def create_category(db: Session, *, merchant_id: str, menu_id: str, name: str, sort_order: int = 0,
+                    translations: dict | None = None) -> MenuCategory:
     _require_menu(db, menu_id, merchant_id)
-    cat = MenuCategory(menu_id=menu_id, name=name, sort_order=sort_order)
+    cat = MenuCategory(menu_id=menu_id, name=name, sort_order=sort_order, translations=translations)
     db.add(cat)
     db.flush()
     return cat
 
 
-def update_category(db: Session, *, merchant_id: str, category_id: str, name=None, sort_order=None) -> MenuCategory:
+def update_category(db: Session, *, merchant_id: str, category_id: str, name=None, sort_order=None,
+                    translations=None) -> MenuCategory:
     cat = _require_category(db, category_id, merchant_id)
     if name is not None:
         cat.name = name
     if sort_order is not None:
         cat.sort_order = sort_order
+    if translations is not None:
+        cat.translations = translations or None  # {} clears back to canonical-only
     db.flush()
     return cat
 
@@ -229,17 +233,18 @@ def delete_category(db: Session, *, merchant_id: str, category_id: str) -> None:
 
 
 def create_item(db: Session, *, merchant_id: str, category_id: str, name: str, price: Decimal | float,
-                description: str = "", sort_order: int = 0) -> MenuItem:
+                description: str = "", sort_order: int = 0, translations: dict | None = None) -> MenuItem:
     _require_category(db, category_id, merchant_id)
     item = MenuItem(category_id=category_id, name=name, price=money(price),
-                    description=description, sort_order=sort_order, is_available=True)
+                    description=description, sort_order=sort_order, is_available=True,
+                    translations=translations)
     db.add(item)
     db.flush()
     return item
 
 
 def update_item(db: Session, *, merchant_id: str, item_id: str, name=None, price=None,
-                description=None, is_available=None, sort_order=None) -> MenuItem:
+                description=None, is_available=None, sort_order=None, translations=None) -> MenuItem:
     item = _require_item(db, item_id, merchant_id)
     if name is not None:
         item.name = name
@@ -251,6 +256,8 @@ def update_item(db: Session, *, merchant_id: str, item_id: str, name=None, price
         item.is_available = is_available
     if sort_order is not None:
         item.sort_order = sort_order
+    if translations is not None:
+        item.translations = translations or None
     db.flush()
     return item
 

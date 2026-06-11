@@ -1,0 +1,24 @@
+{
+  "_comment": "Singlish — an OVERLAY on en. Only override the fun strings; everything else inherits en.",
+  "action.add_to_cart": "Chope it",
+  "action.checkout": "Settle bill",
+  "action.continue": "Steady, go on",
+  "action.retry": "Try again lah",
+
+  "cart.empty": "Cart still empty leh",
+  "cart.add_more": "Add more, don't shy",
+
+  "menu.unavailable": "Habis liao",
+
+  "order.placed": "Order in liao!",
+  "order.status.ready": "Can collect liao!",
+  "order.collect.title": "Oi, your food ready!",
+  "order.collect.body": "Order #{number} ready already — go collect from the stall lah.",
+  "order.ready_banner": "Order #{number} ready liao",
+
+  "service.choose": "How you want? Eat here or tapao?",
+  "service.takeaway": "Tapao",
+
+  "common.loading": "Wait ah…",
+  "common.error": "Alamak, something wrong"
+}

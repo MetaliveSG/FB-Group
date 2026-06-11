@@ -7,6 +7,7 @@ import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth"
 import { REPORT_TIMEZONES } from "@/lib/timezones";
 import MerchantSidebar from "@/components/MerchantSidebar";
 import NodeDirectory from "@/components/NodeDirectory";
+import BrandingCard from "@/components/BrandingCard";
 import { useScope } from "@/lib/useScope";
 import { Toggle } from "@/components/ui";
 import type { MerchantSettings, LoyaltyProgram } from "@fbgroup/api-client";
@@ -232,6 +233,9 @@ export default function SettingsPage() {
 
       {error && <div className="alert alert-error">{error}</div>}
       {msg && <div className="alert alert-success">{msg}</div>}
+
+      {/* Branding (customer-app theme) — set on the tenant node; cascades to all its storefronts. */}
+      {scope?.tenantId && <div style={{ marginBottom: 16 }}><BrandingCard nodeId={scope.tenantId} /></div>}
 
       {settings && (
         <div className="card" style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>

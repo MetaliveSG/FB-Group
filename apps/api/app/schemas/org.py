@@ -249,6 +249,16 @@ class NodeServiceOptionsOut(BaseModel):
     catalog: list[dict]                  # all options: {key, label, order_type, hand_off}
 
 
+class NodeThemeIn(BaseModel):
+    """Set a node's brand theme. null/empty = inherit (clear). Keys: primary, accent, logo_url."""
+    theme: dict | None = None
+
+
+class NodeThemeOut(BaseModel):
+    own: dict | None = None       # the node's OWN theme (null = inherit)
+    resolved: dict                # effective after the cascade merge
+
+
 class KdsStationOut(BaseModel):
     """A storefront's KDS station token (kitchen-tablet bearer credential). `token` is the secret,
     revealable in the console; the tablet opens `/kds?station=<token>`. None/inactive = not set up."""
