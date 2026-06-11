@@ -250,11 +250,14 @@ export default function NodeBrowsePage() {
                 </section>
               )}
 
-              {/* ALL STALLS — filtered by segment */}
-              <section>
-                <SectionHeader title={seg === "All" ? "All stalls" : seg} sub={`${filtered.length} stall${filtered.length === 1 ? "" : "s"}`} />
+              {/* ALL STALLS — on the brand gradient (matches the rewards promo), white wording */}
+              <section style={{ background: "linear-gradient(120deg, var(--color-primary), #ff7a18)", borderRadius: 18, padding: "18px 16px 16px", boxShadow: "0 8px 22px rgba(204,0,1,0.28)" }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
+                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#fff" }}>{seg === "All" ? "All stalls" : seg}</h2>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>{`${filtered.length} stall${filtered.length === 1 ? "" : "s"}`}</span>
+                </div>
                 {filtered.length === 0 ? (
-                  <p style={{ color: "var(--color-text-muted)", textAlign: "center", padding: "20px 0" }}>No stalls in this category.</p>
+                  <p style={{ color: "rgba(255,255,255,0.9)", textAlign: "center", padding: "20px 0" }}>No stalls in this category.</p>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{filtered.map(stallRow)}</div>
                 )}
