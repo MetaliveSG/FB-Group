@@ -9,6 +9,11 @@ export type Locale = "en" | "en-SG" | "zh" | "ms" | "ta" | "id" | "th" | "vi";
 
 export const SUPPORTED_LOCALES: Locale[] = ["en", "en-SG", "zh", "ms", "ta", "id", "th", "vi"];
 
+// The subset shown in the language switcher (UI). SUPPORTED_LOCALES stays the full RECOGNISED set (the
+// resolver still honours a saved zh/ms etc.), but we only OFFER locales whose catalogs are ready — English
+// + Singlish for now. Add zh/ms/… here as their catalogs reach usable coverage (see check-catalogs.mjs).
+export const ENABLED_LOCALES: Locale[] = ["en", "en-SG"];
+
 // Display name shown in the language switcher (in the language's own script — endonym).
 export const LOCALE_LABELS: Record<Locale, string> = {
   en: "English",

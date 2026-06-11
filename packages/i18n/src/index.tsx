@@ -16,6 +16,7 @@ import ms from "./locales/ms.json";
 export {
   DEFAULT_LOCALE,
   SUPPORTED_LOCALES,
+  ENABLED_LOCALES,
   LOCALE_LABELS,
   normalizeLocale,
   type Locale,
