@@ -158,17 +158,15 @@ export default function NodeBrowsePage() {
 
   const stallRow = (s: StallRef) => (
     <button key={s.menu_id} onClick={() => selectStall(s)}
-      style={{ display: "flex", alignItems: "center", gap: 14, width: "100%", textAlign: "left", padding: 12, cursor: "pointer",
-        border: "none", borderRadius: 16, color: "#fff",
-        background: "linear-gradient(120deg, var(--color-primary), #ff7a18)", boxShadow: "0 6px 16px rgba(204,0,1,0.22)" }}>
+      style={{ ...card, display: "flex", alignItems: "center", gap: 14, width: "100%", textAlign: "left", padding: 12, cursor: "pointer" }}>
       {s.signboard_url
-        ? <img src={s.signboard_url} alt={s.stall_name} loading="lazy" style={{ width: 64, height: 56, flexShrink: 0, objectFit: "contain", borderRadius: 12, background: "#fff", padding: 4 }} />
-        : <span style={{ fontSize: 30, width: 56, height: 56, borderRadius: 12, background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{s.logo || "🍽️"}</span>}
+        ? <img src={s.signboard_url} alt={s.stall_name} loading="lazy" style={{ width: 64, height: 56, flexShrink: 0, objectFit: "contain", borderRadius: 12, background: "#fff", padding: 4, border: "1px solid var(--color-border)" }} />
+        : <span style={{ fontSize: 30, width: 56, height: 56, borderRadius: 12, background: "var(--color-surface-alt)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{s.logo || "🍽️"}</span>}
       <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: 16, fontWeight: 800, color: "#fff" }}>{s.stall_name}</span>
-        <span style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.85)", marginTop: 2 }}>{s.cuisine || "Food"} · {s.item_count} item{s.item_count === 1 ? "" : "s"}</span>
+        <span style={{ display: "block", fontSize: 16, fontWeight: 800, color: "var(--color-text)" }}>{s.stall_name}</span>
+        <span style={{ display: "block", fontSize: 13, color: "var(--color-text-muted)", marginTop: 2 }}>{s.cuisine || "Food"} · {s.item_count} item{s.item_count === 1 ? "" : "s"}</span>
       </span>
-      <span style={{ fontSize: 20, color: "rgba(255,255,255,0.9)" }}>›</span>
+      <span style={{ fontSize: 20, color: "var(--color-primary)" }}>›</span>
     </button>
   );
 
