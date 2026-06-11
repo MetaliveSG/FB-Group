@@ -65,12 +65,33 @@ LOYALTY_DOMAINS = {MB}
 # Brand themes (cascade-merged enterprise → brand → stall). FSG = a corporate navy house style;
 # Malaysia Boleh! overrides with its bold Malaysian red + yellow → every stall inherits the red.
 THEMES = {
-    FSG: {"primary": "#16335b"},                      # Fei Siong Group house navy (the default)
+    FSG: {                                            # Enterprise profile — tenants inherit via the cascade
+        "primary": "#16335b",                         # Fei Siong Group house navy (the default)
+        "enterprise_name": "Fei Siong Group",
+        "enterprise_logo_url": "/brands/fsg/logo.png",
+        "enterprise_image_url": "/brands/fsg/brands-map.jpg",
+        "enterprise_story": (
+            "Founded in 1995 by Mr Tan Kim Siong — from a single fishball-noodle stall outside the old "
+            "National Library to one of Singapore's leading F&B groups: 20 brands and 205+ outlets serving "
+            "authentic, affordable hawker fare."
+        ),
+        "enterprise_awards": ["/brands/fsg/award-enterprise50.png", "/brands/fsg/award-skillsfuture.png"],
+    },
     MB: {                                             # Malaysia Boleh! — real brand kit (self-hosted assets)
         "primary": "#cc0001", "accent": "#ffcc00",   # Malaysian red + gold
         "logo_url": "/brands/malaysia-boleh/logo.png",
         "hero_image_url": "/brands/malaysia-boleh/hero.jpg",
+        "hero_images": [                              # home slideshow
+            "/brands/malaysia-boleh/hero.jpg",
+            "/brands/malaysia-boleh/about2.jpg",
+            "/brands/malaysia-boleh/about3.png",
+        ],
         "tagline": "A Taste of Malaysia",
+        "story": (
+            "Born from a 3-month journey across Malaysia — authentic street-food recipes from KL, Penang, "
+            "Klang & Ipoh, served in a nostalgic 1960s shophouse bazaar."
+        ),
+        "about_image_url": "/brands/malaysia-boleh/about2.jpg",
     },
 }
 

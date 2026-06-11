@@ -102,7 +102,16 @@ export interface BrandTheme {
   accent?: string;
   logo_url?: string;
   hero_image_url?: string;   // full-bleed hero photo behind the storefront header
+  hero_images?: string[];    // home hero slideshow/carousel slides
   tagline?: string;          // brand tagline shown in the hero (e.g. "A Taste of Malaysia")
+  story?: string;            // brand-story copy for the home "Our story" block
+  about_image_url?: string;  // image for the brand-story block
+  // Enterprise profile (inherited from the parent via the theme cascade) → "Get to know {enterprise}".
+  enterprise_name?: string;
+  enterprise_logo_url?: string;
+  enterprise_image_url?: string;
+  enterprise_story?: string;
+  enterprise_awards?: string[];   // award badge image URLs (horizontal scroll)
 }
 
 export interface ServiceOption {

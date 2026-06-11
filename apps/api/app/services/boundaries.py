@@ -116,7 +116,15 @@ def resolve_service_options_for_outlet(db: Session, *, outlet_id: str | None) ->
 # --- Brand kit (customer-app theming) — cascade-MERGED (partial per-key override) ---------------
 # Colours (primary/accent) drive CSS-var overrides; logo_url/hero_image_url/tagline are media/copy the
 # customer app's hero consumes. Adding a key here auto-flows through resolve/get/set + the QR context.
-_THEME_KEYS = ("primary", "accent", "logo_url", "hero_image_url", "tagline")
+_THEME_KEYS = (
+    "primary", "accent", "logo_url",
+    "hero_image_url", "hero_images",            # hero_images = a list → home carousel/slideshow
+    "tagline", "story", "about_image_url",      # brand story block
+    # Enterprise profile (set on the parent/enterprise node; tenants inherit via the cascade) —
+    # powers the "Get to know {enterprise}" section.
+    "enterprise_name", "enterprise_logo_url", "enterprise_image_url", "enterprise_story",
+    "enterprise_awards",                        # list of award badge image URLs (horizontal scroll)
+)
 
 
 def resolve_theme(db: Session, *, node: OrgNode | None) -> dict:
@@ -147,7 +155,9 @@ def set_node_theme(db: Session, node: OrgNode, theme: dict | None) -> dict:
     if not theme:
         node.theme = None
     else:
-        clean = {k: str(v) for k, v in theme.items() if k in _THEME_KEYS and v}
+        # keep list values (hero_images / enterprise_awards) intact; coerce scalars to str
+        clean = {k: (v if isinstance(v, list) else str(v))
+                 for k, v in theme.items() if k in _THEME_KEYS and v}
         node.theme = clean or None
     db.flush()
     return get_node_theme(db, node)
