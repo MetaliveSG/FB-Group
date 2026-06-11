@@ -15,6 +15,7 @@ customer_segments
 customer_tags
 customers
 jackpot_prizes
+kds_stations
 leases
 loyalty_accounts
 menu_categories

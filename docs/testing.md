@@ -6,10 +6,10 @@ cd apps/api && .venv/bin/python -m pytest -v      # full backend suite
 ```
 Tests use an isolated in-memory SQLite DB (StaticPool) shared between the test
 session and the FastAPI `TestClient`, with RBAC seeded and rate-limiter/OTP reset per
-test (`app/tests/conftest.py`). Latest run: **312 passed** (see
-`artifacts/pytest_results.txt`). Frontend: **66 Vitest tests**.
+test (`app/tests/conftest.py`). Latest run: **327 passed** (see
+`artifacts/pytest_results.txt`). Frontend: **74 Vitest tests**.
 
-## Coverage by file (312 backend tests across 52 files)
+## Coverage by file (327 backend tests across 55 files)
 | File | Module(s) | What it proves |
 |---|---|---|
 | `test_health.py` | 12 | health endpoint + secure headers |
@@ -63,6 +63,9 @@ test (`app/tests/conftest.py`). Latest run: **312 passed** (see
 | `test_module_cascade.py` | org | **binary parent-gated** module flags (effective = AND up the path; child can't override parent OFF; wallet gated by Table-QR; per-node endpoint + nav-flags) |
 | `test_kds.py` | fulfilment | **KDS** paid-order queue (FIFO, paid & ≠collected) + `fulfilment_status` transitions queued→preparing→ready→collected; invalid transition 409; staff-only |
 | `test_service_options.py` | fulfilment | **two-axis service options**: SEA-first default (self-service+takeaway), storefront set drives order_type+hand_off, unavailable-option 409, QR-context list, cascade get/set on a node |
+| `test_i18n.py` | i18n | locale resolution (override→tenant→accept-language), menu-translation fallback-to-canonical, zero-decimal currency formatting |
+| `test_theme.py` | theme | brand-theme cascade (nearest-ancestor resolve), list/dict theme values preserved on set, surfaced in QR context |
+| `test_wallet.py` | wallet | stored-value wallet — hash-chained ledger (non-repudiable), balance==SUM(ledger) reconciliation, idempotent post |
 | `test_e2e_capture_loop.py` | 1-11 | golden flow end-to-end (below) |
 
 ## Required test flows → where verified
@@ -79,7 +82,7 @@ test (`app/tests/conftest.py`). Latest run: **312 passed** (see
 11. Permission boundaries → `test_e2e`, `test_permissions`, `test_platform`
 
 ## Frontend tests
-`apps/web` — **66 Vitest tests** (format helpers incl. **`orderNo`** call-out codes, auth-resilience, stage/role/campaign-type contracts, wheel math, menu filtering, **module-gated nav** `merchantNav.test.ts`). Run `npm test` in `apps/web`.
+`apps/web` — **74 Vitest tests** (format helpers incl. **`orderNo`** call-out codes + **i18n** locale/zero-decimal-currency `i18n.test.ts`, auth-resilience, stage/role/campaign-type contracts, wheel math, menu filtering, **module-gated nav** `merchantNav.test.ts`). Run `npm test` in `apps/web`.
 
 ## Regression checklist (run before any release)
 - [ ] `pytest` green

@@ -429,6 +429,38 @@
               "type": "string",
               "title": "Token"
             }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lang"
+            }
+          },
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
           }
         ],
         "responses": {
@@ -524,6 +556,38 @@
               "type": "string",
               "title": "Menu Id"
             }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lang"
+            }
+          },
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
           }
         ],
         "responses": {
@@ -575,6 +639,38 @@
             "schema": {
               "type": "string",
               "title": "Menu Id"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lang"
+            }
+          },
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
             }
           }
         ],
@@ -7960,6 +8056,298 @@
         }
       }
     },
+    "/api/v1/org/nodes/{node_id}/theme": {
+      "get": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Read Node Theme",
+        "description": "The node's OWN brand theme (null=inherit) + the resolved (cascade-merged) theme.",
+        "operationId": "read_node_theme_api_v1_org_nodes__node_id__theme_get",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeThemeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Update Node Theme",
+        "description": "Set the node's brand theme (cascades to the subtree, per-key merge). Empty/null = inherit.",
+        "operationId": "update_node_theme_api_v1_org_nodes__node_id__theme_put",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NodeThemeIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeThemeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/org/nodes/{node_id}/kds-station": {
+      "get": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Read Kds Station",
+        "description": "The storefront's current station token (revealable) + active state.",
+        "operationId": "read_kds_station_api_v1_org_nodes__node_id__kds_station_get",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KdsStationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Issue Kds Station",
+        "description": "Issue or **rotate** the station token (a new token invalidates the old one). Returns the token.",
+        "operationId": "issue_kds_station_api_v1_org_nodes__node_id__kds_station_post",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KdsStationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Revoke Kds Station",
+        "description": "Revoke (deactivate) the station token \u2014 the kitchen tablet stops authenticating until re-issued.",
+        "operationId": "revoke_kds_station_api_v1_org_nodes__node_id__kds_station_delete",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/org/nodes/{node_id}/accounts": {
       "get": {
         "tags": [
@@ -10040,6 +10428,177 @@
           }
         }
       }
+    },
+    "/api/v1/kds/context": {
+      "get": {
+        "tags": [
+          "kds"
+        ],
+        "summary": "Kds Context",
+        "description": "Minimal bind info for the tablet header \u2014 which outlet this station serves.",
+        "operationId": "kds_context_api_v1_kds_context_get",
+        "parameters": [
+          {
+            "name": "x-kds-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Kds-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kds/queue": {
+      "get": {
+        "tags": [
+          "kds"
+        ],
+        "summary": "Kds Queue",
+        "description": "The station's outlet queue: paid, not-yet-collected orders, oldest-first.",
+        "operationId": "kds_queue_api_v1_kds_queue_get",
+        "parameters": [
+          {
+            "name": "x-kds-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Kds-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KitchenOrderOut"
+                  },
+                  "title": "Response Kds Queue Api V1 Kds Queue Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kds/orders/{order_id}/fulfilment": {
+      "patch": {
+        "tags": [
+          "kds"
+        ],
+        "summary": "Kds Advance",
+        "description": "Advance a ticket (queued\u2192preparing\u2192ready\u2192collected) \u2014 only for an order in THIS station's outlet.",
+        "operationId": "kds_advance_api_v1_kds_orders__order_id__fulfilment_patch",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "x-kds-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Kds-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FulfilmentStatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KitchenOrderOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10839,6 +11398,17 @@
             "type": "integer",
             "title": "Sort Order",
             "default": 0
+          },
+          "translations": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translations"
           }
         },
         "type": "object",
@@ -10872,6 +11442,17 @@
               }
             ],
             "title": "Sort Order"
+          },
+          "translations": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translations"
           }
         },
         "type": "object",
@@ -11620,6 +12201,17 @@
             "type": "integer",
             "title": "Sort Order",
             "default": 0
+          },
+          "translations": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translations"
           }
         },
         "type": "object",
@@ -11689,6 +12281,17 @@
               }
             ],
             "title": "Sort Order"
+          },
+          "translations": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translations"
           }
         },
         "type": "object",
@@ -11852,6 +12455,41 @@
           "voucher_code"
         ],
         "title": "JackpotWinOut"
+      },
+      "KdsStationOut": {
+        "properties": {
+          "outlet_id": {
+            "type": "string",
+            "title": "Outlet Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": "Kitchen"
+          },
+          "token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "outlet_id"
+        ],
+        "title": "KdsStationOut",
+        "description": "A storefront's KDS station token (kitchen-tablet bearer credential). `token` is the secret,\nrevealable in the console; the tablet opens `/kds?station=<token>`. None/inactive = not set up."
       },
       "KitchenOrderOut": {
         "properties": {
@@ -12241,6 +12879,17 @@
             "type": "array",
             "title": "Items",
             "default": []
+          },
+          "translations": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translations"
           }
         },
         "type": "object",
@@ -12291,6 +12940,17 @@
             "type": "array",
             "title": "Modifiers",
             "default": []
+          },
+          "translations": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translations"
           }
         },
         "type": "object",
@@ -13078,6 +13738,11 @@
             "type": "array",
             "title": "Stalls",
             "default": []
+          },
+          "theme": {
+            "type": "object",
+            "title": "Theme",
+            "default": {}
           }
         },
         "type": "object",
@@ -13235,6 +13900,48 @@
           "catalog"
         ],
         "title": "NodeServiceOptionsOut"
+      },
+      "NodeThemeIn": {
+        "properties": {
+          "theme": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theme"
+          }
+        },
+        "type": "object",
+        "title": "NodeThemeIn",
+        "description": "Set a node's brand kit. null/empty = inherit (clear). Keys: primary, accent, logo_url,\nhero_image_url, tagline."
+      },
+      "NodeThemeOut": {
+        "properties": {
+          "own": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Own"
+          },
+          "resolved": {
+            "type": "object",
+            "title": "Resolved"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resolved"
+        ],
+        "title": "NodeThemeOut"
       },
       "NoteCreate": {
         "properties": {
@@ -14460,6 +15167,30 @@
         "type": "object",
         "title": "OwnerAssignIn"
       },
+      "ParentGroupRef": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "stall_count": {
+            "type": "integer",
+            "title": "Stall Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "node_id",
+          "name"
+        ],
+        "title": "ParentGroupRef",
+        "description": "The stall's DIRECT parent when it's a multi-stall group/foodcourt \u2014 lets a diner on a single-stall\npage pop UP and pick another stall. Resolved from the stall's own node (works on a direct scan too,\nnot only when navigated in from the group). Null for a standalone storefront with no sibling stalls."
+      },
       "PaymentMethod": {
         "type": "string",
         "enum": [
@@ -15036,6 +15767,31 @@
             "type": "array",
             "title": "Service Options",
             "default": []
+          },
+          "theme": {
+            "type": "object",
+            "title": "Theme",
+            "default": {}
+          },
+          "locale": {
+            "type": "string",
+            "title": "Locale",
+            "default": "en"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "default": "SGD"
+          },
+          "parent_group": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ParentGroupRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -15897,6 +16653,36 @@
             "type": "integer",
             "title": "Item Count",
             "default": 0
+          },
+          "price_from": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price From"
+          },
+          "top_items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Top Items",
+            "default": []
+          },
+          "signboard_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signboard Url"
           },
           "order_path": {
             "anyOf": [

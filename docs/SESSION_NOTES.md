@@ -6,6 +6,46 @@
 
 ---
 
+# Session — 2026-06-12
+
+## What changed
+- **i18n/l10n foundation** (`packages/i18n`, migration `k5l6i18n`): language/currency/timezone as **3
+  decoupled axes** (person/settlement/place, Grab-validated). `LocaleProvider` + `useT` + `formatMoney`
+  (zero-decimal-currency safe); `ENABLED_LOCALES` gates the switcher (limited to **English + Singlish**
+  for now); menu `translations` JSON slot (author-once/present-many, fallback-to-canonical);
+  `customers.locale`. Backend `app/services/i18n.py` locale resolver (override→tenant→Accept-Language).
+- **Brand-theme cascade** (migration `j4k5theme`, `org_nodes.theme` JSON): per-tenant brand kit
+  (`primary`/`accent`/`logo`/`hero`/`tagline` + `enterprise_*` showcase fields) resolved
+  nearest-ancestor-wins, surfaced in the QR context. `_THEME_KEYS` in `boundaries.py` is the single gate.
+- **Malaysia Boleh! foodcourt aesthetic**: content-rich home (Chagee/Luckin-grade) — branded hero
+  slideshow, segment filter, recommended scroll, **all-stalls directory**, mascot + animated steam,
+  "Get to know FSG" map with blinking outlet dots; **real stall signboards** (migration `l6m7signboard`,
+  `menus.signboard_url`) + free-licensed dish photos. +3 Jurong Point stalls (now 9).
+- **FSG enterprise showcase** at `/t/node/fsg` (`EnterpriseHome.tsx` + `/awards` page): watercolour
+  editorial hero, auto-scroll brands, "Our story" slideshow→timeline, CSR, awards banner — all
+  theme-cascade-driven from the FSG enterprise node.
+- **Richer "All stalls" rows** (final polish): signboard + name + "from S$X" + cuisine + personality tag
+  + a real dish-preview line. Backend `catalog.menu_preview()`; `StallRef` += `price_from`/`top_items`.
+  Re-trimmed signboards 12%→5% margin + landscape 76×56 tile + white Recommended cards (fixes
+  "logos small / too much white border"). `stallTag` "Bak Kut Teh"→drinks-"teh" mistag fixed.
+
+## Decisions
+- **Three axes stay decoupled** — language ≠ currency ≠ timezone (a diner's language never changes the
+  money or the time). Critical to lay before the FSG menu is authored (retrofitting translations later = pain).
+- **Signboard look needs THREE fixes together** — re-trim art margin + landscape row tile + white cards.
+  Square `contain` tiles letterbox wide text signs into a thin band → "small logo". (memory `signboard-row-art-fix`)
+- **FSG seed is already idempotent** — `_seed_stall_menu` refreshes signboard/cuisine/logo/image on every run;
+  the earlier "didn't update" was the **api container running stale baked code** (no source bind-mount).
+  Lesson: edit seed → **rebuild api** → then `exec` the seed.
+
+## Still open / next session
+- Carry the red/editorial art direction from the FSG showcase to the MB home for consistency.
+- HitPay real payment (KPMG foodcourt pilot critical-path).
+- Full UI-string + currency-display sweep is INCREMENTAL (foundation laid, not every string localized).
+- Menu-page grid redesign (deferred); crisper FSG award badges; Facebook dish photos (login-gated).
+
+---
+
 # Session — 2026-06-11
 
 ## What changed

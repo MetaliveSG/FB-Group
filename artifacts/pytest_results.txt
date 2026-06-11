@@ -1,2 +1,2 @@
-312 passed (pytest, 52 files) — 2026-06-11
-Frontend: 66 passed (Vitest, 7 files)
+327 passed (55 files) — backend pytest, exit 0 all green (2026-06-12)
+66 -> 74 passed (8 files) — frontend Vitest

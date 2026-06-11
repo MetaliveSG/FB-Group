@@ -1,7 +1,7 @@
 # Database Schema
 
-SQLAlchemy 2.0 models (`apps/api/app/models/`), Alembic-managed (**32 migrations**, single
-head). **45 application tables** (+ `alembic_version`). String UUID PKs (`uuid4().hex`),
+SQLAlchemy 2.0 models (`apps/api/app/models/`), Alembic-managed (**36 migrations**, single
+head). **46 application tables** (+ `alembic_version`). String UUID PKs (`uuid4().hex`),
 naive-UTC timestamps, money as `Numeric(12,2)`. Full DDL: run `alembic upgrade head` or
 see `artifacts/schema_tables.txt`.
 
@@ -10,7 +10,7 @@ see `artifacts/schema_tables.txt`.
 **Org spine** — `org_nodes` (the member-tree-map: one node per Merchant/Brand/Outlet/Menu; adjacency `parent_id` + materialised `path` + `sells`/boundary flags + `loyalty_domain_id`/`settlement_account_id`; typed tables are its profiles). Standardised to two display kinds — **CHAIN** (structural) + **STOREFRONT** (`sells`); cols `name`, `chain_stopped`, `subscription_fee` Numeric(12,2) (migrations `q4r5orgnodename`, `r5s6chainfee`); per-node **module flags** `mod_rewards`/`mod_qr_ordering`/`mod_pos`/`mod_wallet` (**binary + parent-gated** — NOT NULL DEFAULT false, effective = AND up the path; migrations `b6c7modflags`, `d8e9modbinary`, `f0g1modwallet`); **`service_options`** JSON (fulfilment — the storefront's enabled set, cascade-resolved; migration `h2i3serviceopts`)
 **Identity / RBAC** — `users` (+`kind` web/pos, +`pin` encrypted-at-rest POS PIN), `roles`, `permissions`, `role_permissions`, `user_roles`, `customers`, `customer_auth_identities`, `customer_consents` (PDPA terms/marketing, versioned)
 **Catalog** — `menus` (a Menu = a stall; foodcourt cols `stall_name`/`cuisine`/`logo`/`sort_order`/`is_open`), `menu_categories`, `menu_items` (incl. `image_url` for real food photos), `menu_modifiers`
-**Orders** — `orders` (+`source`/`external_id` for POS integration, `OrderChannel.pos`; **`fulfilment_status`** kitchen/KDS state queued→preparing→ready→collected, separate from payment `status`; **`hand_off`** self_pickup|served — the 2nd fulfilment axis; migrations `g1h2fulfilment`, `h2i3serviceopts`), `order_items`
+**Orders** — `orders` (+`source`/`external_id` for POS integration, `OrderChannel.pos`; **`fulfilment_status`** kitchen/KDS state queued→preparing→ready→collected, separate from payment `status`; **`hand_off`** self_pickup|served — the 2nd fulfilment axis; migrations `g1h2fulfilment`, `h2i3serviceopts`), `order_items`, `kds_stations` (per-outlet kitchen-display station binding — revocable station token, not a web login)
 **Payments** — `payments`, `transactions`
 **Wallet** — `wallet_accounts` (stored-value, per loyalty-domain), `wallet_ledger` (non-repudiable hash-chained ledger; migration `c7d8wallet`, NOT-NULL fix `e9f0walletnn`)
 **Loyalty** — `coalitions`, `coalition_members`, `loyalty_accounts` (+`owner_user_id` CRM owner; `points_balance` is a cache of the ledger), `reward_rules`, `reward_transactions` (append-only posting ledger; +`loyalty_domain_id` stamp, +`idempotency_key` unique per domain), `reward_redemptions` (+`voucher_code`)
@@ -21,7 +21,7 @@ see `artifacts/schema_tables.txt`.
 **Audit** — `audit_logs`
 
 ## Migrations (chain)
-**32 migrations, single linear head (`h2i3serviceopts`).** The chain self-documents in
+**36 migrations, single linear head (`l6m7signboard`).** The chain self-documents in
 `apps/api/alembic/versions/` (`alembic history`) — not hand-maintained here (it drifts every migration).
 Recent additions (post org-spine): `p2q3settingsnn` (settings NOT NULL) → `q4r5orgnodename` →
 `r5s6chainfee` → `s6t7venuelease` (leases) → `t7u8consent` (PDPA) → `u8v9voucher` → `v0w1campaignid` →
@@ -29,7 +29,9 @@ Recent additions (post org-spine): `p2q3settingsnn` (settings NOT NULL) → `q4r
 `a5b6scopeidx` (reward-redemption scope index) → `b6c7modflags` (per-node module flags) →
 `c7d8wallet` (wallet tables) → `d8e9modbinary` (module flags → binary + parent-gated) →
 `e9f0walletnn` (wallet NOT-NULL fix) → `f0g1modwallet` (mod_wallet) → `g1h2fulfilment`
-(orders.fulfilment_status) → `h2i3serviceopts` (orders.hand_off + org_nodes.service_options).
+(orders.fulfilment_status) → `h2i3serviceopts` (orders.hand_off + org_nodes.service_options) →
+`j4k5theme` (org_nodes.theme brand-kit JSON cascade) → `k5l6i18n` (menu_categories/menu_items
+`translations` JSON + customers.locale) → `l6m7signboard` (menus.signboard_url) — current head.
 (Target Postgres; SQLite dev/test uses `Base.metadata.create_all`.)
 
 ## Key relationships
