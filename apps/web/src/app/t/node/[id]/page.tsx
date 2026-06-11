@@ -158,15 +158,17 @@ export default function NodeBrowsePage() {
 
   const stallRow = (s: StallRef) => (
     <button key={s.menu_id} onClick={() => selectStall(s)}
-      style={{ ...card, display: "flex", alignItems: "center", gap: 14, width: "100%", textAlign: "left", padding: 12, cursor: "pointer" }}>
+      style={{ display: "flex", alignItems: "center", gap: 14, width: "100%", textAlign: "left", padding: 12, cursor: "pointer",
+        border: "none", borderRadius: 16, color: "#fff",
+        background: "linear-gradient(120deg, var(--color-primary), #ff7a18)", boxShadow: "0 6px 16px rgba(204,0,1,0.22)" }}>
       {s.signboard_url
-        ? <img src={s.signboard_url} alt={s.stall_name} loading="lazy" style={{ width: 64, height: 56, flexShrink: 0, objectFit: "contain", borderRadius: 12, background: "#fff", padding: 4, border: "1px solid var(--color-border)" }} />
-        : <span style={{ fontSize: 30, width: 56, height: 56, borderRadius: 12, background: "var(--color-surface-alt)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{s.logo || "🍽️"}</span>}
+        ? <img src={s.signboard_url} alt={s.stall_name} loading="lazy" style={{ width: 64, height: 56, flexShrink: 0, objectFit: "contain", borderRadius: 12, background: "#fff", padding: 4 }} />
+        : <span style={{ fontSize: 30, width: 56, height: 56, borderRadius: 12, background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{s.logo || "🍽️"}</span>}
       <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: 16, fontWeight: 800, color: "var(--color-text)" }}>{s.stall_name}</span>
-        <span style={{ display: "block", fontSize: 13, color: "var(--color-text-muted)", marginTop: 2 }}>{s.cuisine || "Food"} · {s.item_count} item{s.item_count === 1 ? "" : "s"}</span>
+        <span style={{ display: "block", fontSize: 16, fontWeight: 800, color: "#fff" }}>{s.stall_name}</span>
+        <span style={{ display: "block", fontSize: 13, color: "rgba(255,255,255,0.85)", marginTop: 2 }}>{s.cuisine || "Food"} · {s.item_count} item{s.item_count === 1 ? "" : "s"}</span>
       </span>
-      <span style={{ fontSize: 20, color: "var(--color-text-muted)" }}>›</span>
+      <span style={{ fontSize: 20, color: "rgba(255,255,255,0.9)" }}>›</span>
     </button>
   );
 
@@ -250,14 +252,11 @@ export default function NodeBrowsePage() {
                 </section>
               )}
 
-              {/* ALL STALLS — on the brand gradient (matches the rewards promo), white wording */}
-              <section style={{ background: "linear-gradient(120deg, var(--color-primary), #ff7a18)", borderRadius: 18, padding: "18px 16px 16px", boxShadow: "0 8px 22px rgba(204,0,1,0.28)" }}>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
-                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#fff" }}>{seg === "All" ? "All stalls" : seg}</h2>
-                  <span style={{ fontSize: 12.5, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>{`${filtered.length} stall${filtered.length === 1 ? "" : "s"}`}</span>
-                </div>
+              {/* ALL STALLS — light section, the stall rows carry the brand gradient */}
+              <section>
+                <SectionHeader title={seg === "All" ? "All stalls" : seg} sub={`${filtered.length} stall${filtered.length === 1 ? "" : "s"}`} />
                 {filtered.length === 0 ? (
-                  <p style={{ color: "rgba(255,255,255,0.9)", textAlign: "center", padding: "20px 0" }}>No stalls in this category.</p>
+                  <p style={{ color: "var(--color-text-muted)", textAlign: "center", padding: "20px 0" }}>No stalls in this category.</p>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{filtered.map(stallRow)}</div>
                 )}
