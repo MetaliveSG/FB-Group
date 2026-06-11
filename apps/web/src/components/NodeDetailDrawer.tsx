@@ -9,11 +9,6 @@ import {
   revokeNodeAccount,
   getNodeModules,
   setNodeModules,
-  getNodeServiceOptions,
-  setNodeServiceOptions,
-  getNodeKdsStation,
-  issueNodeKdsStation,
-  revokeNodeKdsStation,
   listVenueLeases,
   createLease,
   updateLease,
@@ -22,7 +17,7 @@ import {
 } from "@/lib/api";
 import { getStaffToken } from "@/lib/auth";
 import { Toggle } from "@/components/ui";
-import type { OrgTreeNode, OrgNodeAccount, MerchantKpi, Lease, OrgNodeCreated, PosStaffSecret, OrgNodeModules, ModuleKey, NodeServiceOptions, KdsStation } from "@fbgroup/api-client";
+import type { OrgTreeNode, OrgNodeAccount, MerchantKpi, Lease, OrgNodeCreated, PosStaffSecret, OrgNodeModules, ModuleKey } from "@fbgroup/api-client";
 
 const ROLE_STYLE: Record<string, { bg: string; fg: string }> = {
   CHAIN: { bg: "#dbeafe", fg: "#1e40af" },
@@ -82,8 +77,6 @@ export default function NodeDetailDrawer({
   const [posReveal, setPosReveal] = useState<PosStaffSecret[] | null>(null);  // show-once team PINs on SF create
 
   const [modules, setModules] = useState<OrgNodeModules | null>(null);
-  const [svcOpts, setSvcOpts] = useState<NodeServiceOptions | null>(null);
-  const [kds, setKds] = useState<KdsStation | null>(null);   // storefront's kitchen-display station token
   const [accounts, setAccounts] = useState<OrgNodeAccount[] | null>(null);
   const [acOpen, setAcOpen] = useState(false);
   const [acEmail, setAcEmail] = useState("");
@@ -117,9 +110,6 @@ export default function NodeDetailDrawer({
     const tok = getStaffToken();
     if (tok && canManage) {
       getNodeModules(base, tok, node.id).then(setModules).catch(() => setModules(null));
-      getNodeServiceOptions(base, tok, node.id).then(setSvcOpts).catch(() => setSvcOpts(null));
-      setKds(null);
-      if (node.sells) getNodeKdsStation(base, tok, node.id).then(setKds).catch(() => setKds(null));
       listNodeAccounts(base, tok, node.id).then(setAccounts).catch(() => setAccounts([]));
       if (!node.sells) {
         listVenueLeases(base, tok, node.id)
@@ -154,19 +144,6 @@ export default function NodeDetailDrawer({
     run(() => setNodeModules(base, tok(), node.id, { [key]: val } as Partial<Record<ModuleKey, boolean>>),
         (m) => setModules(m as OrgNodeModules));
 
-  // Save the simplified config: dine-in is Self-Service OR Served (exactly one) + Takeaway on/off.
-  const saveServiceConfig = (dineInServed: boolean, takeawayOn: boolean) => {
-    const list = [dineInServed ? "dine_in_served" : "dine_in_pickup", ...(takeawayOn ? ["takeaway"] : [])];
-    run(() => setNodeServiceOptions(base, tok(), node.id, list), (o) => setSvcOpts(o as NodeServiceOptions));
-  };
-  const resetServiceOptions = () =>
-    run(() => setNodeServiceOptions(base, tok(), node.id, null), (o) => setSvcOpts(o as NodeServiceOptions));
-
-  // KDS station token — issue/rotate, revoke.
-  const issueKds = () => run(() => issueNodeKdsStation(base, tok(), node.id), (s) => setKds(s as KdsStation));
-  const revokeKds = () => run(async () => { await revokeNodeKdsStation(base, tok(), node.id); return null; },
-                              () => setKds((k) => (k ? { ...k, token: null, is_active: false } : k)));
-  const kdsLink = (t: string) => `${typeof window !== "undefined" ? window.location.origin : ""}/kds?station=${encodeURIComponent(t)}`;
 
   // Candidate stalls to lease in: any Storefront not under THIS venue (those are house stalls,
   // no lease needed) and not already leased here.
@@ -426,90 +403,6 @@ export default function NodeDetailDrawer({
                 })
               )}
               <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>A node can be ON only if its parent is ON; turning a node OFF locks its whole subtree OFF. Wallet also needs Table QR ON.</span>
-            </div>
-          )}
-
-          {/* Service options (fulfilment) — Dine-in: Self-Service or Served · Takeaway: on/off.
-              Cascades like the module flags (a foodcourt/brand sets it once; storefronts inherit + override). */}
-          {canManage && svcOpts && (() => {
-            const eff = svcOpts.own ?? svcOpts.resolved;
-            const served = eff.includes("dine_in_served");
-            const takeawayOn = eff.includes("takeaway");
-            return (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: "1px solid var(--color-border,#e5e7eb)", paddingTop: 14 }}>
-                {label(node.sells ? "Service options (fulfilment)" : "Service options — default for storefronts below")}
-                {/* Dine-in: Self-Service (collect) vs Served (waiter). */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600 }}>Dine-in</span>
-                  <div role="radiogroup" aria-label="Dine-in service" style={{ display: "flex", border: "1px solid var(--color-border,#e5e7eb)", borderRadius: 8, overflow: "hidden" }}>
-                    {([["Self-Service", false], ["Served", true]] as [string, boolean][]).map(([lbl, isServed], i) => {
-                      const sel = served === isServed;
-                      return (
-                        <button key={lbl} type="button" role="radio" aria-checked={sel} disabled={busy}
-                          onClick={() => saveServiceConfig(isServed, takeawayOn)}
-                          style={{ flex: 1, padding: "6px 0", fontSize: 12, fontWeight: sel ? 700 : 500, border: "none",
-                            borderLeft: i ? "1px solid var(--color-border,#e5e7eb)" : "none",
-                            background: sel ? "var(--color-primary,#dc2626)" : "#fff", color: sel ? "#fff" : "var(--color-text,#334155)",
-                            cursor: busy ? "default" : "pointer" }}>
-                          {lbl}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
-                    {served ? "A waiter/runner brings it to the table (no diner alert)." : "Diner collects from the counter when ready (gets a “ready” alert)."}
-                  </span>
-                </div>
-                {/* Takeaway on/off. */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>Takeaway <span style={{ fontWeight: 400, color: "var(--color-text-muted)", fontSize: 11 }}>— packaged to go</span></span>
-                  <Toggle on={takeawayOn} onChange={() => saveServiceConfig(served, !takeawayOn)} disabled={busy} />
-                </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
-                    {svcOpts.own == null ? "Inheriting (cascade)." : "Set here; cascades to the subtree."}
-                  </span>
-                  {svcOpts.own != null && (
-                    <button type="button" onClick={resetServiceOptions} disabled={busy}
-                      style={{ background: "none", border: "none", color: "var(--color-primary,#dc2626)", fontSize: 11, fontWeight: 700, cursor: busy ? "default" : "pointer" }}>
-                      Reset to inherit
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Kitchen display (KDS) station — a private link the kitchen tablet opens (no login). */}
-          {canManage && node.sells && kds && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--color-border,#e5e7eb)", paddingTop: 14 }}>
-              {label("Kitchen display (KDS)")}
-              {kds.is_active && kds.token ? (
-                <>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <input readOnly value={kdsLink(kds.token)} onFocus={(e) => e.currentTarget.select()}
-                      style={{ flex: 1, fontSize: 11, padding: "6px 8px", border: "1px solid var(--color-border,#e5e7eb)", borderRadius: 6, color: "var(--color-text)", background: "var(--color-surface-alt,#f8fafc)" }} />
-                    <button type="button" className="btn btn-secondary btn-sm" disabled={busy}
-                      onClick={() => navigator.clipboard?.writeText(kdsLink(kds.token!)).catch(() => {})}>Copy</button>
-                  </div>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <button type="button" className="btn btn-secondary btn-sm" disabled={busy}
-                      onClick={() => window.open(kdsLink(kds.token!), "_blank", "noopener,noreferrer")}>Open</button>
-                    <button type="button" disabled={busy} onClick={issueKds}
-                      style={{ background: "none", border: "none", color: "var(--color-primary,#dc2626)", fontSize: 11, fontWeight: 700, cursor: busy ? "default" : "pointer" }}>Rotate token</button>
-                    <button type="button" disabled={busy} onClick={revokeKds}
-                      style={{ background: "none", border: "none", color: "#b91c1c", fontSize: 11, fontWeight: 700, cursor: busy ? "default" : "pointer", marginLeft: "auto" }}>Revoke</button>
-                  </div>
-                  <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>Open this link on the kitchen tablet — it stays signed in (no login). Rotate or revoke if a device is lost.</span>
-                </>
-              ) : (
-                <>
-                  <button type="button" className="btn btn-primary btn-sm" style={{ alignSelf: "flex-start", padding: "6px 14px", fontWeight: 700 }} disabled={busy} onClick={issueKds}>
-                    Set up kitchen screen
-                  </button>
-                  <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>Issues a private link for this storefront&apos;s kitchen tablet (no login). Needs Table QR on.</span>
-                </>
-              )}
             </div>
           )}
 

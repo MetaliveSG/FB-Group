@@ -7,6 +7,8 @@ import { orgTables, createTable, deleteTable, menuOutlets, getApiBase } from "@/
 import { getStaffToken, clearStaffToken, getOperatorMerchant } from "@/lib/auth";
 import MerchantSidebar from "@/components/MerchantSidebar";
 import NodeDirectory from "@/components/NodeDirectory";
+import ServiceOptionsCard from "@/components/ServiceOptionsCard";
+import KdsStationCard from "@/components/KdsStationCard";
 import { useScope } from "@/lib/useScope";
 import { Icons } from "@/components/ui";
 import type { OrgTable, MenuAdminOutlet } from "@fbgroup/api-client";
@@ -38,6 +40,8 @@ export default function TablesQrPage() {
 
   const { scope, isOperator, nodes, ready, enter } = useScope();
   const needPick = ready && isOperator && !!scope && scope.tenantId === null;
+  // The storefront node for the outlet currently managed → drives its Ordering setup (service options, KDS).
+  const sfNodeId = nodes.find((n) => n.sells && n.outlet_id === oid)?.id ?? null;
 
   // The public customer-scan origin (where /t/{token} is served). Browser origin in this PoC.
   const [origin, setOrigin] = useState("");
@@ -191,6 +195,14 @@ export default function TablesQrPage() {
               {outlets.map((o) => <option key={o.outlet_id} value={o.outlet_id}>{o.name}</option>)}
             </select>
           </div>
+        </div>
+      )}
+
+      {/* Per-storefront Ordering setup — service options (fulfilment) + the kitchen display station. */}
+      {sfNodeId && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 20 }}>
+          <ServiceOptionsCard nodeId={sfNodeId} />
+          <KdsStationCard nodeId={sfNodeId} />
         </div>
       )}
 
