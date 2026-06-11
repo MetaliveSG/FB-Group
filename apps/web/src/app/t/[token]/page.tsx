@@ -146,13 +146,13 @@ function MenuItemCard({
         <Button
           size="sm"
           variant="primary"
-          leftIcon={Icons.Plus}
+          leftIcon={available ? Icons.Plus : undefined}
           disabled={!available}
           style={{ flexShrink: 0, alignSelf: "center" }}
           aria-label={hasOptions ? `Customise ${item.name}` : `Add ${item.name}`}
           onClick={() => (hasOptions ? onCustomise(item) : onAdd(item, [], 1))}
         >
-          {available ? "Add" : "Sold out"}
+          {available ? "" : "Sold out"}
         </Button>
       </div>
     </Card>

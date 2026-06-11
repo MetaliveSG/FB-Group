@@ -10,11 +10,11 @@ export default function LanguageSwitcher() {
   return (
     <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "var(--text-sm)", fontWeight: 700 }}>
       <span aria-hidden style={{ fontSize: 18 }}>🌐</span>
-      <span style={{ flex: 1 }}>{t("common.language")}</span>
+      <span style={{ whiteSpace: "nowrap" }}>{t("common.language")}</span>
       <select
         value={locale}
         onChange={(e) => setLocale(e.target.value as Locale)}
-        style={{ padding: "8px 10px", borderRadius: "var(--radius-md, 10px)", border: "1px solid var(--color-border, #e5e7eb)", fontWeight: 700, fontSize: "var(--text-sm)", background: "var(--color-surface, #fff)" }}
+        style={{ flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: "var(--radius-md, 10px)", border: "1px solid var(--color-border, #e5e7eb)", fontWeight: 700, fontSize: "var(--text-sm)", background: "var(--color-surface, #fff)" }}
       >
         {SUPPORTED_LOCALES.map((l) => (
           <option key={l} value={l}>{LOCALE_LABELS[l]}</option>

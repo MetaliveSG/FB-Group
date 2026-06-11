@@ -23,6 +23,16 @@ export default function BrandTheme({ theme }: { theme?: Theme | null }) {
       `--brand-700:${darken(theme.primary)}`,
     );
   }
-  if (theme.accent) css.push(`--color-accent:${theme.accent}`);
+  if (theme.accent) {
+    // The accent BUTTON (.ui-btn--accent) is a gradient of --amber-400/500 — overriding only
+    // --color-accent left it unchanged. Override the amber scale too so accent actually applies.
+    css.push(
+      `--color-accent:${theme.accent}`,
+      `--color-accent-hover:${theme.accent}`,
+      `--amber-400:${theme.accent}`,
+      `--amber-500:${darken(theme.accent, 0.9)}`,
+      `--amber-600:${darken(theme.accent, 0.78)}`,
+    );
+  }
   return <style>{`:root{${css.join(";")}}`}</style>;
 }
