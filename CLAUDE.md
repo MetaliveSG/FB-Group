@@ -113,6 +113,9 @@ cd apps/api && .venv/bin/python -m app.seed_kampong
 # idempotent, additive, fixed node ids → reproducible QR tokens (against live Postgres):
 cd apps/api && .venv/bin/python -m app.seed_demo_merchants
 #   (or in Docker: docker-compose -f infra/docker-compose.yml exec api python -m app.seed_demo_merchants)
+# Fei Siong Group (FSG) ENTERPRISE demo — the pitch tree, Malaysia Boleh! foodcourt + 6 real stalls w/ menus
+# (idempotent; FSG enterprise → Malaysia Boleh! tenant → stalls; owner@malaysiaboleh.sg / Password123!):
+cd apps/api && .venv/bin/python -m app.seed_fei_siong   # → memory fsg-enterprise, menu-modifier-groups
 # Full stack (Postgres + API + web):
 docker-compose -f infra/docker-compose.yml up --build
 # Frontend:
@@ -223,6 +226,8 @@ venue/lease/settlement/franchising/Storefront-re-key (all post-MVP).
   - `owner@breadtalk.sg` → **Breadtalk Group** (+ downline: Bakery, Toast Box, Toast Box @ Taka/Orchard)
   - `owner@pepperlunch.sg` → **Pepper Lunch Group** (+ all Pepper Lunch outlets) *(genuine Merchant-Owner from onboarding; pw reset to the standard)*
   - `manager@toastbox.sg` → **Toast Box @ Orchard** only (single-storefront scope)
+  - `owner@malaysiaboleh.sg` → **Malaysia Boleh!** foodcourt (FSG enterprise demo: Fei Siong Group → Malaysia
+    Boleh! tenant → 6 Malaysian stalls w/ real menus). Seed: `python -m app.seed_fei_siong` → [[fsg-enterprise]].
   - Durable via the ensure-script: `python -m app.seed_demo_merchants` (idempotent; rebuilds both
     groups + storefronts + these 3 logins with fixed node ids → stable QR tokens). Run after a data wipe.
 - Customer QR: scan tokens are the live storefronts' QR (see each Storefront's *Tables & QR*); OTP phone `+6580000000` (DEBUG returns the code).
