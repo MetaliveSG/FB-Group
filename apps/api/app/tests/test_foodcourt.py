@@ -11,6 +11,7 @@ def test_single_outlet_returns_one_stall_with_inline_menu(client, db):
     assert r["is_foodcourt"] is False
     assert len(r["stalls"]) == 1
     assert r["menu"] is not None and r["menu"]["categories"]   # full menu inline (no extra fetch)
+    assert r.get("parent_group") is None                       # standalone storefront → no "up" control
 
 
 def test_foodcourt_returns_stall_directory_and_null_menu(client, db):

@@ -6,10 +6,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.models.org import OrgNode
 from app.models.tenancy import Brand, DiningTable, Merchant, Outlet
 from app.core.errors import NotFoundError
 from app.schemas.catalog import MenuOut
-from app.schemas.qr import NodeBrowseOut, QrContextOut, StallRef
+from app.schemas.qr import NodeBrowseOut, ParentGroupRef, QrContextOut, StallRef
 from app.services import boundaries
 from app.services import catalog as catalog_service
 from app.services import i18n
@@ -71,6 +72,20 @@ def resolve_qr(
         full = catalog_service.get_outlet_menu(db, qr.outlet_id, menus[0].id)
         inline_menu = MenuOut.model_validate(i18n.localize_menu(full, locale))
 
+    # If this single stall sits under a multi-stall group (foodcourt), let the diner pop up and switch
+    # stalls. Resolved from the stall's OWN node (menu.id == node.id) → its direct parent → sibling count,
+    # so it works even on a direct stall scan, not only when navigated in from the group browse.
+    parent_group = None
+    if not is_foodcourt and menus:
+        sf_node = db.get(OrgNode, menus[0].id)
+        if sf_node and sf_node.parent_id:
+            parent = db.get(OrgNode, sf_node.parent_id)
+            if parent is not None and not parent.sells:
+                siblings = catalog_service.direct_storefronts(db, parent)
+                if len(siblings) > 1:
+                    parent_group = ParentGroupRef(node_id=parent.id, name=parent.name or parent.id,
+                                                  stall_count=len(siblings))
+
     return QrContextOut(
         qr_token=qr.token,
         merchant={"id": merchant.id, "name": merchant.name},
@@ -86,6 +101,7 @@ def resolve_qr(
         theme=boundaries.resolve_theme_for_outlet(db, outlet_id=qr.outlet_id),
         locale=locale,
         currency=(merchant.currency if merchant else "SGD"),
+        parent_group=parent_group,
     )
 
 

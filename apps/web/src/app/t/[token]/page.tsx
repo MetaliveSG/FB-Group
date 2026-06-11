@@ -708,6 +708,15 @@ export default function TablePage() {
         </button>
       )}
 
+      {/* Single-stall storefront under a group/foodcourt → pop UP to the parent and pick another stall. */}
+      {!selectedStall && qrData?.parent_group && (
+        <button type="button" className="stall-backbar"
+          onClick={() => router.push(`/t/node/${encodeURIComponent(qrData.parent_group!.node_id)}`)}>
+          <Icons.ArrowLeft size={18} /> {qrData.parent_group.name}
+          <span className="stall-backbar__name">All {qrData.parent_group.stall_count} stalls</span>
+        </button>
+      )}
+
       {/* Category bar + search only in a menu view (not the stall directory / rewards-only) */}
       {!inDirectory && !loadingStall && !orderingDisabled && (
         <MenuCategoryNav

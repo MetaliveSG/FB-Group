@@ -90,6 +90,9 @@ export interface QrResolution {
   // formatMoney(amt, { locale, currency }) — handles 0-decimal currencies (IDR/VND) automatically.
   locale: string;
   currency: string;
+  // Set when this single stall sits under a multi-stall group/foodcourt → show an "up to {name} ·
+  // other stalls" control that routes to /t/node/{node_id}. Null for a standalone storefront.
+  parent_group?: { node_id: string; name: string; stall_count: number } | null;
 }
 
 export interface BrandTheme { primary?: string; accent?: string; logo_url?: string }

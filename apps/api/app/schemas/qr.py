@@ -35,6 +35,15 @@ class StallRef(BaseModel):
     order_path: str | None = None
 
 
+class ParentGroupRef(BaseModel):
+    """The stall's DIRECT parent when it's a multi-stall group/foodcourt — lets a diner on a single-stall
+    page pop UP and pick another stall. Resolved from the stall's own node (works on a direct scan too,
+    not only when navigated in from the group). Null for a standalone storefront with no sibling stalls."""
+    node_id: str
+    name: str
+    stall_count: int = 0
+
+
 class NodeBrowseOut(BaseModel):
     """A node-scoped customer browse (the 'brand / group app' view): point at any member-tree node
     and see the orderable leaf stalls in its scope (its own sellable leaves + any stalls leased into
@@ -72,3 +81,6 @@ class QrContextOut(BaseModel):
     # the diner's language never changes the currency or the time.
     locale: str = "en"
     currency: str = "SGD"
+    # Set when this single-stall page sits under a multi-stall group/foodcourt — the app shows an "up to
+    # {name} · other stalls" control that navigates to /t/node/{node_id}. Null for a standalone storefront.
+    parent_group: ParentGroupRef | None = None
