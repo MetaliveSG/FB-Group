@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { resolveNodeBrowse, resolveNodeMenu, getApiBase } from "@/lib/api";
 import BrandTheme from "@/components/BrandTheme";
@@ -135,6 +135,26 @@ export default function NodeBrowsePage() {
   const filtered = seg === "All" ? stalls : stalls.filter((s) => cuisineTag(s) === seg);
   const recommended = useMemo(() => [...stalls].sort((a, b) => b.item_count - a.item_count).slice(0, 6), [stalls]);
 
+  // Auto-scroll the "Recommended for you" rail (gentle ping-pong; pauses on touch; reduced-motion safe).
+  const recRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = recRef.current;
+    if (!el || reduceMotion() || recommended.length <= 2) return;
+    let dir = 1, paused = false, resume: ReturnType<typeof setTimeout>;
+    const hold = () => { paused = true; clearTimeout(resume); resume = setTimeout(() => (paused = false), 2500); };
+    el.addEventListener("pointerdown", hold);
+    el.addEventListener("wheel", hold, { passive: true });
+    const tick = setInterval(() => {
+      if (paused) return;
+      const max = el.scrollWidth - el.clientWidth;
+      if (max <= 0) return;
+      if (el.scrollLeft >= max - 1) dir = -1;
+      else if (el.scrollLeft <= 0) dir = 1;
+      el.scrollLeft += dir;
+    }, 28);
+    return () => { clearInterval(tick); clearTimeout(resume); el.removeEventListener("pointerdown", hold); el.removeEventListener("wheel", hold); };
+  }, [recommended.length, seg]);
+
   const stallRow = (s: StallRef) => (
     <button key={s.menu_id} onClick={() => selectStall(s)}
       style={{ ...card, display: "flex", alignItems: "center", gap: 14, width: "100%", textAlign: "left", padding: 12, cursor: "pointer" }}>
@@ -171,11 +191,24 @@ export default function NodeBrowsePage() {
             <>
               {/* PROMO — coins + games (our differentiator; none of the benchmarks have it) */}
               <div style={{ position: "relative", overflow: "hidden", borderRadius: 18, padding: "16px 18px", color: "#fff",
+                minHeight: theme?.mascot_url ? 132 : undefined,
                 background: "linear-gradient(120deg, var(--color-primary), #ff7a18)", boxShadow: "0 8px 22px rgba(204,0,1,0.28)" }}>
                 <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, opacity: 0.92, textTransform: "uppercase" }}>Rewards</div>
                 <div style={{ fontSize: 19, fontWeight: 900, marginTop: 2 }}>Earn coins &amp; spin to win 🎰</div>
-                <div style={{ fontSize: 13, opacity: 0.95, marginTop: 4, maxWidth: "78%" }}>Coins at every stall · play for free vouchers &amp; the 888 jackpot.</div>
-                <div aria-hidden style={{ position: "absolute", right: -8, bottom: -18, fontSize: 86, opacity: 0.18 }}>🎁</div>
+                <div style={{ fontSize: 13, opacity: 0.95, marginTop: 4, maxWidth: theme?.mascot_url ? "58%" : "78%" }}>Coins at every stall · play for free vouchers &amp; the 888 jackpot.</div>
+                {theme?.mascot_url ? (
+                  <>
+                    <style>{"@keyframes cipSteam{0%{opacity:0;transform:translate(-50%,4px) scale(.7)}20%{opacity:.9}60%{opacity:.55}100%{opacity:0;transform:translate(-50%,-22px) scaleX(1.7) scaleY(1.1)}}@media (prefers-reduced-motion:reduce){.cip-steam{animation:none!important;opacity:.45!important}}"}</style>
+                    <div aria-hidden style={{ position: "absolute", right: 12, top: 0, bottom: 0, width: 84, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {[0, 0.55, 1.15].map((d, i) => (
+                        <span key={i} className="cip-steam" style={{ position: "absolute", top: 18, left: "50%", marginLeft: [-12, -1, 9][i], width: 9, height: i === 1 ? 26 : 22, borderRadius: "50%", background: "radial-gradient(closest-side, rgba(255,255,255,0.95), rgba(255,255,255,0))", filter: "blur(1.6px)", opacity: 0, transformOrigin: "bottom center", animation: `cipSteam 2.6s ease-in-out ${d}s infinite` }} />
+                      ))}
+                      <img src={theme.mascot_url} alt="" style={{ height: 99, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.22))" }} />
+                    </div>
+                  </>
+                ) : (
+                  <div aria-hidden style={{ position: "absolute", right: -8, bottom: -18, fontSize: 86, opacity: 0.18 }}>🎁</div>
+                )}
               </div>
 
               {/* SEGMENT — cuisine filter */}
@@ -185,7 +218,7 @@ export default function NodeBrowsePage() {
               {seg === "All" && recommended.length > 2 && (
                 <section>
                   <SectionHeader title="Recommended for you" />
-                  <div style={{ display: "flex", gap: 12, overflowX: "auto", margin: "0 -16px", padding: "2px 16px 4px", scrollbarWidth: "none" }}>
+                  <div ref={recRef} style={{ display: "flex", gap: 12, overflowX: "auto", margin: "0 -16px", padding: "2px 16px 4px", scrollbarWidth: "none" }}>
                     {recommended.map((s) => (
                       <button key={s.menu_id} onClick={() => selectStall(s)}
                         style={{ ...card, flex: "0 0 150px", textAlign: "left", padding: 0, cursor: "pointer" }}>

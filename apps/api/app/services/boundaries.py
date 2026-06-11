@@ -119,6 +119,7 @@ def resolve_service_options_for_outlet(db: Session, *, outlet_id: str | None) ->
 _THEME_KEYS = (
     "primary", "accent", "logo_url",
     "hero_image_url", "hero_images",            # hero_images = a list → home carousel/slideshow
+    "mascot_url",                               # brand mascot (decorates the rewards promo, with steam)
     "tagline", "story", "about_image_url",      # brand story block
     # Enterprise profile (set on the parent/enterprise node; tenants inherit via the cascade) —
     # powers the "Get to know {enterprise}" section.

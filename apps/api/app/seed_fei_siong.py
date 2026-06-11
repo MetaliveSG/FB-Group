@@ -80,6 +80,7 @@ THEMES = {
     MB: {                                             # Malaysia Boleh! — real brand kit (self-hosted assets)
         "primary": "#cc0001", "accent": "#ffcc00",   # Malaysian red + gold
         "logo_url": "/brands/malaysia-boleh/logo.png",
+        "mascot_url": "/brands/malaysia-boleh/mascot.png",
         "hero_image_url": "/brands/malaysia-boleh/hero.jpg",
         "hero_images": [                              # home slideshow
             "/brands/malaysia-boleh/hero.jpg",
@@ -101,6 +102,10 @@ STALL_SIGNBOARDS = {
     S_BKT: "klang-bak-kut-teh.png", S_PRAWN: "penang-prawn-mee.png",
     S_CLAYPOT: "petaling-claypot-rice.png", S_CHENDOL: "penang-road-chendol.png",
 }
+
+# Curated stall display order (Menu.sort_order; directory + storefront listings order by it):
+# Chilli · Petaling(claypot) · Bak Kut Teh · Chendol · Char Kway Teow · Prawn.
+STALL_ORDER = {S_CHILLI: 0, S_CLAYPOT: 1, S_BKT: 2, S_CHENDOL: 3, S_CKT: 4, S_PRAWN: 5}
 
 ACCOUNTS = [("owner@malaysiaboleh.sg", "Malaysia Boleh Owner", MB)]
 
@@ -179,6 +184,7 @@ def _seed_stall_menu(db: Session, stall_id: str) -> bool:
     spec = STALL_MENUS[stall_id]
     menu.cuisine = spec["cuisine"]      # nicer foodcourt-browse display
     menu.logo = spec["logo"]
+    menu.sort_order = STALL_ORDER.get(stall_id, 0)   # curated directory order
     sign = STALL_SIGNBOARDS.get(stall_id)
     menu.signboard_url = f"{_SIGN_DIR}{sign}" if sign else None
     cat = db.scalar(select(MenuCategory).where(MenuCategory.menu_id == stall_id))

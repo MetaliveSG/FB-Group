@@ -103,6 +103,7 @@ export interface BrandTheme {
   logo_url?: string;
   hero_image_url?: string;   // full-bleed hero photo behind the storefront header
   hero_images?: string[];    // home hero slideshow/carousel slides
+  mascot_url?: string;       // brand mascot decorating the rewards promo (with steam animation)
   tagline?: string;          // brand tagline shown in the hero (e.g. "A Taste of Malaysia")
   story?: string;            // brand-story copy for the home "Our story" block
   about_image_url?: string;  // image for the brand-story block
