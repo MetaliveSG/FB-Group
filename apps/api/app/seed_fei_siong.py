@@ -44,6 +44,9 @@ S_BKT = "mb_bak_kut_teh"
 S_PRAWN = "mb_prawn_noodles"
 S_CLAYPOT = "mb_claypot_rice"
 S_CHENDOL = "mb_chendol"
+S_HUANGCHAO = "mb_huang_chao"
+S_WANTON = "mb_kl_wanton_mee"
+S_SEINGANZAI = "mb_sei_ngan_zai"
 
 # (id, parent_id, kind, label) — parent-before-child.
 NODES = [
@@ -55,6 +58,9 @@ NODES = [
     (S_PRAWN, MB, STOREFRONT, "Penang Prawn Noodles"),
     (S_CLAYPOT, MB, STOREFRONT, "Petaling St Claypot Rice"),
     (S_CHENDOL, MB, STOREFRONT, "Penang Road Chendol"),
+    (S_HUANGCHAO, MB, STOREFRONT, "Huang Chao Teochew Noodle House"),
+    (S_WANTON, MB, STOREFRONT, "KL Wanton Mee"),
+    (S_SEINGANZAI, MB, STOREFRONT, "Sei Ngan Zai"),
 ]
 
 # Malaysia Boleh! is the tenant: collects money (settlement) AND is the one loyalty ring for its stalls.
@@ -124,7 +130,7 @@ THEMES = {
         "accent": "#ffcc00",
         "enterprise_name": "Fei Siong Group",
         "enterprise_logo_url": "/brands/fsg/logo.png",
-        "enterprise_image_url": "/brands/fsg/brands-map.jpg",
+        "enterprise_image_url": "/brands/fsg/sg-map.png",   # dot-less landmass; dots are overlaid + animated
         "enterprise_story": (
             "Founded in 1995 by Mr Tan Kim Siong — from a single fishball-noodle stall outside the old "
             "National Library to one of Singapore's leading F&B groups: 20 brands and 205+ outlets serving "
@@ -157,11 +163,12 @@ STALL_SIGNBOARDS = {
     S_CHILLI: "damansara-chilli-pan-mee.png", S_CKT: "penang-char-kuay-teow.png",
     S_BKT: "klang-bak-kut-teh.png", S_PRAWN: "penang-prawn-mee.png",
     S_CLAYPOT: "petaling-claypot-rice.png", S_CHENDOL: "penang-road-chendol.png",
+    S_HUANGCHAO: "huang-chao-teochew.png", S_WANTON: "kl-wanton-mee.jpg", S_SEINGANZAI: "sei-ngan-zai.png",
 }
 
-# Curated stall display order (Menu.sort_order; directory + storefront listings order by it):
-# Chilli · Petaling(claypot) · Bak Kut Teh · Chendol · Char Kway Teow · Prawn.
-STALL_ORDER = {S_CHILLI: 0, S_CLAYPOT: 1, S_BKT: 2, S_CHENDOL: 3, S_CKT: 4, S_PRAWN: 5}
+# Curated stall display order (Menu.sort_order; directory + storefront listings order by it).
+STALL_ORDER = {S_CHILLI: 0, S_CLAYPOT: 1, S_BKT: 2, S_CHENDOL: 3, S_CKT: 4, S_PRAWN: 5,
+               S_HUANGCHAO: 6, S_WANTON: 7, S_SEINGANZAI: 8}
 
 ACCOUNTS = [("owner@malaysiaboleh.sg", "Malaysia Boleh Owner", MB)]
 
@@ -195,6 +202,21 @@ STALL_MENUS: dict[str, dict] = {
         ("Penang Road Chendol", "Shaved ice, gula melaka, coconut milk, green jelly & red beans", 3.50, "chendol.jpg"),
         ("Ice Kacang", "Mountain of shaved ice, syrups, attap chee, sweet corn", 4.00, "ice-kacang.jpg"),
         ("Kopi / Teh", "Traditional kopitiam coffee or tea", 1.80, "kopi.jpg"),
+    ]},
+    S_HUANGCHAO: {"cuisine": "Teochew · Noodles", "logo": "🍜", "items": [
+        ("Fishball Noodle", "Springy Teochew noodles with handmade fishballs & fishcake", 5.00, None),
+        ("Mushroom Minced-Meat Noodle", "Bouncy noodles tossed in dark sauce, minced pork & mushroom", 5.50, None),
+        ("Fishcake Soup", "Clear soup with fishballs, fishcake & lettuce", 5.00, None),
+    ]},
+    S_WANTON: {"cuisine": "KL · Noodles", "logo": "🥢", "items": [
+        ("Wanton Noodle (Dry)", "Springy egg noodles, char siew, prawn wantons, dark sauce", 5.00, None),
+        ("Wanton Noodle (Soup)", "Egg noodles & wantons in a clear pork broth", 5.00, None),
+        ("Dumpling Wanton Mee", "With extra prawn-and-pork dumplings", 6.50, None),
+    ]},
+    S_SEINGANZAI: {"cuisine": "Penang · Koay Teow Th'ng", "logo": "🦆", "items": [
+        ("Koay Teow Th'ng", "Penang flat rice-noodle soup, fishballs & minced pork", 5.50, None),
+        ("Duck Koay Teow Th'ng", "Koay teow th'ng topped with braised duck", 7.00, None),
+        ("Braised Duck Rice", "Tender braised duck over rice with herbal gravy", 7.50, None),
     ]},
 }
 

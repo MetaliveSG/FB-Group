@@ -211,12 +211,15 @@ export default function NodeBrowsePage() {
                 <div style={{ fontSize: 13, opacity: 0.95, marginTop: 4, maxWidth: theme?.mascot_url ? "58%" : "78%" }}>Coins at every stall · play for free vouchers &amp; the 888 jackpot.</div>
                 {theme?.mascot_url ? (
                   <>
-                    <style>{"@keyframes cipSteam{0%{opacity:0;transform:translate(-50%,6px) scale(.55)}25%{opacity:1}65%{opacity:.7}100%{opacity:0;transform:translate(-50%,-32px) scaleX(1.9) scaleY(1.25)}}@media (prefers-reduced-motion:reduce){.cip-steam{animation:none!important;opacity:.6!important}}"}</style>
+                    <style>{"@keyframes cipSteam{0%{opacity:0;transform:translate(-50%,0) scale(.5)}25%{opacity:1}60%{opacity:.7}100%{opacity:0;transform:translate(-50%,-26px) scaleX(1.8) scaleY(1.3)}}@media (prefers-reduced-motion:reduce){.cip-steam{animation:none!important;opacity:.6!important}}"}</style>
                     <div aria-hidden style={{ position: "absolute", right: 12, top: 0, bottom: 0, width: 84, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {[0, 0.5, 1.0, 1.5].map((d, i) => (
-                        <span key={i} className="cip-steam" style={{ position: "absolute", top: 14, left: "50%", marginLeft: [-15, -5, 6, 15][i], width: 12, height: [24, 30, 26, 22][i], borderRadius: "50%", background: "radial-gradient(closest-side, rgba(255,255,255,1), rgba(255,255,255,0))", filter: "blur(1.3px)", opacity: 0, transformOrigin: "bottom center", animation: `cipSteam 2.8s ease-in-out ${d}s infinite` }} />
-                      ))}
-                      <img src={theme.mascot_url} alt="" style={{ height: 99, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.22))" }} />
+                      <div style={{ position: "relative", lineHeight: 0 }}>
+                        {/* steam rises UP from the bowl rim (anchored near the top of the mascot) */}
+                        {[0, 0.5, 1.0, 1.5].map((d, i) => (
+                          <span key={i} className="cip-steam" style={{ position: "absolute", bottom: 89, left: "50%", marginLeft: [-13, -4, 5, 13][i], width: 11, height: [18, 24, 20, 16][i], borderRadius: "50%", background: "radial-gradient(closest-side, rgba(255,255,255,1), rgba(255,255,255,0))", filter: "blur(1.3px)", opacity: 0, transformOrigin: "center bottom", animation: `cipSteam 2.8s ease-in-out ${d}s infinite` }} />
+                        ))}
+                        <img src={theme.mascot_url} alt="" style={{ height: 99, display: "block", filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.22))" }} />
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -283,11 +286,12 @@ export default function NodeBrowsePage() {
                     {theme.enterprise_story && <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: "var(--color-text-muted)" }}>{theme.enterprise_story}</p>}
                   </div>
                   {theme.enterprise_image_url && (
-                    <div style={{ position: "relative" }}>
-                      <style>{"@keyframes cipBlink{0%,100%{opacity:.25;transform:translate(-50%,-50%) scale(.8)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.3)}}@media (prefers-reduced-motion:reduce){.cip-dot{animation:none!important;opacity:.8!important}}"}</style>
-                      <img src={theme.enterprise_image_url} alt={`${theme.enterprise_name} outlets`} style={{ width: "100%", display: "block", background: "var(--color-surface-alt)" }} />
-                      {[[12,55],[18,46],[25,40],[29,53],[34,44],[31,31],[39,58],[43,47],[41,36],[49,46],[47,32],[55,52],[59,42],[63,56],[67,45],[73,38],[79,48],[86,43],[51,61],[21,63]].map(([x, y], i) => (
-                        <span key={i} className="cip-dot" aria-hidden style={{ position: "absolute", left: `${x}%`, top: `${y}%`, width: 8, height: 8, borderRadius: "50%", background: "#ef3b2d", boxShadow: "0 0 7px 1px rgba(239,59,45,0.8)", animation: `cipBlink ${(1.3 + (i % 5) * 0.28).toFixed(2)}s ease-in-out ${((i * 0.37) % 2.2).toFixed(2)}s infinite` }} />
+                    <div style={{ position: "relative", background: "#fbf7f1" }}>
+                      <style>{"@keyframes cipDot{0%,12%{opacity:0}30%,66%{opacity:1}86%,100%{opacity:0}}@media (prefers-reduced-motion:reduce){.cip-dot{animation:none!important;opacity:.9!important}}"}</style>
+                      <img src={theme.enterprise_image_url} alt={`${theme.enterprise_name} outlets`} style={{ width: "100%", display: "block" }} />
+                      {/* outlet pins fading in/out at staggered intervals → a living map */}
+                      {[[10,52],[14,42],[18,54],[22,40],[26,48],[29,35],[31,27],[34,44],[37,52],[39,37],[42,46],[44,30],[47,40],[50,48],[53,35],[56,44],[59,30],[63,40],[67,32],[71,43],[75,31],[79,40],[84,42],[88,25],[90,31],[16,62],[25,64],[36,58]].map(([x, y], i) => (
+                        <span key={i} className="cip-dot" aria-hidden style={{ position: "absolute", left: `${x}%`, top: `${y}%`, width: 9, height: 9, borderRadius: "50%", background: "#d9542e", boxShadow: "0 0 4px rgba(217,84,46,0.5)", transform: "translate(-50%,-50%)", animation: `cipDot ${(3.4 + (i % 6) * 0.55).toFixed(2)}s ease-in-out ${((i * 0.61) % 4.5).toFixed(2)}s infinite` }} />
                       ))}
                     </div>
                   )}
