@@ -119,7 +119,7 @@ export interface BrandTheme {
   enterprise_brands?: { name: string; logo: string; node?: string }[];   // node = a browsable org node id
   enterprise_csr_headline?: string;
   enterprise_csr?: { title: string; date: string; body: string; image: string }[];
-  enterprise_history?: { year: string; text: string; image: string }[];
+  enterprise_history?: { year: string; text: string; image: string; focus?: string }[];   // focus = bg-position
 }
 
 export interface ServiceOption {

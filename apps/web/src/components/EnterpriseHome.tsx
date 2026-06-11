@@ -148,7 +148,7 @@ export default function EnterpriseHome({ theme, name, nodeId, onOpenBrand }: {
             <button type="button" onClick={() => setStoryOpen(true)}
               style={{ ...card, position: "relative", width: "100%", height: 232, padding: 0, marginTop: 16, cursor: "pointer", color: "#fff", display: "block", textAlign: "left" }}>
               {history.map((h, i) => (
-                <div key={i} aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url('${h.image}')`, backgroundSize: "cover", backgroundPosition: "center top", opacity: i === storyIdx ? 1 : 0, transition: "opacity 0.8s ease" }} />
+                <div key={i} aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url('${h.image}')`, backgroundSize: "cover", backgroundPosition: h.focus ?? "center top", opacity: i === storyIdx ? 1 : 0, transition: "opacity 0.8s ease" }} />
               ))}
               <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0) 32%, rgba(0,0,0,0.82) 100%)" }} />
               <span style={{ position: "absolute", top: 12, right: 12, background: "rgba(0,0,0,0.45)", borderRadius: 999, padding: "5px 11px", fontSize: 11, fontWeight: 700 }}>Tap to explore ›</span>

@@ -107,7 +107,13 @@ ENTERPRISE_SHOWCASE = {
     ],
     "enterprise_csr_headline": "Fostering positive change through F&B",
     "enterprise_csr": [{"title": t, "date": d, "body": b, "image": f"{_FB}/csr/{img}"} for t, d, b, img in _E_CSR],
-    "enterprise_history": [{"year": y, "text": tx, "image": f"{_FB}/history/{img}"} for y, tx, img in _E_HISTORY],
+    "enterprise_history": [
+        # `focus` = slideshow background-position; default is "center top". These slides have their subject
+        # mid-frame, so move the focus down to "center".
+        {"year": y, "text": tx, "image": f"{_FB}/history/{img}",
+         **({"focus": "center"} if y in ("1995", "2020", "2023") else {})}
+        for y, tx, img in _E_HISTORY
+    ],
 }
 
 # Brand themes (cascade-merged enterprise → brand → stall). FSG = a corporate navy house style;
