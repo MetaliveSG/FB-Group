@@ -264,9 +264,9 @@ export default function NodeBrowsePage() {
                     {recommended.map((s) => (
                       <button key={s.menu_id} onClick={() => selectStall(s)}
                         style={{ ...card, flex: "0 0 150px", textAlign: "left", padding: 0, cursor: "pointer" }}>
-                        <div style={{ height: 96, background: "var(--color-surface-alt)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <div style={{ height: 92, background: "#fff", borderBottom: "1px solid var(--color-border)", display: "flex", alignItems: "center", justifyContent: "center", padding: "6px 8px" }}>
                           {s.signboard_url
-                            ? <img src={s.signboard_url} alt={s.stall_name} loading="lazy" style={{ maxWidth: "82%", maxHeight: 72, objectFit: "contain" }} />
+                            ? <img src={s.signboard_url} alt={s.stall_name} loading="lazy" style={{ maxWidth: "100%", maxHeight: 78, objectFit: "contain" }} />
                             : <span style={{ fontSize: 40 }}>{s.logo || "🍽️"}</span>}
                         </div>
                         <div style={{ padding: "10px 12px 12px" }}>
