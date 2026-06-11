@@ -3,12 +3,16 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Shared packages (typed API client) + the web app.
+# Root workspace manifest FIRST, then a root `npm install` — so hoisted deps (e.g. react) land in
+# /app/node_modules where shared packages/* can resolve them. (packages/i18n is the first shared
+# package that imports react; installing only inside apps/web hid react from it → build break.)
+COPY package.json package-lock.json ./
 COPY packages ./packages
 COPY apps/web ./apps/web
 
+RUN npm install               # workspace install at the repo root (hoists shared deps)
+
 WORKDIR /app/apps/web
-RUN npm install
 RUN npm run build
 
 EXPOSE 3000
