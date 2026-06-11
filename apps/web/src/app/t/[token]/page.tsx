@@ -105,11 +105,11 @@ function Banner({ qr, right }: { qr: QrResolution | null; right?: React.ReactNod
   if (hero) {
     return (
       <header style={{ position: "relative", color: "#fff", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: `url('${hero}')`, backgroundSize: "cover", backgroundPosition: "center" }} />
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.32) 42%, rgba(0,0,0,0.80) 100%)" }} />
-        <div style={{ position: "relative", padding: "var(--space-4)", minHeight: 196, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: "var(--space-2)" }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: `url('${hero}')`, backgroundSize: "cover", backgroundPosition: "center 78%" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.42) 50%, rgba(0,0,0,0.86) 100%)" }} />
+        <div style={{ position: "relative", padding: "var(--space-4)", minHeight: 168, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 6 }}>
           {logo
-            ? <img src={logo} alt={qr?.merchant.name ?? "logo"} style={{ height: 48, alignSelf: "flex-start", maxWidth: "70%", objectFit: "contain", filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.55))" }} />
+            ? <img src={logo} alt={qr?.merchant.name ?? "logo"} style={{ height: 38, alignSelf: "flex-start", maxWidth: "58%", objectFit: "contain", filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.6))" }} />
             : <div style={{ fontSize: "var(--text-2xl)", fontWeight: 900, textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>{qr?.merchant.name}</div>}
           {tagline && <div style={{ fontSize: "var(--text-sm)", fontWeight: 700, opacity: 0.96, textShadow: "0 1px 4px rgba(0,0,0,0.7)" }}>{tagline}</div>}
           {contextBar}
@@ -128,24 +128,40 @@ function Banner({ qr, right }: { qr: QrResolution | null; right?: React.ReactNod
 
 // ─── Menu item card ───────────────────────────────────────────
 
+// Within a category, several variants can map to the same dish photo (Dry/Soup/Tom Yam → one image).
+// Showing it on every row reads as a placeholder bug — so the FIRST item with a given photo shows it,
+// and the repeats render compact (photo-less variation rows). Honest + premium (Chagee/Luckin pattern).
+function dedupePhotos(items: MenuItem[]): Array<{ item: MenuItem; showPhoto: boolean }> {
+  const seen = new Set<string>();
+  return items.map((item) => {
+    const img = item.image_url || "";
+    const showPhoto = !!img && !seen.has(img);
+    if (img) seen.add(img);
+    return { item, showPhoto };
+  });
+}
+
 function MenuItemCard({
   item,
   onAdd,
   onCustomise,
+  showPhoto = true,
 }: {
   item: MenuItem;
   onAdd: (item: MenuItem, modifierIds: string[], qty: number) => void;
   onCustomise: (item: MenuItem) => void;
+  showPhoto?: boolean;
 }) {
   const available = item.is_available;
   const hasOptions = item.modifiers.length > 0;
+  const withPhoto = showPhoto && !!item.image_url;
 
   return (
     <Card pad style={{ marginBottom: "var(--space-3)", opacity: available ? 1 : 0.55 }}>
       <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
-        {item.image_url && (
+        {withPhoto && (
           <img
-            src={item.image_url}
+            src={item.image_url!}
             alt={item.name}
             loading="lazy"
             style={{
@@ -170,17 +186,24 @@ function MenuItemCard({
             )}
           </div>
         </div>
-        <Button
-          size="sm"
-          variant="primary"
-          leftIcon={available ? Icons.Plus : undefined}
-          disabled={!available}
-          style={{ flexShrink: 0, alignSelf: "center" }}
-          aria-label={hasOptions ? `Customise ${item.name}` : `Add ${item.name}`}
-          onClick={() => (hasOptions ? onCustomise(item) : onAdd(item, [], 1))}
-        >
-          {available ? "" : "Sold out"}
-        </Button>
+        {/* Primary action — a bold, unmissable round add button (≥44px). hasOptions opens the customise sheet. */}
+        {available ? (
+          <button
+            type="button"
+            onClick={() => (hasOptions ? onCustomise(item) : onAdd(item, [], 1))}
+            aria-label={hasOptions ? `Customise ${item.name}` : `Add ${item.name}`}
+            style={{ flexShrink: 0, alignSelf: "center", width: 44, height: 44, borderRadius: "50%",
+              border: "none", background: "var(--color-primary)", color: "#fff", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 3px 10px rgba(0,0,0,0.20)" }}
+          >
+            {hasOptions
+              ? <Icons.Plus size={22} aria-hidden />
+              : <span style={{ fontSize: 26, fontWeight: 700, lineHeight: 1, marginTop: -2 }}>+</span>}
+          </button>
+        ) : (
+          <span style={{ flexShrink: 0, alignSelf: "center", fontSize: "var(--text-xs)", fontWeight: 800, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: 0.4 }}>Sold out</span>
+        )}
       </div>
     </Card>
   );
@@ -798,16 +821,16 @@ export default function TablePage() {
           filteredItems.length === 0 ? (
             <Card flush><EmptyState icon={Icons.Search} title="No matches">Try another dish or category.</EmptyState></Card>
           ) : (
-            filteredItems.map((item) => (
-              <MenuItemCard key={item.id} item={item} onAdd={addToCart} onCustomise={setCustomiseItem} />
+            dedupePhotos(filteredItems).map(({ item, showPhoto }) => (
+              <MenuItemCard key={item.id} item={item} showPhoto={showPhoto} onAdd={addToCart} onCustomise={setCustomiseItem} />
             ))
           )
         ) : (
           categories.map((cat: MenuCategory) => (
             <section key={cat.id} id={`menu-cat-${cat.id}`} data-cat={cat.id} style={{ marginBottom: "var(--space-5)", scrollMarginTop: 64 }}>
               <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 800, margin: "0 0 var(--space-3)" }}>{cat.name}</h2>
-              {cat.items.map((item) => (
-                <MenuItemCard key={item.id} item={item} onAdd={addToCart} onCustomise={setCustomiseItem} />
+              {dedupePhotos(cat.items).map(({ item, showPhoto }) => (
+                <MenuItemCard key={item.id} item={item} showPhoto={showPhoto} onAdd={addToCart} onCustomise={setCustomiseItem} />
               ))}
             </section>
           ))

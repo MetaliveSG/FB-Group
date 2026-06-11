@@ -64,11 +64,11 @@ export default function NodeBrowsePage() {
           otherwise a clean coloured header. */}
       {hero ? (
         <header style={{ position: "relative", color: "#fff", overflow: "hidden", borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}>
-          <div style={{ position: "absolute", inset: 0, backgroundImage: `url('${hero}')`, backgroundSize: "cover", backgroundPosition: "center" }} />
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.34) 44%, rgba(0,0,0,0.80) 100%)" }} />
-          <div style={{ position: "relative", padding: "26px 20px 20px", minHeight: 188, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 8, maxWidth: 480, margin: "0 auto" }}>
+          <div style={{ position: "absolute", inset: 0, backgroundImage: `url('${hero}')`, backgroundSize: "cover", backgroundPosition: "center 78%" }} />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.44) 50%, rgba(0,0,0,0.86) 100%)" }} />
+          <div style={{ position: "relative", padding: "24px 20px 18px", minHeight: 166, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 6, maxWidth: 480, margin: "0 auto" }}>
             {logo
-              ? <img src={logo} alt={data?.name ?? "logo"} style={{ height: 50, alignSelf: "flex-start", maxWidth: "72%", objectFit: "contain", filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.55))" }} />
+              ? <img src={logo} alt={data?.name ?? "logo"} style={{ height: 40, alignSelf: "flex-start", maxWidth: "60%", objectFit: "contain", filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.6))" }} />
               : <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900, textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>{data?.name}</h1>}
             {tagline && <div style={{ fontSize: 14, fontWeight: 700, opacity: 0.96, textShadow: "0 1px 4px rgba(0,0,0,0.7)" }}>{tagline}</div>}
             <div style={{ fontSize: 12.5, opacity: 0.92, fontWeight: 600 }}>{subline}</div>
