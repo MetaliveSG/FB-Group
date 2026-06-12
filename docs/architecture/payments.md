@@ -177,15 +177,75 @@ foodcourt tickets; float (Starbucks holds ~US$1B+); standing balance + card-on-f
 **Phasing:** pilot ships **pass-through** payment first (prove +10% without regulatory lead time);
 wallet is the **fast-follow lock-in amplifier** once the legal one-pager clears + saved-card is wired.
 
+## 7b. Wallet as TENDER at the existing counter (phase ②, specced 2026-06-12)
+_How a diner pays from the FS Wallet at an UNCHANGED uPOS counter. Three industry patterns, offered as
+a ladder so the pilot is never blocked on uPOS — same philosophy as §8. **Recommendation: start with
+Option B (zero uPOS change), upgrade to Option A when uPOS confirms tender-API capability.**_
+
+### The options ladder
+- **Option B — merchant-presented QR (the SGQR/GrabPay hawker pattern) · ZERO uPOS change · START HERE.**
+  A static, stall-scoped QR at the counter. Diner scans with the CIP webapp → enters/confirms the
+  amount the cashier quotes → one tap pays from the wallet → the phone shows a **confirmation screen**
+  (big ✓, amount, stall name, **live clock** — screenshot-resistant, the Alipay trick) which the
+  cashier glances at, then rings the sale in uPOS with an **"FS Wallet" custom tender** (config-level —
+  virtually every POS supports named tenders without integration). Friction: amount is keyed by the
+  diner; trust is the glance. Culturally native at SG hawker counters today.
+- **Option A — customer-presented code (the Starbucks/Alipay-offline pattern) · needs a uPOS tender
+  integration · THE UPGRADE.** The webapp shows a short-lived, single-use pay-code (QR/barcode,
+  server-issued, TTL ~90s, bound to the wallet). Cashier **scans it with the existing uPOS scanner**
+  at tender time; uPOS calls `POST /wallet/charge {token, amount, stall_id, txn_id}` (HMAC-signed,
+  same secret rail as §8) → CIP validates + debits → returns approval → uPOS closes the sale.
+  Fast (~2–3s), no diner typing, exact-amount integrity. Gated on uPOS answering Week-0 Q5/Q6 (§8).
+- **Option C — dynamic per-transaction QR from uPOS** (uPOS displays a QR carrying txn_id+amount;
+  diner scans → one-tap exact-amount pay → CIP callback closes the sale). Cleanest recon, deepest
+  uPOS change — A's alternative only if uPOS finds it easier than a tender API.
+
+### Engine (common to all options — reuses the §7 ledger, additive)
+- **`wallet_payment_intents`** `{id, wallet_account_id, stall_node_id, amount, status
+  created→confirmed→matched|expired, matched_txn_id, created_at}` — every counter payment is an
+  intent; the debit posts `WalletLedger type=spend, source_ref=intent_id`, **idempotent** by intent.
+- **Option A token service:** server-issued single-use code bound to the wallet (TTL ~90s, ONE
+  outstanding code per wallet); `POST /wallet/charge` validates token→wallet→balance, debits, returns
+  approval — **idempotent by `txn_id`** (uPOS retries must never double-debit).
+- **Insufficient balance** → auto-reload if enabled (§7), else the webapp prompts a top-up — never a
+  silent decline at the counter.
+- **Limits (consumer-protection + PSA light-touch posture):** per-txn cap (default S$100) · daily
+  spend cap (default S$200) · configurable per tenant.
+- **Void/refund:** supervisor void at uPOS (or console) → `type=refund` ledger reversal keyed to the
+  intent/txn — same idempotency rail.
+- **Loyalty + no double-earn:** wallet spend earns coins ONCE — if the debit matches a uPOS txn the
+  diner ALSO receipt-QR-scans (§8), the claim is deduped by `txn_id`.
+
+### Reconciliation (the FSG finance deliverable)
+Closed loop = no money moves at spend time (the float liability decreases). Daily recon per stall:
+uPOS "FS Wallet"-tender sales (via the §8 webhook, `payment_method=wallet`) vs CIP wallet debits —
+matched by `txn_id` (A/C: exact) or stall+amount+time-window (B: fuzzy, ± a few minutes; unmatched
+rows surface for review). B's fuzziness is the price of zero integration — acceptable at pilot
+volume, and any receipt-QR scan tightens the match it touches.
+
+### Risks
+- **Screenshot fraud (B):** live-clock + stall-name confirmation screen, cashier training, low default
+  caps; residual risk accepted at pilot volume — Option A eliminates it.
+- **Connectivity:** B needs the diner online, A needs uPOS online — foodcourt wifi risk; mitigation =
+  retry + fall back to PayNow/cash (the wallet is never the only tender).
+- **No PII to uPOS** (PDPA): the token/tender carries wallet/txn refs only — identity stays in CIP.
+
+### Effort
+Option B ≈ **3–4 d** (intent flow + confirm screen + static QRs + recon report) — no uPOS dependency.
+Option A ≈ **+3–5 d** CIP-side (token service + charge API) **+ uPOS's tender work** (their estimate).
+
 ## 8. uPOS integration (the counter/queue lane — extractable as a handout for uPOS)
 _All foodcourt stalls run uPOS (one vendor → one integration → all stalls). uPOS is **not replaced** —
 small tweaks only. FSG (the paying uPOS customer) drives the request + timeline._
 
-**Ask uPOS these 4 capability questions FIRST (Week 0):**
+**Ask uPOS these 6 capability questions FIRST (Week 0):**
 1. **Outbound:** webhook/API call on every completed sale to a configurable HTTPS endpoint?
 2. **Receipt:** can the receipt template embed a **dynamic QR** (per-transaction URL/token)?
 3. **Inbound:** an API to create/inject an order into a stall's queue (+ status callbacks)?
-4. **Per item: effort, timeline, cost, and a sandbox?**
+4. **Custom tender:** can a named tender type ("FS Wallet") be added at config level (no integration)?
+5. **Tender API (gates §7b Option A):** at tender time, can uPOS scan a code and call an external
+   HTTPS charge API, closing the sale on approval?
+6. **Per item: effort, timeline, cost, and a sandbox?**
 
 **Tweak 1 — Outbound transaction webhook ★ MUST-HAVE.** Fires on sale completed/paid → powers **100%
 capture + the +10% baseline/measurement** + the receipt-QR match.
