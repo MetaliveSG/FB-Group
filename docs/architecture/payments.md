@@ -202,9 +202,10 @@ receipt-QR scan), then inherits the txn's `items[]` once matched.
 
 ### The rail (LOCKED — the customer-presented model; was "Option A")
 The webapp shows a **short-lived, single-use CIP code** (QR/barcode; server-issued; TTL ~90s; ONE
-outstanding code per customer; encodes a token, never a value). At tender time the cashier **scans it
-with the existing uPOS scanner**; uPOS calls **`POST /tender/scan {token, bill_amount, stall_id,
-txn_id, items[]?}`** (HMAC-signed, same secret rail as §8); CIP resolves the token:
+outstanding code per customer; encodes a token, never a value). The cashier **scans it with the
+existing uPOS scanner** (the code attaches to the bill as a tender line); **on transaction submit**
+uPOS calls **`POST /tender/scan {token, bill_amount, stall_id, txn_id, items[]?}`** — scan captures,
+submit validates: the API fires when uPOS commits the txn, so the validated bill amount is FINAL (HMAC-signed, same secret rail as §8); CIP resolves the token:
 - **Voucher token** → validate rules (single-use · window · min-spend vs `bill_amount` · per-period
   cap) → redeem → return `{approved, deduct: 2.00}` → **uPOS applies it (discount or split-tender —
   whichever uPOS supports) and shows the balance due**.

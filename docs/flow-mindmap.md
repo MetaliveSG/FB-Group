@@ -21,8 +21,13 @@ later** — they're placeholders, not designs. Renders as a diagram on GitHub (M
 FSG COLLECTS $1 cash today vs $0.90 kopi cost — **never cash-negative, even on the free-gift visit.**
 
 **For the uPOS CTO — uPOS is NOT replaced; one integration, all stalls, three capabilities:**
-1. **At tender** (the only new cashier step): scan a QR → call our API → apply the returned
-   deduction → show balance due. *Exactly how gift-card tenders work today.*
+1. **Voucher at tender** (the only new cashier steps):
+   - cashier **scans the diner's $2 voucher QR** — the code attaches to the bill as a tender line;
+   - **on transaction submit, uPOS POSTs to the CIP API** to validate the voucher (single-use ·
+     min-spend vs this bill) — CIP redeems and approves in that one call;
+   - **valid → $2 applied, transaction completes**, till shows the balance/paid;
+     invalid → till prompts another tender — nothing burned, queue keeps moving.
+   *Exactly how gift-card tenders work today.*
 2. **After sale:** send the sale record (items, amount, stall, txn id). *Batched or delayed is fine —
    nothing at the counter waits on it.*
 3. *Nice-to-have:* a QR on the printed receipt so members who paid without a voucher still earn.
