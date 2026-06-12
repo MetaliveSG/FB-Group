@@ -184,7 +184,7 @@ never hardcode a stale baseline.
 
 The session NARRATIVE was already written once, in Step 1b (SESSION_NOTES — the single log).
 This step maintains the STATE and distills the durable bits (the tiered-lifecycle decision,
-2026-06-12 — memory `memory-lifecycle` + `docs/decisions.md`). Four sub-steps:
+2026-06-12 — `docs/decisions.md` rows + CLAUDE.md §Persistent memory). Four sub-steps:
 
 ### 4a — Update the state file (build-state.md)
 `~/.claude/.../memory/build-state.md` holds ONLY pending work + the KIV backlog (no session

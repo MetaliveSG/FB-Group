@@ -47,9 +47,9 @@ stale demo tokens, "PLAN" headers on built features, and skills contradicting lo
 
 ## Phase 4 — Report + commit
 - Print: findings count by class · what was auto-healed (file → one-line fix) · proposed merges/
-  deletions awaiting the user · estate size trend (memory file count + CLAUDE.md words + always-read
-  token estimate vs last heal — append one line to the "Heal log" at the bottom of memory
-  `memory-lifecycle.md` so the trend is visible).
+  deletions awaiting the user · estate size trend (memory file count + CLAUDE.md words vs last heal —
+  put the trend numbers IN THE COMMIT MESSAGE; history = `git log --grep "chore(heal)"`,
+  no log file).
 - Commit repo-side fixes directly to `main`: `chore(heal): memory-heal pass YYYY-MM-DD — <n> fixes`.
 - If the pass found ZERO drift, say so and stop — do not churn files to look busy.
 

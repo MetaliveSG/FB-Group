@@ -182,7 +182,7 @@ venue/lease/settlement/franchising/Storefront-re-key (all post-MVP).
     fixed node ids → stable QR). Old seeded `owner@makan.sg` etc. = cleared/legacy.
 - Customer QR: scan tokens are the live storefronts' QR (see each Storefront's *Tables & QR*); OTP phone `+6580000000` (DEBUG returns the code).
 
-## Persistent memory (tiered, LOCKED 2026-06-12 — memory `memory-lifecycle`; ENFORCE these every session)
+## Persistent memory (tiered, LOCKED 2026-06-12 — register rows of that date; ENFORCE these every session)
 **One home per kind of fact — write it the moment it exists, in that home, nowhere else:**
 - **Decision firmed** ("locked"/"agreed"/overruled) → a `docs/decisions.md` row **in the same turn**;
   mark overruled rows SUPERSEDED. The register outranks all other prose.
