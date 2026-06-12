@@ -25,11 +25,13 @@ mindmap
         Validate + REDEEM atomically — one call
         $2 deducted — uPOS shows $1 balance
         Webapp flips ~2s → ✓ redeemed + live clock
-      Pay $1 balance — cash or PayNow
-      After payment
-        Voucher 1 → USED
-        Voucher 2 UNLOCKS — return hook
+        AT SCAN-APPROVAL: voucher 1 → REDEEMED
+        Voucher 2 UNLOCKS — the retention moment
         300 coins provisional
+      Pay $1 balance — cash or PayNow
+      Later — webhook match
+        items attach to profile
+        coins provisional → CONFIRMED
     2 · Diner journey — returning
       Open webapp → next voucher QR → same scan flow
       No-voucher visit — earn only
