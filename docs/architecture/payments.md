@@ -92,11 +92,17 @@ PAID → voided → refunded            (supervisor void → HitPay refund)
 | Testing: sandbox, 3DS, **PayNow async**, refunds, idempotent webhooks | **2–3 d** |
 | **Total dev** | **~1.5–2 weeks** (+ KYC lead time in parallel) |
 
-**Build slices (ship in order):**
-1. **Pay-per-order via HitPay + webhook + order-state** → *the pilot critical path* (+10% measurable).
-2. **Wallet ledger + manual top-up** (tenant-scoped) → in-app balance + 1-tap spend.
-3. **Saved-card + auto-reload (< $5 → $20) + top-up bonus** → Phase-2 lock-in, **gated on the wallet
-   legal one-pager** — don't block +10% on it.
+**Build slices — RE-SEQUENCED 2026-06-12 (FSG roadmap change, see `docs/decisions.md`):
+loyalty/CRM rollout comes FIRST and is the new critical path; ordering moves last.**
+1. **Loyalty + CRM capture at the EXISTING uPOS counters** — the §8 seam (outbound webhook +
+   signed receipt-QR) is now the *critical path*, not a nice-to-have: diner pays at the counter as
+   today, scans the receipt QR, earns coins, lands in CRM. Zero stall-operations change.
+2. **Wallet / stored-card as a TENDER at the existing counters** — wallet ledger + manual top-up
+   (tenant-scoped), plus a pay-at-counter design (NEW, to spec: diner presents a wallet QR /
+   cashier charges via uPOS tender integration). Auto-reload + top-up bonus follow, gated on the
+   wallet legal one-pager.
+3. **Online ordering (order-ahead)** — pay-per-order via HitPay hosted checkout + webhook +
+   order-state machine (§3) — formerly slice 1, now lands on top of an active loyalty base.
 
 **Week-0 checklist (FSG + CIP):** FSG HitPay merchant account + KYC + PayNow activation (lead time —
 start now) · webhook URL allow-listed + HMAC salt shared + sandbox keys · recurring billing enabled
