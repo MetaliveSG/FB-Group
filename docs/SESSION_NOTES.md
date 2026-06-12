@@ -38,6 +38,13 @@
   the earlier "didn't update" was the **api container running stale baked code** (no source bind-mount).
   Lesson: edit seed → **rebuild api** → then `exec` the seed.
 
+## Dense record
+- Commits `7cd7f87`…`b24f0ec` (~33) · migrations: `k5l6i18n`, `j4k5theme`, `l6m7signboard` ·
+  counts: 148 endpoints · 46 tables · 36 migrations · 327+74 tests · 33 routes · verified:
+  Playwright @390px on live Postgres, pytest/vitest green, openapi 148 ops.
+- LESSON: api container has NO source bind-mount — edit seed → `docker-compose build api` → then exec.
+- LESSON: art "small in a white border" = stacked PNG margin + tile padding + aspect mismatch — fix all.
+
 ## Still open / next session
 - Carry the red/editorial art direction from the FSG showcase to the MB home for consistency.
 - HitPay real payment (KPMG foodcourt pilot critical-path).

@@ -191,14 +191,21 @@ venue/lease/settlement/franchising/Storefront-re-key (all post-MVP).
     groups + storefronts + these 3 logins with fixed node ids → stable QR tokens). Run after a data wipe.
 - Customer QR: scan tokens are the live storefronts' QR (see each Storefront's *Tables & QR*); OTP phone `+6580000000` (DEBUG returns the code).
 
-## Memory & skills (tiered lifecycle — set 2026-06-12, memory `memory-lifecycle`)
-- **Tiers:** this file = constitution (invariants/traps/pointers, keep ≤~2,300 words — move narrative to
-  `docs/`) · `docs/decisions.md` = decision authority · memory dir = `MEMORY.md` index + one-fact files ·
-  `build-state.md` = episodic log (**latest 2 Rounds verbatim, older Rounds ≤5-line summaries**, full text
-  in `build-state-archive.md`) · claude-mem = deep archive (semantic recall).
-- Persistent memory: `~/.claude/projects/-Volumes-Data-Drive-Coding-multi-agent-FB-Group/memory/`.
-  Run `/my-catchup` at session start; `/my-wrapup` to close out — wrapup CONSOLIDATES (promote lessons →
-  semantic homes · compress the now-old Round · mark contradicted memories superseded), not just appends.
+## Persistent memory (tiered, LOCKED 2026-06-12 — memory `memory-lifecycle`; ENFORCE these every session)
+**One home per kind of fact — write it the moment it exists, in that home, nowhere else:**
+- **Decision firmed** ("locked"/"agreed"/overruled) → a `docs/decisions.md` row **in the same turn**;
+  mark overruled rows SUPERSEDED. The register outranks all other prose.
+- **Session history** → `docs/SESSION_NOTES.md` is **THE ONLY session log** (newest-first; each entry
+  carries a Dense-record line). The old build-state "Round" entries are RETIRED — never write one;
+  round narratives R1–R43 live in `build-state-archive` (deep history only).
+- **Pending work / KIV** → the backlog in memory `build-state.md` (STATE only — no narratives).
+- **Taste/preferences/context** → the matching memory topic file (`MEMORY.md` index); **one file per
+  domain, merge aggressively** — no new .md without an absorb-check + same-turn registration (the
+  no-drive-by rule in Conventions & traps).
+- **This file** = constitution: invariants/traps/pointers only, keep ≤~2,300 words.
+- Lifecycle: `/my-catchup` at session start; `/my-wrapup` to close — wrapup writes ONE SESSION_NOTES
+  entry, then consolidates (reconcile backlog · sweep decisions · promote lessons · expire superseded).
+- Memory dir: `~/.claude/projects/-Volumes-Data-Drive-Coding-multi-agent-FB-Group/memory/`.
 - Project skills in `.claude/skills/`: `/my-architect`, `/my-tester`, `/my-security-audit`, `/my-dba`,
   `/my-ops`, `/my-diagnose`, `/my-bizdev`, `/my-uiux` (advisors) + `/my-catchup`, `/my-wrapup` (lifecycle).
 

@@ -17,7 +17,7 @@ Do ALL of these in parallel:
    `/Users/samuelgan/.claude/projects/-Volumes-Data-Drive-Coding-multi-agent-FB-Group/memory/MEMORY.md`
    then read every file it references — at minimum:
    - `docs-index.md` (⭐ anti-hallucination map: which docs are AS-BUILT vs PLAN vs SUPERSEDED + ground-truth counts + clean-boot/real-credentials reality — trust this + code over stale doc prose)
-   - `build-state.md` (canonical: what's been built, every Round entry, every KIV)
+   - `build-state.md` (the STATE file: pending work + the KIV backlog — no session narratives)
    - `project-fbgroup-crm.md` (scope, goals, demo loop)
    - `arch-decisions.md` (monorepo, polyglot, DB strategy, auth)
    - `user-prefs.md` (how the user wants me to operate)
@@ -25,6 +25,10 @@ Do ALL of these in parallel:
 1b. **Decision register**: Read `docs/decisions.md` — THE authority on what's currently
    decided (LOCKED/AGREED/DEFERRED/SUPERSEDED). At minimum the last ~12 rows; it outranks
    memory prose and doc narrative when they disagree.
+
+1c. **Session history**: Read the TOP 2–3 dated entries of `docs/SESSION_NOTES.md` — the
+   single session log (what changed, decisions, dense record, still-open). This replaces
+   the old build-state "Round" narratives; deep history is in `build-state-archive` only.
 
 2. **CLAUDE.md**: Read `/Volumes/Data Drive/Coding/multi_agent/FB Group/CLAUDE.md`
    for project conventions (if it exists).
@@ -53,11 +57,11 @@ From everything gathered, produce a **concise briefing** with these sections:
 - Counts (endpoints / tables / migrations / tests / web routes) — should match docs
 - Docker stack: api/web/db healthy?
 - Git: in a repo? clean working tree? uncommitted changes?
-- Which modules were last touched (from the most recent Round in `build-state.md`)
+- Which modules were last touched (from the newest `docs/SESSION_NOTES.md` entry)
 
-### Recent Rounds (last 2-3)
-- Summarise the most recent Round entries from `build-state.md` — what shipped, what was verified live, what's KIV
-- Highlight key decisions and architectural lessons (e.g. round-12 SQLite-vs-Postgres VARCHAR overflow lesson, round-14 idempotent insert/update/remove sync pattern)
+### Recent sessions (last 2-3)
+- Summarise the top dated entries from `docs/SESSION_NOTES.md` — what shipped, what was verified live, what's KIV
+- Highlight key decisions (cross-check `docs/decisions.md`) and any LESSON/GOTCHA lines from the Dense records
 
 ### Open Items & KIVs
 - List every "**KIV**" entry in `build-state.md` (deferred work)

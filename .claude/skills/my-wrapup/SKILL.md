@@ -15,10 +15,9 @@ you will do. Include:
   comparing against `~/.claude/.../memory/build-state.md`'s last Round entry)
 - Which `docs/` files need updating (and what counts/lines)
 - Whether artifacts need regenerating (`openapi.json`, `pytest_results.txt`, `schema_tables.txt`)
-- The new `docs/SESSION_NOTES.md` dated entry (human-facing journal) AND the dense
-  `~/.claude/.../memory/build-state.md` Round N entry (machine/catchup-facing)
-- The memory consolidation (Step 4): decisions to sweep into `docs/decisions.md`, the Round
-  to compress into the archive, lessons to promote, memories to mark superseded
+- The new `docs/SESSION_NOTES.md` dated entry (THE single session log, incl. its Dense record line)
+- The memory consolidation (Step 4): build-state backlog reconciliation, decisions to sweep into
+  `docs/decisions.md`, lessons to promote, memories to mark superseded
 - The git commit on `main` (it IS a repo; direct-to-main flow — see memory `workflow-direct-to-main`)
 - Where the zip backup will be saved
 
@@ -32,11 +31,11 @@ discussed/changed in this session's working memory. Write a concise summary:
 - Key decisions made and why
 - Anything deferred to next session (KIV items)
 
-## Step 1b: Update docs/SESSION_NOTES.md (human-facing session journal — MMQRDepositBot practice)
+## Step 1b: Update docs/SESSION_NOTES.md — THE session log (single log, decided 2026-06-12)
 
-Maintain a running, human-readable session log at **`docs/SESSION_NOTES.md`** (committed to the repo) —
-DISTINCT from, and IN ADDITION TO, the dense AI/catchup-facing `build-state.md` Round entry in memory
-(Step 4). Add a new dated section at the **top** (newest-first, matching the build-state convention):
+`docs/SESSION_NOTES.md` is the ONLY session journal (the old dual-log — a dense build-state "Round"
+entry duplicating this — is retired; round narratives live in `build-state-archive`). Add a new dated
+section at the **top** (newest-first):
 
 ```markdown
 ---
@@ -47,26 +46,19 @@ DISTINCT from, and IN ADDITION TO, the dense AI/catchup-facing `build-state.md` 
 - Bullet list of changes, with file references
 
 ## Decisions
-- Key decisions + the rationale (the "why")
+- Key decisions + the rationale (the "why") — each should already be a docs/decisions.md row
+
+## Dense record
+- Commits `<first>`…`<last>` · migrations: <names or none> · counts: <N endpoints · N tables ·
+  N migrations · N+N tests · N routes> · verified: <one line of live-verification evidence>
+- LESSON/GOTCHA one-liners worth keeping (these also get promoted in Step 4)
 
 ## Still open / next session
-- Unfinished work, KIVs, follow-ups
+- Unfinished work, KIVs, follow-ups (mirror new KIVs into build-state's backlog, Step 4)
 ```
 
-If `docs/SESSION_NOTES.md` doesn't exist, create it with this header + preamble (do NOT backfill past
-sessions — the journal begins at this wrapup; earlier history stays in memory):
-```markdown
-# CIP (FB Group) — Session Notes
-
-> Session journal started <this wrapup's date>. Earlier history (Rounds R1–R39+) lives in the
-> memory `build-state.md`; notes here begin from this date forward — past sessions are not backfilled.
-```
-Keep BOTH logs: `SESSION_NOTES.md` is the at-a-glance human journal in the repo; `build-state.md`
-Round N (Step 4) is the dense machine log for `/my-catchup`. Different readers — don't drop either.
-
-(Related MMQRDepositBot discipline worth honouring — **Proof of Work**: for heavy/risky tasks
-(prod-like deploys, P0/P1 fixes, migrations, security changes) save dated evidence under `artifacts/`
-as `YYYYMMDD_<desc>.{md,txt}` — before/after state, commands, counts. Trivial edits don't need it.)
+(**Proof of Work** discipline stands: for heavy/risky tasks — prod-like deploys, P0/P1 fixes,
+migrations, security changes — save dated evidence under `artifacts/` as `YYYYMMDD_<desc>.{md,txt}`.)
 
 ## Step 2: Regenerate artifacts (MANDATORY when counts may have shifted)
 
@@ -188,27 +180,16 @@ Run the full backend suite once more (baseline **287+**) and confirm green.
 Run frontend (`cd apps/web && npm test`, baseline **58+** vitest). Pull the live counts from the run —
 never hardcode a stale baseline.
 
-## Step 4: Consolidate memory (MANDATORY — promote · compress · expire, not just append)
+## Step 4: Consolidate memory (MANDATORY — state · decisions · promote · expire)
 
-This step keeps the always-loaded memory tier CONSTANT-SIZE while the archive grows
-(the tiered-lifecycle decision, 2026-06-12 — see memory `memory-lifecycle` + `docs/decisions.md`).
-Four sub-steps, in order:
+The session NARRATIVE was already written once, in Step 1b (SESSION_NOTES — the single log).
+This step maintains the STATE and distills the durable bits (the tiered-lifecycle decision,
+2026-06-12 — memory `memory-lifecycle` + `docs/decisions.md`). Four sub-steps:
 
-### 4a — Append the new Round
-Append a new **Round N** entry to
-`/Users/samuelgan/.claude/projects/-Volumes-Data-Drive-Coding-multi-agent-FB-Group/memory/build-state.md`
-above the previous round. Format:
-
-```markdown
-**Round N (YYYY-MM-DD) — <one-line summary>.** <Concise but dense description of
-what shipped: routes, services, models, migrations, seed changes, tests. Reference
-specific files. Note any KIVs introduced. Note any architectural lesson worth
-preserving (the "Lesson: ..." pattern from prior rounds). End with verification
-evidence: "Live verified on Docker/Postgres: ..." with concrete numbers.>
-```
-
-If the session uncovered a recurring class of bug, also add a "**Bug fixed**" or
-"**Gotcha**" entry.
+### 4a — Update the state file (build-state.md)
+`~/.claude/.../memory/build-state.md` holds ONLY pending work + the KIV backlog (no session
+narratives). Reconcile it: add KIVs raised this session, remove/strike items that shipped,
+move PENDING items that completed. Keep entries to 1–3 lines with a pointer.
 
 ### 4b — Sweep firmed decisions into `docs/decisions.md`
 Review the session for **major decisions the user firmed** ("locked", "agreed", "go with X",
@@ -216,20 +197,15 @@ overruled a design). Each should ALREADY have a row (the CLAUDE.md capture rule 
 in the same turn) — append any that were missed, and set Status `SUPERSEDED` on any row an
 overruling decision replaced (never delete rows; fill the new row's *Supersedes* column).
 
-### 4c — Compress the now-old Round (keep latest 2 verbatim)
-`build-state.md` keeps only the **latest 2 Rounds verbatim**. The Round that just became
-third-newest: MOVE its full text to the top of the rounds section in `build-state-archive.md`
-(same memory dir), and replace it in `build-state.md` with a **≤5-line summary**: what
-shipped · key commits/migrations · counts · LESSON/Gotcha one-liners · pointers
-(`→ [[topic-memory]] + archive`). Lessons must survive compression — if a LESSON isn't
-already in CLAUDE.md's traps or a topic memory, promote it (4d) BEFORE compressing.
+### 4c — Promote
+Any durable lesson/trap/how-to from this session that lives only in the SESSION_NOTES entry →
+copy it to its semantic home: CLAUDE.md "Conventions & traps" for universal traps; the relevant
+topic memory file otherwise (prefer absorbing into an existing file — see the no-drive-by rule;
+if a new file is truly needed, add its MEMORY.md line in the same turn).
 
-### 4d — Promote + expire
-- **Promote:** any durable lesson/trap/how-to from this session that lives only in the Round
-  narrative → move it to its semantic home (CLAUDE.md "Conventions & traps" for universal
-  traps; the relevant topic memory file otherwise; create one if none fits, + MEMORY.md line).
-- **Expire:** any memory file this session contradicted or superseded → update it or add
-  `status: superseded` to its frontmatter (+ note what replaced it). Don't delete.
+### 4d — Expire
+Any memory file this session contradicted or superseded → update it or add
+`status: superseded` to its frontmatter (+ note what replaced it). Don't delete.
 
 ## Step 5: Git commit + push (on `main`)
 
@@ -273,9 +249,9 @@ Print a short summary:
 - Files changed (count + list)
 - Docs updated (which docs, what counts shifted)
 - Artifacts regenerated (openapi paths/ops, schema_tables count, pytest result)
-- Memory Round N appended + consolidation done (decisions swept into docs/decisions.md ·
-  old Round compressed to archive · lessons promoted · superseded memories marked)
-- SESSION_NOTES.md dated entry added
+- SESSION_NOTES.md dated entry added (the single session log)
+- Consolidation done (build-state backlog reconciled · decisions swept into docs/decisions.md ·
+  lessons promoted · superseded memories marked)
 - Git: committed (hash) + pushed to main
 - Backup: created at <path> (size) / skipped
 - KIVs added this session
@@ -283,8 +259,8 @@ Print a short summary:
 
 ## Rules
 
-- Read the build-state.md current state before claiming what changed —
-  many sessions touch the same files, only the Round entry tells you what's new
+- Read the top SESSION_NOTES entries before claiming what changed —
+  many sessions touch the same files; the journal tells you what's actually new
 - Never inflate counts to "round numbers" — pull the live counts from the
   artifacts you just regenerated
 - Commit + push on `main` is the wrapup norm (direct-to-main flow); don't open a PR
