@@ -13,6 +13,7 @@ built — don't cite as reality) · **REFERENCE** (positioning/collateral, not c
 | `decisions.md` | ⭐ REGISTER | One row per firmed decision (LOCKED/AGREED/DEFERRED/SUPERSEDED) — append in the turn a decision is firmed |
 | `delivery-report.md` | ⭐ AS-BUILT | Canonical current-state rollup (counts, features, creds, limitations) |
 | `SESSION_NOTES.md` | JOURNAL | Human-readable session log (newest first; started 2026-06-08) |
+| `flow-mindmap.md` | WORKING | Phase-① flow mindmap (Mermaid) — locked diner journey + 🔀 routes parked for later discussion |
 
 ## Architecture
 | Doc | Status | What it is |
