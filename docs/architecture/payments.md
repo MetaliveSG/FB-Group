@@ -214,6 +214,27 @@ txn_id, items[]?}`** (HMAC-signed, same secret rail as §8); CIP resolves the to
 Response target **< 2s**; on timeout uPOS retries (idempotent by `txn_id`) or the cashier falls back
 to normal tender (the diner's voucher stays unredeemed — never half-burned).
 
+### Voucher state machine at the counter (decided 2026-06-12 — redeem-on-scan, atomic)
+**Showing the QR redeems nothing; the single `/tender/scan` call validates AND redeems atomically.**
+```
+ISSUED --tap "Use"--> ISSUED+ARMED(token, 90s TTL) --TTL/cancel--> ISSUED (nothing burned)
+                             | cashier scans -> /tender/scan {token, bill_amount, txn_id}
+                             v  ONE atomic txn: validate (single-use . window . min-spend
+                                vs the REAL bill) -> REDEEMED -> return {approved, deduct}
+REDEEMED --webhook txn matches--> MATCHED (items attach . provisional coins -> CONFIRMED)
+REDEEMED --uPOS tender-void OR no webhook match in 24h--> reversed -> ISSUED (re-lock next
+                                sequential voucher if untouched)
+```
+- **Webapp mirror (poll ~2s):** armed = QR + countdown + "waiting for scan…" · approved =
+  **"✓ $2 redeemed · pay balance to cashier"** + live clock + **"Voucher #2 unlocked"** (sequential
+  unlock fires HERE — the retention moment) · declined = the reason ("bill must be ≥ $3").
+- **Why redeem-on-scan, not hold/capture two-phase:** a capture step would double the uPOS ask, and
+  the completion signal (webhook) is allowed to LAG — a held voucher would sit in limbo. The
+  scan→pay gap at a hawker counter is seconds; exposure on a walk-away is $2, caught by the
+  reversal nets above and proven rare by the exception report.
+- The approved screen (✓ + live clock) doubles as the glance-verification screen of the manual
+  fallback — same UI either way.
+
 ### Fallback ONLY if uPOS cannot scan-at-tender (Week-0 Q5 = no)
 Manual two-step: cashier keys the uPOS discount + verifies the diner's live-clock redemption screen
 (merchant-presented, glance-verified). Demoted to contingency 2026-06-12 — the diner-keys-amount

@@ -18,9 +18,13 @@ mindmap
           Voucher 1 unlocked
           2 to 5 locked — sequential
       Show voucher QR — one-time token, ~90s TTL
+        Voucher still ISSUED — armed, nothing burned
+        TTL expires → re-show, voucher untouched
       Cashier scans with uPOS scanner
-        uPOS calls /tender/scan
+        uPOS calls /tender/scan — bill context included
+        Validate + REDEEM atomically — one call
         $2 deducted — uPOS shows $1 balance
+        Webapp flips ~2s → ✓ redeemed + live clock
       Pay $1 balance — cash or PayNow
       After payment
         Voucher 1 → USED
@@ -47,6 +51,8 @@ mindmap
       Voucher core R39 + sequential-unlock extension
       Min-spend checked vs REAL uPOS bill
       Earn: provisional → verified on webhook match
+      Redeem-on-scan — no two-phase hold
+      Reversal nets: tender-void · 24h no-match auto-return
       Daily recon + exception report
     5 · Economics & guardrails
       100 coins per $1 gross bill — tenant config
