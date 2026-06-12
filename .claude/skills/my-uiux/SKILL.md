@@ -5,16 +5,12 @@ user-invocable: true
 
 SESSION MEMORY (READ FIRST — before auditing or proposing anything)
 
-Restore the design record from these, in order:
-1. Memory **`design-language.md`** — the canonical APPROVED/REJECTED aesthetic decisions
-   (the product family look; what the user has signed off or vetoed). This is the file that
-   makes the governance audit below cheap — trust it over re-deriving taste from code.
-2. Memory **`uiux-redesign-state.md`** — the redesign program state (benchmark, sandbox,
-   what's blocked on designer assets).
-3. Memory **`signboard-row-art-fix.md`** — the artwork-handling lessons (trim/tile/surface).
-4. **`docs/decisions.md`** — any design-relevant LOCKED rows (theming, i18n, naming).
+ONE file holds the design record: memory **`design-language.md`** — approved/rejected
+aesthetics, redesign program state (what's blocked on designer assets), and artwork-handling
+lessons. Read it first; trust it over re-deriving taste from code. Also skim
+**`docs/decisions.md`** for design-relevant LOCKED rows (theming architecture, i18n, naming).
 When the user approves or rejects a visual direction in-session, UPDATE `design-language.md`
-in the same turn (the capture rule applies to design decisions too).
+in the same turn; if the choice is a product-level commitment, add a decisions.md row too.
 
 DESIGN GOVERNANCE (NON-NEGOTIABLE)
 
