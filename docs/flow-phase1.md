@@ -1,7 +1,7 @@
 # CIP Phase ① — Flow (loyalty first, at the existing uPOS counter)
 
 _The LOCKED phase-① flow (decisions 2026-06-12; full spec `architecture/payments.md` §7b/§8).
-Drawn as ONE vertical step flow. Routes not yet designed are listed at the bottom._
+ONE vertical step flow, every step a box. Routes not yet designed are listed at the bottom._
 
 ## The 30-second version (for the FSG room — board + their uPOS CTO)
 
@@ -42,18 +42,18 @@ flowchart TD
     S5["5 · Diner shows $2 voucher QR<br/>one-time code · 90s · nothing burned yet"]
     S6["6 · Cashier scans the QR —<br/>code attaches to the bill"]
     S7["7 · Cashier SUBMITS the txn —<br/>uPOS POSTs to CIP API"]
-    S8{"8 · CIP validates + redeems<br/>ONE atomic call<br/>single-use · min-spend vs final bill"}
+    S8["8 · CIP validates + redeems — ONE atomic call<br/>single-use · min-spend vs FINAL bill"]
     S9["9 · uPOS applies −$2 —<br/>till shows $1 balance"]
     S10["10 · Diner pays $1 cash/PayNow —<br/>transaction completes"]
     S11["11 · Her phone: ✓ redeemed ·<br/>300 coins provisional · voucher #2 UNLOCKED"]
-    S12["12 · Later (can lag): uPOS webhook —<br/>items · amount · stall · txn id"]
-    S13["13 · CIP matches by txn id:<br/>items → her profile · coins CONFIRMED"]
+    S12["12 · Later (can lag): uPOS webhook —<br/>location/stall · items + OPTIONS<br/>(chilli/no chilli · dry/soup) · amount · txn id"]
+    S13["13 · CIP matches by txn id: items +<br/>preferences → her profile · coins CONFIRMED"]
     S14["14 · CRM/AI: she loves kopi →<br/>sends kopi voucher → she returns"]
-    DEC["✗ Invalid: till prompts another tender —<br/>nothing burned, queue keeps moving"]
+    DEC["✗ TXN FAILS at tender — DUPLICATE /<br/>already-used / below min-spend →<br/>till prompts another tender · nothing burned"]
 
     S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8
     S8 -- valid --> S9 --> S10 --> S11 --> S12 --> S13 --> S14
-    S8 -- invalid --> DEC
+    S8 -- duplicate / invalid --> DEC
     S14 -. return visit: skip 1–3, voucher #2 .-> S4
 ```
 
@@ -92,6 +92,6 @@ sequenceDiagram
     U-->>K: balance $1 due → txn completes
     C-->>D: (poll ~2s) ✓ redeemed · #2 unlocked
     D->>K: pays $1
-    U->>C: (later, can lag) webhook {txn_id, items, tenders}
+    U->>C: (later, can lag) webhook {txn_id, items + options, tenders}
     note over C: match by txn_id → items → profile ·<br/>coins CONFIRMED · recon: $2 = FSG budget
 ```

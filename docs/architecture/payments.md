@@ -192,8 +192,8 @@ diner scans the counter standee QR → registers (OTP + consent, **<60s, in-queu
 **300 coins** granted (provisional → confirmed on the webhook match, which also attaches the 2× kopi
 line items to the new customer profile).
 
-**CAPTURE REQUIREMENT (LOCKED 2026-06-12, register row):** CIP must capture **WHAT items were sold,
-WHERE (stall), and HOW MUCH** — for every counter sale, whatever the tender. Item-level data only
+**CAPTURE REQUIREMENT (LOCKED 2026-06-12, register row):** CIP must capture **WHAT items were sold (incl. their
+OPTIONS/preferences — chilli/no-chilli, dry/soup), WHERE (stall), and HOW MUCH** — for every counter sale, whatever the tender. Item-level data only
 exists in uPOS (the till owns the basket), so the **§8 outbound webhook (payload includes `items[]`,
 `stall_id`, `amount`) is NON-NEGOTIABLE for phase ① and ② alike** — no wallet option replaces it. The
 wallet option choice below only sets the **match quality** between the payment and that webhook txn:
@@ -292,7 +292,8 @@ _All foodcourt stalls run uPOS (one vendor → one integration → all stalls). 
 small tweaks only. FSG (the paying uPOS customer) drives the request + timeline._
 
 **Ask uPOS these 6 capability questions FIRST (Week 0):**
-1. **Outbound:** webhook/API call on every completed sale to a configurable HTTPS endpoint?
+1. **Outbound:** webhook/API call on every completed sale to a configurable HTTPS endpoint —
+   **incl. line items WITH their options/modifiers** (chilli/no-chilli, dry/soup, add-ons)?
 2. **Receipt:** can the receipt template embed a **dynamic QR** (per-transaction URL/token)?
 3. **Inbound:** an API to create/inject an order into a stall's queue (+ status callbacks)?
 4. **Custom tender:** can a named tender type ("FS Wallet") be added at config level (no integration)?
@@ -309,7 +310,7 @@ capture + the +10% baseline/measurement** + the receipt-QR match.
 ```json
 { "event":"sale.completed", "txn_id":"UPOS-...", "location_id":"court-01", "stall_id":"stall-07",
   "amount":12.80, "currency":"SGD", "payment_method":"paynow",
-  "items":[{"name":"Chicken Rice","qty":1,"unit_price":4.50}],
+  "items":[{"name":"Chicken Rice","qty":1,"unit_price":4.50,"options":["no chilli","soup"]}],
   "receipt_no":"R-000123", "timestamp":"2026-06-09T12:30:05+08:00" }
 ```
 
