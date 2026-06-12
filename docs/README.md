@@ -49,8 +49,7 @@ built — don't cite as reality) · **REFERENCE** (positioning/collateral, not c
 | `cip-vs-salesforce-fnb.md` | REFERENCE | Competitive collateral (KPMG deal) |
 | `foodcourt-pilot-kit.md` | REFERENCE | Foodcourt pilot collateral |
 | `fsg-chairman-deck.md` | REFERENCE | FSG chairman deck source |
-| `payments-scope.md` / `payments-build-spec.md` | PLAN | Real-payment (HitPay) scope + spec |
-| `wallet-scope.md` / `upos-integration-spec.md` | PLAN | Wallet + uPOS integration scoping |
+| `payments.md` | PLAN | ⭐ Real payment, consolidated 2026-06-12: HitPay PSP + build spec + FSG wallet (§7) + uPOS integration (§8) — the pilot critical path |
 
 ## archive/
 Superseded docs kept for the paper trail — do not cite as current:

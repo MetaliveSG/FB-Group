@@ -10,7 +10,7 @@ size: 16:9
      marp docs/fsg-chairman-deck.md --pptx --allow-local-files
      Numbers illustrative — insert FSG actuals. Decided architecture: no POS change; small uPOS
      integration (webhook + signed receipt-QR) + a small tablet at anchor stalls. Source narrative:
-     docs/cip-vs-salesforce-fnb.md, foodcourt-pilot-kit.md, payments-build-spec.md, wallet-scope.md. -->
+     docs/cip-vs-salesforce-fnb.md, foodcourt-pilot-kit.md, payments.md. -->
 
 <style>
 :root{
