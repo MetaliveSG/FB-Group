@@ -26,7 +26,9 @@ FSG COLLECTS $1 cash today vs $0.90 kopi cost — **never cash-negative, even on
    one call) → **valid: $2 applied, transaction completes**; invalid: till prompts another tender —
    nothing burned, queue keeps moving. *Exactly how gift-card tenders work today.*
 2. **After sale:** send the sale record (items, amount, stall, txn id). *Batched or delayed is fine.*
-3. *Nice-to-have:* a QR on the printed receipt so members who paid without a voucher still earn.
+3. **Must-have: a QR on every printed receipt** — it's three lanes in one: the **discovery door**
+   (non-members join from the receipt — Flow B), the **no-voucher earn lane**, and the **resilience
+   lane** (earning keeps working even if the connection is down — Flow C).
 
 Same integration later takes the **FS Wallet** as a tender — build once, two products. Signed calls
 both ways · idempotent · **zero customer personal data enters uPOS** (PDPA-clean).
@@ -156,7 +158,94 @@ flowchart TD
 ```
 
 **Returning diner:** skips steps 1–3 (already a member) — opens the webapp at step 5 with the next
-voucher. **No-voucher visit:** pays normally, scans the receipt QR (uPOS capability 3) → earns coins.
+voucher. **No-voucher visit:** pays normally, scans the receipt QR → earns coins (and a non-member who does
+this lands in **Flow B** — the receipt is an acquisition door).
+
+
+## Flow B — discovery via the receipt (diner didn't know the program exists)
+
+_The receipt QR is the second acquisition door: pay first, discover after. Same claim rail as the
+no-voucher earn lane; one-time claim per txn._
+
+```text
++--------------------------------------------------------+
+| B1 . New diner orders + pays $3 as usual -             |
+|      has never heard of the loyalty program            |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| B2 . Receipt prints with a QR:                         |
+|      "SCAN - CLAIM 300 COINS FOR THIS MEAL"            |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| B3 . Scans at the table -> registers in 30s            |
+|      phone + OTP + one consent tap                     |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| B4 . Claims this receipt - one-time per txn,           |
+|      claim window (config, ~7 days)                    |
+|      -> 300 coins (provisional -> confirmed)           |
+|      -> AND the welcome pack lands: 5 x $2             |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| B5 . Next visit: uses voucher #1 ->                    |
+|      joins the MAIN FLOW at step 4                     |
++--------------------------------------------------------+
+```
+
+## Flow C — connection down (degraded mode)
+
+_Vouchers degrade gracefully (deferred, never burned); earning NEVER stops — the receipt QR works
+offline because printing is local. Requires uPOS to queue + replay webhooks (Week-0 ask Q1b);
+fallback if they can't: the signed-token receipt QR (§8)._
+
+```text
++--------------------------------------------------------+
+| C1 . uPOS <-> CIP connection is DOWN                   |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| C2 . Voucher scan at tender -> POST times out          |
+|      -> DECLINED -> cashier takes another tender       |
+|      voucher stays ISSUED - perk deferred, NOT lost    |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| C3 . Receipt STILL prints its QR -                     |
+|      printing is local, txn id is local,               |
+|      CIP is not in that loop                           |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| C4 . Diner scans (her phone is online) -> CIP          |
+|      doesn't know the txn yet -> claim PENDING:        |
+|      "300 coins reserved - confirming"                 |
+|      provisional coins visible, NOT spendable          |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| C5 . Connection restores -> uPOS replays its           |
+|      queued webhooks -> match by txn id ->             |
+|      coins CONFIRMED . items + options attach          |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| C6 . Pending claim unmatched after 72h ->              |
+|      expires + lands on the exception report           |
++--------------------------------------------------------+
+```
 
 ## 🔀 Different routes — discuss later (undesigned placeholders)
 - Wallet as tender — phase ②, same scan rail (one scan = voucher + wallet remainder)
@@ -164,7 +253,6 @@ voucher. **No-voucher visit:** pays normally, scans the receipt QR (uPOS capabil
 - Voucher on a cash/PayNow payer where uPOS can't scan (manual fallback detail)
 - Multi-voucher in one transaction
 - Per-stall settlement of voucher funding — M2
-- Offline / uPOS-down degraded mode
 
 ## Engineering detail — data flow per actor (the build contract for /tender/scan + the webhook)
 
