@@ -1,8 +1,50 @@
 # CIP (FB Group) — Session Notes
 
-> Session journal started 2026-06-08. Earlier history (Rounds R1–R39+) lives in the
-> memory `build-state.md`; notes here begin from this date forward — past sessions are not backfilled.
-> Dense, AI/catchup-facing history stays in `build-state.md`; this file is the at-a-glance human journal.
+> THE single session log (decided 2026-06-12; the old dual-log build-state "Round" entries are
+> retired — round narratives R1–R43 live in the memory `build-state-archive`). Newest first; each
+> entry: What changed · Decisions · Dense record (commits/migrations/counts/verification + LESSONs) ·
+> Still open. Journal started 2026-06-08; earlier sessions are not backfilled.
+
+---
+
+# Session — 2026-06-12 (pm) — persistent-memory system
+
+## What changed
+- **Decision register** `docs/decisions.md` — 28 rows backfilled (2026-05-26→today) with
+  LOCKED/AGREED/DEFERRED/SUPERSEDED statuses + supersedes chains; capture rule in CLAUDE.md =
+  append the row in the same turn a decision is firmed.
+- **Tiered memory lifecycle** enforced in CLAUDE.md §Persistent memory (one home per kind of fact);
+  CLAUDE.md slimmed 2,911→~2,330 words (scan-domains/KDS/service-options narratives → docs).
+- **docs/ foldered**: root = 4 living files (README · decisions · delivery-report · SESSION_NOTES) +
+  `architecture/` · `reference/` · `business/` · `archive/`; new `docs/README.md` status map;
+  39 files' references rewritten, grep-verified.
+- **Consolidations**: 4 payments docs → `architecture/payments.md`; 3 UI/UX memories →
+  `design-language.md`; 4 thin memories folded into user-prefs/build-state; `memory-lifecycle.md`
+  folded into CLAUDE.md; dual session log → THIS file only; build-state → state/backlog only
+  (6,133→938 words). Memory dir 43→37 files.
+- **Skills**: `/my-uiux` refreshed (stale demo creds/OTP, tokens-built, Lucide-adopted, theme-cascade
+  + i18n context) + reads `design-language` first; `/my-wrapup` = single log + consolidate;
+  `/my-catchup` reads register + SESSION_NOTES; **NEW `/my-memory-heal`** — audits every .md vs
+  reality; first pass ran: 31 findings → 24 auto-healed (stale counts in poc-demo/my-tester/
+  my-architect, legacy QR tokens presented as live in my-ops/my-tester, PR-flow claim in catchup).
+
+## Decisions
+- All registered same-turn (rows dated 2026-06-12): memory lifecycle · no-drive-by .md files ·
+  docs foldered · ONE session log. Plus user prefs recorded: one file per domain, merge aggressively.
+
+## Dense record
+- Commits `31f1c02`…`a465984`+fold (13, all pushed incrementally) · migrations: none · counts
+  unchanged: 148 endpoints · 46 tables · 36 migrations · 327+74 tests · 33 routes · verified:
+  heal-pass grep sweeps = zero stale paths, zero dead wikilinks, zero registration orphans.
+- LESSON: a memory file can be indexed, accurate, AND pointless — first test before creating one is
+  "is this already in the always-loaded constitution?"
+- LESSON: hardcoded counts in skills rot — point at the CLAUDE.md baseline/artifacts instead.
+
+## Still open / next session
+- HitPay real payment (KPMG pilot critical path) → `docs/architecture/payments.md` slice 1.
+- Carry FSG red/editorial art direction to the MB home; UI-string/currency sweep (incremental).
+- CLAUDE.md sits ~105 words over its 2,300 budget (remaining content is load-bearing — revisit only
+  if it grows). Untracked `artifacts/` benchmark dirs + `showcase/beat3/` — commit or gitignore, TBD.
 
 ---
 
