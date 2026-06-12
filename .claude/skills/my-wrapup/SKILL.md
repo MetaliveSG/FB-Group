@@ -12,7 +12,7 @@ wait for the user to confirm.**
 Gather information silently, then print a numbered plan of exactly what
 you will do. Include:
 - Which files were changed this session (from `git diff` if a repo, or
-  comparing against `~/.claude/.../memory/build-state.md`'s last Round entry)
+  comparing against the newest `docs/SESSION_NOTES.md` entry)
 - Which `docs/` files need updating (and what counts/lines)
 - Whether artifacts need regenerating (`openapi.json`, `pytest_results.txt`, `schema_tables.txt`)
 - The new `docs/SESSION_NOTES.md` dated entry (THE single session log, incl. its Dense record line)

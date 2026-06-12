@@ -260,7 +260,7 @@ System overview: `docs/architecture/architecture.md` — pay attention to the ca
 narrative, the multi-tenant `merchant_id` predicate, and the identity model
 (customers vs users).
 
-Memory: `~/.claude/.../memory/build-state.md` — every Round entry tells you
+Memory: `docs/SESSION_NOTES.md` (top entries) + memory `build-state.md` backlog — they tell you
 what was added/changed and any KIVs. The Round 12 (SQLite VARCHAR overflow),
 Round 14 (api-client / schema drift), and Round 5 (port collision, idempotent
 seeding) lessons are particularly relevant for diagnosis.
