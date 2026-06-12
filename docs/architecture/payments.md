@@ -106,8 +106,8 @@ loyalty/CRM rollout comes FIRST and is the new critical path; ordering moves las
 
 **Week-0 checklist (FSG + CIP):** FSG HitPay merchant account + KYC + PayNow activation (lead time —
 start now) · webhook URL allow-listed + HMAC salt shared + sandbox keys · recurring billing enabled
-(auto-reload card-on-file) · stall→member-tree mapping (one storefront node per stall) · the 4 uPOS
-capability questions (§8).
+(auto-reload card-on-file) · stall→member-tree mapping (one storefront node per stall) · the 6 uPOS
+capability questions (§8 — Q1 webhook + Q5 scan-at-tender gate phase ①).
 
 ## 6. Gotchas / risks
 - **PayNow async** → design pending→paid UX deliberately (QR, waiting, webhook confirm, expiry).
