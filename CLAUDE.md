@@ -39,8 +39,7 @@ module flags — a foodcourt sets it once high, stalls inherit); the diner picks
 default = Self-Service + Takeaway. BUILT 2026-06-10/11 (cascade config + drawer control +
 `Order.hand_off` + per-order picker + KDS cue + ready notification, ≤6s poll). **Per-stall options in a
 foodcourt = DEFERRED into M2** (foodcourt orders attribute to the venue outlet until M2 stall
-attribution). Still open: `pickup_number` · conditional table · real push (SSE/Web Push) · per-item
-availability by option · service-charge keyed off `served` (self-collect wrongly charged today).
+attribution). Open gaps → the doc §"Still to add" + the build-state backlog.
 
 ## Stack
 - **Backend** `apps/api` — FastAPI + SQLAlchemy 2.0 (typed `Mapped`/`mapped_column`) + Alembic.
@@ -61,15 +60,10 @@ availability by option · service-charge keyed off `served` (self-collect wrongl
 # Backend (fastest, SQLite):
 cd apps/api && .venv/bin/python -m app.seed && .venv/bin/uvicorn app.main:app
 cd apps/api && .venv/bin/python -m pytest          # backend tests
-# Re-seed the SG-local merchant against live Postgres (idempotent, safe, no data loss):
-cd apps/api && .venv/bin/python -m app.seed_kampong
-# Ensure the demo merchants (Breadtalk Group + Pepper Lunch Group) + their 3 Manager logins —
-# idempotent, additive, fixed node ids → reproducible QR tokens (against live Postgres):
-cd apps/api && .venv/bin/python -m app.seed_demo_merchants
-#   (or in Docker: docker-compose -f infra/docker-compose.yml exec api python -m app.seed_demo_merchants)
-# Fei Siong Group (FSG) ENTERPRISE demo — the pitch tree, Malaysia Boleh! foodcourt + 6 real stalls w/ menus
-# (idempotent; FSG enterprise → Malaysia Boleh! tenant → stalls; owner@malaysiaboleh.sg / Password123!):
-cd apps/api && .venv/bin/python -m app.seed_fei_siong   # → memory fsg-enterprise, menu-modifier-groups
+# Seeds (all idempotent, against live Postgres; in Docker prepend `docker-compose -f infra/docker-compose.yml exec api`):
+cd apps/api && .venv/bin/python -m app.seed_kampong          # SG-local Kampong Eats dataset
+cd apps/api && .venv/bin/python -m app.seed_demo_merchants   # Breadtalk + Pepper Lunch + 3 Manager logins (fixed node ids → stable QR)
+cd apps/api && .venv/bin/python -m app.seed_fei_siong        # FSG enterprise demo (Malaysia Boleh! + stalls) → memory fsg-enterprise
 # Full stack (Postgres + API + web):
 docker-compose -f infra/docker-compose.yml up --build
 # Frontend:
@@ -180,15 +174,12 @@ venue/lease/settlement/franchising/Storefront-re-key (all post-MVP).
 
 ## Demo credentials
 - Operator: `http://localhost:3001/platform/login` → `superadmin@platform.sg` / `Password123!`
-- Merchant dashboard: `http://localhost:3001/merchant/login` (live UI-onboarded merchants; the old
-  seeded `owner@makan.sg` was cleared). All `Password123!`, role = node-scoped **Manager** (owner-equiv):
-  - `owner@breadtalk.sg` → **Breadtalk Group** (+ downline: Bakery, Toast Box, Toast Box @ Taka/Orchard)
-  - `owner@pepperlunch.sg` → **Pepper Lunch Group** (+ all Pepper Lunch outlets) *(genuine Merchant-Owner from onboarding; pw reset to the standard)*
-  - `manager@toastbox.sg` → **Toast Box @ Orchard** only (single-storefront scope)
-  - `owner@malaysiaboleh.sg` → **Malaysia Boleh!** foodcourt (FSG enterprise demo: Fei Siong Group → Malaysia
-    Boleh! tenant → 6 Malaysian stalls w/ real menus). Seed: `python -m app.seed_fei_siong` → [[fsg-enterprise]].
-  - Durable via the ensure-script: `python -m app.seed_demo_merchants` (idempotent; rebuilds both
-    groups + storefronts + these 3 logins with fixed node ids → stable QR tokens). Run after a data wipe.
+- Merchant dashboard: `http://localhost:3001/merchant/login`, all `Password123!`, node-scoped **Manager**:
+  - `owner@breadtalk.sg` → **Breadtalk Group** · `owner@pepperlunch.sg` → **Pepper Lunch Group** ·
+    `manager@toastbox.sg` → **Toast Box @ Orchard** only (single-storefront scope) ·
+    `owner@malaysiaboleh.sg` → **Malaysia Boleh!** (FSG demo; seed `app.seed_fei_siong` → [[fsg-enterprise]]).
+  - After a data wipe, re-run `python -m app.seed_demo_merchants` (rebuilds groups + these logins,
+    fixed node ids → stable QR). Old seeded `owner@makan.sg` etc. = cleared/legacy.
 - Customer QR: scan tokens are the live storefronts' QR (see each Storefront's *Tables & QR*); OTP phone `+6580000000` (DEBUG returns the code).
 
 ## Persistent memory (tiered, LOCKED 2026-06-12 — memory `memory-lifecycle`; ENFORCE these every session)

@@ -96,8 +96,8 @@ For each finding, provide a **concrete fix with code** referencing exact file pa
 ## Context
 
 This is the **FB Group F&B CRM PoC** — a Singapore-flavoured QR ordering / loyalty / retention platform:
-- **Backend** (`apps/api`): FastAPI + SQLAlchemy 2.0, 40 tables, 88 endpoints, 6 Alembic migrations, 90 pytest tests
-- **Frontend** (`apps/web`): Next.js 14 App Router, 18 routes, 37 Vitest tests, typed client `@fbgroup/api-client`
+- **Backend** (`apps/api`): FastAPI + SQLAlchemy 2.0 — live counts in CLAUDE.md 'Run & test' baseline + `artifacts/` (don't trust hardcoded numbers), Alembic migrations, 90 pytest tests
+- **Frontend** (`apps/web`): Next.js 14 App Router (counts per the same baseline), typed client `@fbgroup/api-client`
 - **Infra**: docker-compose (Postgres 16 + api + web), AWS-target via ECS Fargate
 - **Personas**: Operator (super admin) → Merchant (owner / outlet manager / staff) → Customer (diner)
 - **Modules**: tenancy, identity/RBAC, catalog, orders, payments, loyalty (+coalition), CRM (segments/tags/notes), engagement (wheel, **jackpot**, tasks, opportunities, activities), campaigns (WhatsApp mock + win-back launcher), analytics + RFM + **AI Insights advisor**, audit

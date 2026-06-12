@@ -47,7 +47,7 @@ POST-REBUILD CHECKLIST
 
 □ Capture-loop smoke test
   # 1. Resolve QR
-  curl -fs http://localhost:8000/api/v1/qr/orchard-01 | jq .merchant.name
+  curl -fs http://localhost:8000/api/v1/qr/$TOKEN | jq .merchant.name   # TOKEN = a live storefront QR; legacy static tokens need `python -m app.seed`/`app.seed_kampong` first
   → "Makan Express"
   # 2. Login as a seeded customer (OTP)
   CODE=$(curl -fs -X POST http://localhost:8000/api/v1/auth/customer/otp/request \
@@ -56,7 +56,7 @@ POST-REBUILD CHECKLIST
     -H 'Content-Type: application/json' \
     -d "{\"phone\":\"+6580000000\",\"code\":\"$CODE\"}" | jq -r .access_token)
   # 3. Get their loyalty (merchant_id from QR resolve)
-  MID=$(curl -fs http://localhost:8000/api/v1/qr/orchard-01 | jq -r .merchant.id)
+  MID=$(curl -fs http://localhost:8000/api/v1/qr/$TOKEN | jq -r .merchant.id)
   curl -fs "http://localhost:8000/api/v1/me/loyalty?merchant_id=$MID" \
     -H "Authorization: Bearer $TOK" | jq .points_balance
   → number (existing balance from seed)
@@ -354,9 +354,9 @@ Security model: `docs/reference/security.md`
 | Merchant Owner | http://localhost:3001/merchant/login | owner@makan.sg / Password123! (or owner@kopiculture.sg, owner@hawkerhub.sg, owner@kampongeats.sg) |
 | Outlet Manager | (merchant login) | manager.orchard@makan.sg / Password123! |
 | Staff/Cashier | (merchant login) | staff.orchard@makan.sg / Password123! |
-| Customer | http://localhost:3001/t/orchard-01 (or kampong-bedok-01) | OTP with phone +6580000000 (or +6581000000) |
+| Customer | a LIVE storefront QR path (its *Tables & QR* page) | OTP phone +6580000000 (DEBUG returns code) |
 
-Stable QR tokens: `orchard-01`, `tampines-01`, `holland-01`, `hawker-maxwell-01`, `hawker-chinatown-01`, `kampong-bedok-01`, `kampong-toapayoh-01`.
+Static tokens (`orchard-01`, `kampong-*-01`, …) are LEGACY `app/seed.py`/`seed_kampong` only — clean boot has none until seeded.
 
 ## Mandatory Rule: Every Runbook = Reproducible Diagnostic
 

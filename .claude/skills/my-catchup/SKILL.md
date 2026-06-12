@@ -92,7 +92,7 @@ Ready to continue. What would you like to work on?
 - Keep the briefing under 80 lines — dense, no fluff
 - If a file referenced in MEMORY.md doesn't exist, skip it and note it
 - If docker-compose isn't running, say so — don't assume the stack is up
-- This IS a git repo (feature-branch + PR flow); report branch + uncommitted changes in the briefing
+- This IS a git repo (direct-to-main, decision 2026-06-07); report branch + uncommitted changes in the briefing
 - Prefer parallel tool calls to minimize latency
 - Do NOT regenerate openapi.json or rerun pytest as part of catchup — that's a `/my-wrapup` action, not catchup
 

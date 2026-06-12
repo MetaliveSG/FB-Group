@@ -77,7 +77,7 @@ Specifically test these guardrails (see `test_permissions.py`, `test_platform.py
 
 ```bash
 # 1. Resolve QR → get menu
-curl http://localhost:8000/api/v1/qr/orchard-01 | jq
+curl http://localhost:8000/api/v1/qr/$TOKEN | jq   # TOKEN = a LIVE storefront QR (Tables & QR page); static tokens like orchard-01 are legacy app/seed.py-only
 
 # 2. Customer register / OTP
 TOK=$(curl -s -X POST http://localhost:8000/api/v1/auth/customer/register \
@@ -87,7 +87,7 @@ TOK=$(curl -s -X POST http://localhost:8000/api/v1/auth/customer/register \
 # 3. Create order
 ORDER=$(curl -s -X POST http://localhost:8000/api/v1/orders \
   -H "Authorization: Bearer $TOK" -H 'Content-Type: application/json' \
-  -d '{"qr_token":"orchard-01","items":[{"menu_item_id":"<id>","quantity":1}]}' | jq -r .id)
+  -d '{"qr_token":"'$TOKEN'","items":[{"menu_item_id":"<id>","quantity":1}]}' | jq -r .id)
 
 # 4. Checkout (paid via mock)
 curl -X POST "http://localhost:8000/api/v1/orders/$ORDER/checkout" \
@@ -230,8 +230,8 @@ DETAILS
 ## Context
 
 This is the **FB Group F&B CRM PoC** (Singapore F&B / QR ordering / loyalty / retention):
-- **Backend**: FastAPI + SQLAlchemy 2.0, 40 tables, 88 endpoints, 6 migrations, **90 pytest tests passing** baseline
-- **Frontend**: Next.js 14, 18 routes, **37 Vitest tests passing**
+- **Backend**: FastAPI + SQLAlchemy 2.0 — live counts in CLAUDE.md 'Run & test' baseline + `artifacts/` (do NOT trust hardcoded numbers here), **pytest tests passing** baseline
+- **Frontend**: Next.js 14 — routes/test counts per the same baseline
 - **Personas**: Operator → Merchant (owner/manager/staff) → Customer (diner)
 - **Key invariants**: multi-tenant isolation by `merchant_id`; RBAC scope-resolved permissions; Decimal money; idempotent seed paths; mock providers for OTP/WhatsApp/payments/SSO
 

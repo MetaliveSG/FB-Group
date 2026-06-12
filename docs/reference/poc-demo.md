@@ -33,7 +33,7 @@ Open on a **phone-width** viewport.
 **The pitch beat:** *"Everything that diner just did — order, payment, coins, the voucher they won — is now a customer record the merchant can act on. That's the loop competitors don't have."*
 
 ## 3. Proof it actually works (2 min) — credibility
-- **Automated tests:** **291 backend (pytest) + 63 frontend (Vitest), all green** — `artifacts/pytest_results.txt`, `artifacts/frontend_test_results.txt`.
+- **Automated tests:** **327 backend (pytest) + 74 frontend (Vitest), all green** — `artifacts/pytest_results.txt`, `artifacts/frontend_test_results.txt`.
   - Rewards system specifically: happy path, **insufficient-coins blocked**, **multi-tenant isolation** (a diner can't spend M1 coins at M2 / redeem another merchant's reward), grand-jackpot **grow + persist + reset-on-win**, voucher survives prize deletion, actor separation, drain-to-insufficient.
 - **Live HTTP proof report:** `artifacts/rewards_proof_<date>.txt` — **14/14 scenarios PASSED** with REQUEST/RESPONSE/CHECKS/RESULT transcripts (loyalty, catalog, wheel, jackpot+grand pot, vouchers, orders, profile, negative paths).
 - **Structured JSON logging** (`app/core/logging.py`) on every rewards event (`wheel_spin`, `jackpot_play/win/insufficient`, `reward_redeemed`) with `customer_id`/`merchant_id`/`balance`/`cost` context — CloudWatch/OTel-ready (sample lines in the proof report).
@@ -41,7 +41,7 @@ Open on a **phone-width** viewport.
 
 ## 4. Platform credibility (1 min)
 - **Multi-tenant** by `merchant_id` on every query; RBAC (operator/owner/manager/staff/customer), tenant-isolation **test-proven**.
-- FastAPI + SQLAlchemy 2.0 + **PostgreSQL** (43 tables, 26 migrations, 136 endpoints), Next.js 14, fully Dockerised, AWS-target (ECS Fargate + RDS).
+- FastAPI + SQLAlchemy 2.0 + **PostgreSQL** (46 tables, 36 migrations, 148 endpoints), Next.js 14, fully Dockerised, AWS-target (ECS Fargate + RDS).
 - Money as `Decimal`; coins are a pure engagement currency (not cash-redeemable).
 - Design system in `packages/ui` (tokens + Lucide) → **web now, React-Native/Expo later** with ~60–70% reuse.
 
