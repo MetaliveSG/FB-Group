@@ -182,6 +182,14 @@ _How a diner pays from the FS Wallet at an UNCHANGED uPOS counter. Three industr
 a ladder so the pilot is never blocked on uPOS — same philosophy as §8. **Recommendation: start with
 Option B (zero uPOS change), upgrade to Option A when uPOS confirms tender-API capability.**_
 
+**CAPTURE REQUIREMENT (LOCKED 2026-06-12, register row):** CIP must capture **WHAT items were sold,
+WHERE (stall), and HOW MUCH** — for every counter sale, whatever the tender. Item-level data only
+exists in uPOS (the till owns the basket), so the **§8 outbound webhook (payload includes `items[]`,
+`stall_id`, `amount`) is NON-NEGOTIABLE for phase ① and ② alike** — no wallet option replaces it. The
+wallet option choice below only sets the **match quality** between the payment and that webhook txn:
+A/C link exactly by `txn_id` at charge time; B links fuzzily (stall+amount+time, tightened by any
+receipt-QR scan), then inherits the txn's `items[]` once matched.
+
 ### The options ladder
 - **Option B — merchant-presented QR (the SGQR/GrabPay hawker pattern) · ZERO uPOS change · START HERE.**
   A static, stall-scoped QR at the counter. Diner scans with the CIP webapp → enters/confirms the
@@ -216,12 +224,32 @@ Option B (zero uPOS change), upgrade to Option A when uPOS confirms tender-API c
 - **Loyalty + no double-earn:** wallet spend earns coins ONCE — if the debit matches a uPOS txn the
   diner ALSO receipt-QR-scans (§8), the claim is deduped by `txn_id`.
 
+### Voucher redemption at the counter (LOCKED requirement — the loop closes where the diner pays)
+**Primary path — voucher rides the wallet payment (no uPOS change):** the diner applies a voucher in
+the CIP webapp during the wallet flow → the intent records `{amount, voucher_id, wallet_debit =
+amount − voucher_value}` → ONE redemption call into the existing voucher core (`/vouchers/{code}/
+redeem` rules: single-use, window, per-period cap, min-spend — already built, R39) → the confirmation
+screen shows the split (**"✓ S$9.40 paid — S$1 voucher + S$8.40 FS Wallet"**) so the cashier sees the
+FULL bill covered and rings the sale as the normal "FS Wallet" tender. uPOS rings the full amount;
+the voucher value is FSG/CIP-funded and appears as a voucher line in the daily recon (§Reconciliation),
+never as a uPOS discount — **zero cashier retraining**.
+- **Option A:** the diner ARMS the voucher in the webapp before showing the pay-code; `/wallet/charge`
+  applies it server-side (debit = amount − voucher), returns approval for the full amount + a
+  `voucher_applied` field. Same idempotency (`txn_id`); redemption and debit commit atomically.
+- **Non-wallet payers (cash/PayNow at the counter):** voucher redemption needs a staff surface —
+  cashier keys a uPOS manual discount + a CIP redeem (FSG ops phone / console). Workable but clunky;
+  **KIV — revisit if voucher usage by non-wallet diners is material** (the voucher is also a wallet
+  adoption lever: "add it to your FS Wallet to use it seamlessly").
+
 ### Reconciliation (the FSG finance deliverable)
 Closed loop = no money moves at spend time (the float liability decreases). Daily recon per stall:
 uPOS "FS Wallet"-tender sales (via the §8 webhook, `payment_method=wallet`) vs CIP wallet debits —
 matched by `txn_id` (A/C: exact) or stall+amount+time-window (B: fuzzy, ± a few minutes; unmatched
 rows surface for review). B's fuzziness is the price of zero integration — acceptable at pilot
-volume, and any receipt-QR scan tightens the match it touches.
+volume, and any receipt-QR scan tightens the match it touches. The matched webhook txn's **`items[]`
+attach to the intent** (the item-level capture requirement) and **voucher lines appear as their own
+recon column** (uPOS rings the full amount; CIP funds the voucher value from the campaign/loyalty
+budget — the recon proves the two ledgers agree).
 
 ### Risks
 - **Screenshot fraud (B):** live-clock + stall-name confirmation screen, cashier training, low default
