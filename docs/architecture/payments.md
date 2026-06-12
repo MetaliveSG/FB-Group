@@ -177,10 +177,20 @@ foodcourt tickets; float (Starbucks holds ~US$1B+); standing balance + card-on-f
 **Phasing:** pilot ships **pass-through** payment first (prove +10% without regulatory lead time);
 wallet is the **fast-follow lock-in amplifier** once the legal one-pager clears + saved-card is wired.
 
-## 7b. Wallet as TENDER at the existing counter (phase ②, specced 2026-06-12)
-_How a diner pays from the FS Wallet at an UNCHANGED uPOS counter. Three industry patterns, offered as
-a ladder so the pilot is never blocked on uPOS — same philosophy as §8. **Recommendation: start with
-Option B (zero uPOS change), upgrade to Option A when uPOS confirms tender-API capability.**_
+## 7b. Vouchers + Wallet at the existing counter — the scan-at-tender rail (LOCKED 2026-06-12)
+_How a diner redeems a voucher (phase ①) or pays from the FS Wallet (phase ②) at the uPOS counter.
+**The LOCKED flow is CUSTOMER-PRESENTED:** cashier bills in uPOS → diner shows a one-time CIP QR →
+**cashier scans it → uPOS calls CIP → deducts → shows the balance due.** The diner NEVER keys the bill
+amount — the till stays the single source of truth. ONE uPOS integration (scan-a-CIP-code at tender)
+serves BOTH value types: a voucher token redeems a voucher; a wallet token charges the wallet; the
+same rail later takes both in one scan (voucher + wallet remainder)._
+
+**The worked example (the spec's north star):** new diner orders 2 kopi; cashier bills **$3** in uPOS;
+diner scans the counter standee QR → registers (OTP + consent, **<60s, in-queue**) → welcome pack
+5×$2 lands, voucher #1 unlocked → phone shows the **voucher QR** → cashier scans → uPOS deducts $2 →
+**uPOS shows $1 balance** → diner pays $1 (cash/PayNow) → CIP marks voucher #1 USED, **#2 unlocks**,
+**300 coins** granted (provisional → confirmed on the webhook match, which also attaches the 2× kopi
+line items to the new customer profile).
 
 **CAPTURE REQUIREMENT (LOCKED 2026-06-12, register row):** CIP must capture **WHAT items were sold,
 WHERE (stall), and HOW MUCH** — for every counter sale, whatever the tender. Item-level data only
@@ -190,77 +200,70 @@ wallet option choice below only sets the **match quality** between the payment a
 A/C link exactly by `txn_id` at charge time; B links fuzzily (stall+amount+time, tightened by any
 receipt-QR scan), then inherits the txn's `items[]` once matched.
 
-### The options ladder
-- **Option B — merchant-presented QR (the SGQR/GrabPay hawker pattern) · ZERO uPOS change · START HERE.**
-  A static, stall-scoped QR at the counter. Diner scans with the CIP webapp → enters/confirms the
-  amount the cashier quotes → one tap pays from the wallet → the phone shows a **confirmation screen**
-  (big ✓, amount, stall name, **live clock** — screenshot-resistant, the Alipay trick) which the
-  cashier glances at, then rings the sale in uPOS with an **"FS Wallet" custom tender** (config-level —
-  virtually every POS supports named tenders without integration). Friction: amount is keyed by the
-  diner; trust is the glance. Culturally native at SG hawker counters today.
-- **Option A — customer-presented code (the Starbucks/Alipay-offline pattern) · needs a uPOS tender
-  integration · THE UPGRADE.** The webapp shows a short-lived, single-use pay-code (QR/barcode,
-  server-issued, TTL ~90s, bound to the wallet). Cashier **scans it with the existing uPOS scanner**
-  at tender time; uPOS calls `POST /wallet/charge {token, amount, stall_id, txn_id}` (HMAC-signed,
-  same secret rail as §8) → CIP validates + debits → returns approval → uPOS closes the sale.
-  Fast (~2–3s), no diner typing, exact-amount integrity. Gated on uPOS answering Week-0 Q5/Q6 (§8).
-- **Option C — dynamic per-transaction QR from uPOS** (uPOS displays a QR carrying txn_id+amount;
-  diner scans → one-tap exact-amount pay → CIP callback closes the sale). Cleanest recon, deepest
-  uPOS change — A's alternative only if uPOS finds it easier than a tender API.
+### The rail (LOCKED — the customer-presented model; was "Option A")
+The webapp shows a **short-lived, single-use CIP code** (QR/barcode; server-issued; TTL ~90s; ONE
+outstanding code per customer; encodes a token, never a value). At tender time the cashier **scans it
+with the existing uPOS scanner**; uPOS calls **`POST /tender/scan {token, bill_amount, stall_id,
+txn_id, items[]?}`** (HMAC-signed, same secret rail as §8); CIP resolves the token:
+- **Voucher token** → validate rules (single-use · window · min-spend vs `bill_amount` · per-period
+  cap) → redeem → return `{approved, deduct: 2.00}` → **uPOS applies it (discount or split-tender —
+  whichever uPOS supports) and shows the balance due**.
+- **Wallet token** (phase ②) → balance check (auto-reload if enabled) → debit → return
+  `{approved, deduct: full or partial}` — same call, same screen.
+- Later: one scan can return **voucher + wallet remainder** combined.
+Response target **< 2s**; on timeout uPOS retries (idempotent by `txn_id`) or the cashier falls back
+to normal tender (the diner's voucher stays unredeemed — never half-burned).
 
-### Engine (common to all options — reuses the §7 ledger, additive)
-- **`wallet_payment_intents`** `{id, wallet_account_id, stall_node_id, amount, status
-  created→confirmed→matched|expired, matched_txn_id, created_at}` — every counter payment is an
-  intent; the debit posts `WalletLedger type=spend, source_ref=intent_id`, **idempotent** by intent.
-- **Option A token service:** server-issued single-use code bound to the wallet (TTL ~90s, ONE
-  outstanding code per wallet); `POST /wallet/charge` validates token→wallet→balance, debits, returns
-  approval — **idempotent by `txn_id`** (uPOS retries must never double-debit).
-- **Insufficient balance** → auto-reload if enabled (§7), else the webapp prompts a top-up — never a
-  silent decline at the counter.
-- **Limits (consumer-protection + PSA light-touch posture):** per-txn cap (default S$100) · daily
-  spend cap (default S$200) · configurable per tenant.
-- **Void/refund:** supervisor void at uPOS (or console) → `type=refund` ledger reversal keyed to the
-  intent/txn — same idempotency rail.
-- **Loyalty + no double-earn:** wallet spend earns coins ONCE — if the debit matches a uPOS txn the
-  diner ALSO receipt-QR-scans (§8), the claim is deduped by `txn_id`.
+### Fallback ONLY if uPOS cannot scan-at-tender (Week-0 Q5 = no)
+Manual two-step: cashier keys the uPOS discount + verifies the diner's live-clock redemption screen
+(merchant-presented, glance-verified). Demoted to contingency 2026-06-12 — the diner-keys-amount
+variant is **SUPERSEDED** (the till must own the bill; see `docs/decisions.md`). If Q5 = no, this
+fallback runs the pilot while FSG presses uPOS for the scan rail.
 
-### Voucher redemption at the counter (LOCKED requirement — the loop closes where the diner pays)
-**Primary path — voucher rides the wallet payment (no uPOS change):** the diner applies a voucher in
-the CIP webapp during the wallet flow → the intent records `{amount, voucher_id, wallet_debit =
-amount − voucher_value}` → ONE redemption call into the existing voucher core (`/vouchers/{code}/
-redeem` rules: single-use, window, per-period cap, min-spend — already built, R39) → the confirmation
-screen shows the split (**"✓ S$9.40 paid — S$1 voucher + S$8.40 FS Wallet"**) so the cashier sees the
-FULL bill covered and rings the sale as the normal "FS Wallet" tender. uPOS rings the full amount;
-the voucher value is FSG/CIP-funded and appears as a voucher line in the daily recon (§Reconciliation),
-never as a uPOS discount — **zero cashier retraining**.
-- **Option A:** the diner ARMS the voucher in the webapp before showing the pay-code; `/wallet/charge`
-  applies it server-side (debit = amount − voucher), returns approval for the full amount + a
-  `voucher_applied` field. Same idempotency (`txn_id`); redemption and debit commit atomically.
-- **Non-wallet payers (cash/PayNow at the counter):** voucher redemption needs a staff surface —
-  cashier keys a uPOS manual discount + a CIP redeem (FSG ops phone / console). Workable but clunky;
-  **KIV — revisit if voucher usage by non-wallet diners is material** (the voucher is also a wallet
-  adoption lever: "add it to your FS Wallet to use it seamlessly").
+### Engine (one rail, both value types — reuses the §7 ledger, additive)
+- **Token service:** server-issued single-use code (TTL ~90s, ONE outstanding per customer), typed
+  `voucher:{voucher_id}` or `wallet:{account_id}` — the QR carries a token, never a value.
+- **`tender_intents`** `{id, customer_id, kind voucher|wallet, ref_id, stall_node_id, bill_amount,
+  deduct_amount, status approved→matched|reversed, txn_id, created_at}` — every scan-approval is an
+  intent; wallet debits post `WalletLedger type=spend, source_ref=intent_id`; voucher redemptions go
+  through the EXISTING voucher core (`vouchers.redeem`, R39 — single-use · window · **min-spend
+  validated against the uPOS `bill_amount`** · per-period cap). All **idempotent by `txn_id`** (uPOS
+  retries must never double-redeem/debit).
+- **Sequential unlock (welcome pack):** voucher N's redemption unlocks N+1 (`unlocks_next` on the
+  grant) — small voucher-core extension; caps burn at one voucher per visit and manufactures the
+  return visit.
+- **Insufficient wallet balance** → auto-reload if enabled (§7), else decline with `top_up_required`
+  (the webapp prompts; the cashier just sees "declined — other tender").
+- **Earn (provisional → verified):** coins grant provisionally at approval (instant gratification in
+  the webapp), **confirmed when the §8 webhook txn matches by `txn_id`** — the earn is never wired to
+  self-reported data; no-double-earn vs the receipt-QR claim is deduped by the same `txn_id`.
+- **Limits (consumer-protection + PSA light-touch):** per-txn cap (default S$100) · daily wallet-spend
+  cap (default S$200) · earn rate + coin value = **tenant CONFIG, not constants** (pilot setting:
+  100 coins/$1 gross bill, 100 coins = $1 food-only face — COGS-backed, see §Economics in §7).
+- **Void/refund:** supervisor void at uPOS → reversal keyed to the intent/txn — voucher returns to
+  issued, wallet gets `type=refund`, coins claw back. Same idempotency rail.
 
 ### Reconciliation (the FSG finance deliverable)
-Closed loop = no money moves at spend time (the float liability decreases). Daily recon per stall:
-uPOS "FS Wallet"-tender sales (via the §8 webhook, `payment_method=wallet`) vs CIP wallet debits —
-matched by `txn_id` (A/C: exact) or stall+amount+time-window (B: fuzzy, ± a few minutes; unmatched
-rows surface for review). B's fuzziness is the price of zero integration — acceptable at pilot
-volume, and any receipt-QR scan tightens the match it touches. The matched webhook txn's **`items[]`
-attach to the intent** (the item-level capture requirement) and **voucher lines appear as their own
-recon column** (uPOS rings the full amount; CIP funds the voucher value from the campaign/loyalty
-budget — the recon proves the two ledgers agree).
+Every approval carries the uPOS `txn_id`, so matching is **exact**: webhook txns ↔ tender intents,
+with `items[]` attaching to the customer profile (the item-level capture requirement) and **voucher
+deductions as their own recon column** — the voucher value is funded by the FSG campaign/loyalty
+budget, never by the stall (stalls are made whole in FSG's internal settlement; they must never feel
+they personally fund the promo). Exceptions surface daily: approvals with no webhook txn, txns with
+double deductions, provisional earns >24h unconfirmed.
 
 ### Risks
-- **Screenshot fraud (B):** live-clock + stall-name confirmation screen, cashier training, low default
-  caps; residual risk accepted at pilot volume — Option A eliminates it.
-- **Connectivity:** B needs the diner online, A needs uPOS online — foodcourt wifi risk; mitigation =
-  retry + fall back to PayNow/cash (the wallet is never the only tender).
-- **No PII to uPOS** (PDPA): the token/tender carries wallet/txn refs only — identity stays in CIP.
+- **uPOS dependency is now phase-① critical path** (the scan-at-tender rail gates vouchers, not just
+  wallet) — mitigated by the manual fallback above + FSG being the paying uPOS customer.
+- **Connectivity:** the scan call needs uPOS online (<2s target) — on timeout, retry or normal tender;
+  the diner's voucher is never half-burned (server state only flips on approval).
+- **In-queue registration must fit <60s** — OTP autofill, one consent tap, voucher QR auto-shown;
+  every extra screen costs conversions and queue goodwill.
+- **No PII to uPOS** (PDPA): tokens carry refs only — identity stays in CIP.
 
 ### Effort
-Option B ≈ **3–4 d** (intent flow + confirm screen + static QRs + recon report) — no uPOS dependency.
-Option A ≈ **+3–5 d** CIP-side (token service + charge API) **+ uPOS's tender work** (their estimate).
+CIP-side ≈ **5–7 d** (token service + `/tender/scan` + `tender_intents` + sequential unlock + recon
+report + the <60s registration polish). uPOS-side = their estimate for scan-at-tender (Week-0 Q5) —
+the SAME integration later serves wallet (phase ②) with zero additional uPOS work.
 
 ## 8. uPOS integration (the counter/queue lane — extractable as a handout for uPOS)
 _All foodcourt stalls run uPOS (one vendor → one integration → all stalls). uPOS is **not replaced** —
@@ -271,8 +274,9 @@ small tweaks only. FSG (the paying uPOS customer) drives the request + timeline.
 2. **Receipt:** can the receipt template embed a **dynamic QR** (per-transaction URL/token)?
 3. **Inbound:** an API to create/inject an order into a stall's queue (+ status callbacks)?
 4. **Custom tender:** can a named tender type ("FS Wallet") be added at config level (no integration)?
-5. **Tender API (gates §7b Option A):** at tender time, can uPOS scan a code and call an external
-   HTTPS charge API, closing the sale on approval?
+5. **Scan-at-tender (gates §7b — now PHASE-① critical path):** at tender time, can uPOS scan a
+   QR/barcode and call an external HTTPS API, applying the returned deduction (discount or split
+   tender) and showing the balance due?
 6. **Per item: effort, timeline, cost, and a sandbox?**
 
 **Tweak 1 — Outbound transaction webhook ★ MUST-HAVE.** Fires on sale completed/paid → powers **100%
