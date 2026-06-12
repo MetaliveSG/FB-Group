@@ -8,85 +8,39 @@ Maps to the 3-module engine (Table QR · **Intelligence** · POS) on one core �
 Overview + capture-loop diagram in `README.md`; this file = operating guidance for Claude.
 **Pitch · growth model · GTM** → `docs/positioning.md` (or `/my-bizdev`).
 
-## Customer-scan domains (QR · LOCKED 2026-06-10)
-**The customer-scan surface is served per-tenant on a CIP subdomain: `{slug}.mycip.io`** (e.g.
-`breadtalk.mycip.io`, `fsg.mycip.io`). **Apex/root brand domain = `mycip.io`.** A printed QR therefore
-encodes **`https://{slug}.mycip.io/t/{token}`** (a Storefront) or `…/t/node/{id}` (a group browse).
-- **The QR host comes from PER-TENANT config, never the browser.** *Current gap:* `apps/web/.../merchant/
-  tables/page.tsx` builds the URL from `window.location.origin` (→ `localhost:3001` in dev) — that's
-  PoC-only and MUST be replaced by a tenant-resolved scan base before any real QR is printed (printed codes
-  are permanent). Same for the `/platform` "QR Menu" button + on-screen preview. Backend `qr_path` stays a
-  relative `/t/{token}` — only the web layer prepends the origin, so the fix lives there (+ a backend
-  resolver that emits the canonical `{slug}.mycip.io` host per tenant).
-- **`slug`** = a new per-tenant field (settlement-boundary node / `Merchant`), unique, → its subdomain. NOT
-  built yet.
-- **Routing:** wildcard `*.mycip.io` DNS → ONE CIP edge → the same Next app serves `/t/{token}` regardless
-  of `Host`; the **token alone identifies the outlet** (host = branding + trust). Validate the token's
-  tenant matches the host's tenant (so a competitor's QR can't resolve on your branded subdomain).
-- **TLS:** one wildcard cert `*.mycip.io` covers every tenant subdomain.
-- **DEFERRED (Tier 3, post-MVP):** BYO **custom domains** (e.g. `order.fairprice.sg`) — tenant CNAMEs to CIP
-  + per-domain cert automation (ACM/Caddy) + a `tenant_domains` verification table. Subdomain is the locked
-  default; custom-domain is later config on the same resolver, never a reprint. Keep retired hosts 301-ing.
+## Decision register — `docs/decisions.md` (THE authority on what's decided)
+**When the user firms a major decision** ("locked" / "agreed" / "go with X" / overruling a design),
+**append a row to `docs/decisions.md` IN THE SAME TURN** — date · decision · why · status · supersedes —
+and mark any overruled row `SUPERSEDED` (never delete). Don't wait for wrapup (`/my-wrapup` only sweeps
+for missed rows; `/my-catchup` reads recent rows). The register outranks memory prose and doc narrative
+when they disagree.
 
-## Kitchen display (KDS · LOCKED 2026-06-10)
-**The kitchen screen (`/kds`) is a back-of-house DISPLAY, not a dashboard.** Auth model = **station binding,
-NOT a web/email login and NOT a per-person password** (a kitchen tablet is a shared station; per-cook
-attribution is not needed for MVP). The "role" (view this outlet's open tickets + advance ticket status) is
-**baked into a private, revocable per-outlet station token** issued from the console — NOT the public QR
-token (that's semi-public; a separate private token so nobody with a table's QR can open the kitchen). A
-`RoleName.KITCHEN` PIN role on the **POS palette** (`kind="pos"`, never web) is the LATER upgrade only if
-per-person attribution is wanted. **Gate = Table QR effective-ON** (`resolve_modules`) controls whether the
-kitchen screen is reachable; the module flag gates ACCESS, never credential lifecycle (don't mint/destroy
-credentials on a toggle flip — it cascades + churns PINs).
-- **Fulfilment vs payment are SEPARATE statuses (decided 2026-06-10).** `checkout()` sets `order.status`
-  COMPLETED on pay (COMPLETED = *paid*, drives reports/void — do NOT repurpose it). The kitchen owns a
-  separate additive **`fulfilment_status`** (QUEUED→PREPARING→READY→COLLECTED) — the ticket/KDS state,
-  orthogonal to payment. **"Pick up" button = mark READY** (customer collects from the stall — the
-  order-ahead+pay+collect model). KDS queue = paid orders (`status=COMPLETED`) where
-  `fulfilment_status≠COLLECTED`, oldest-first (FIFO).
-- **Preview slice (built 2026-06-10):** `/kds` runs in the MERCHANT/operator session (owner previews it);
-  the station-token issue/revoke is the hardening step (deferred). Launched standalone (new window) from the
-  `/platform` tree-grid "Open Kitchen" (gated on Table-QR) + `/merchant/orders`.
+## Customer-scan domains (QR · LOCKED 2026-06-10 → `docs/architecture-scan-domains.md`)
+Per-tenant scan host = **`{slug}.mycip.io`** (apex `mycip.io`); printed QR encodes
+`https://{slug}.mycip.io/t/{token}` (or `…/t/node/{id}`). **The QR host comes from PER-TENANT config,
+never `window.location.origin`** — the tables page + `/platform` QR button do it the PoC way today and
+MUST be fixed before any real QR prints (printed codes are permanent). Backend `qr_path` stays relative;
+validate the token's tenant matches the host's tenant. `slug` field + tenant resolver NOT built; BYO
+custom domains = post-MVP (Tier 3).
 
-## Service options (fulfilment) — TWO orthogonal axes, per-storefront SET, per-order pick (LOCKED 2026-06-10)
-**NOT a single "dine-in vs pickup" mode.** Studied Toast (configurable "Dining Options" w/ behaviors:
-DineIn adds table+server & plates; TakeOut requires customer info & packages; behavior also drives kitchen
-routing), Square (Orders API = PICKUP/DELIVERY/SHIPMENT only — dine-in is POS-app-only), Olo ("handoff
-modes" pickup/curbside/dine-in/delivery; dine-in can carry a table #; items restrictable per mode). Industry
-pattern = **a location configures a SET of options; the customer/staff picks one per order** (auto if only
-one). BUT Toast/Olo are restaurant-centric (they bundle dine-in = table service) — they CANNOT cleanly model
-the SEA foodcourt "eat-in but **self-collect**". So CIP **decouples two behavior axes** (this is the M4 SEA
-moat, not a copy of Toast):
-- **Dining context: `eat_in` | `takeaway`** → plate vs **package**; whether a **table** applies.
-- **Hand-off: `self_pickup` | `served`** (waiter/runner) → **self_pickup** = order/pickup number + the diner's
-  **"ready for pick-up" notification**; **served** = needs table, runner brings it, **NO diner notification**.
+## Kitchen display (KDS · LOCKED 2026-06-10 → `docs/architecture-fulfilment-modes.md` §KDS)
+`/kds` is a back-of-house DISPLAY. Auth = **station binding** (private, revocable per-outlet station
+token) — NOT a web login, NOT a per-person PIN; Table-QR effective-ON gates ACCESS, the flag never
+drives credential lifecycle. **Fulfilment ≠ payment:** additive **`fulfilment_status`**
+(QUEUED→PREPARING→READY→COLLECTED); `order.status` COMPLETED stays = *paid* (drives reports/void — do
+NOT repurpose). KDS queue = paid ∧ not-collected, FIFO. Preview slice runs in the merchant session;
+station-token issue/revoke deferred.
 
-**The 2×2 generates every scenario** — foodcourt eat-in self-collect (eat_in×self_pickup, table=no, diner
-alerted) · foodcourt takeaway (takeaway×self_pickup) · restaurant dine-in waiter (eat_in×served, table=yes,
-no alert) · restaurant takeaway (takeaway×self_pickup) · foodcourt with runners (eat_in×served).
-**KEY RULE: the diner "ready for pick-up" alert keys off `self_pickup`, NOT "dine-in"** (the bug in the old
-single-axis model). The **storefront configures its enabled set** (cascade like the module flags — a foodcourt
-sets it once high, stalls inherit); the **diner/staff selects one per order** if >1, else it's auto.
-
-- **BUILT (2026-06-10/11):** `org_nodes.service_options` cascade config + simplified console control
-  (NodeDetailDrawer: **Dine-in [Self-Service|Served] + Takeaway on/off**, settable on chain or storefront) ·
-  `Order.hand_off` axis (migration `h2i3serviceopts`) + `create_order` derivation (rejects an unoffered option) ·
-  per-order picker in the QR app (when >1) · **SEA-first default = Self-Service + Takeaway** · KDS 🍽/📦 cue +
-  diner ready-to-collect notification (popup + banner + Orders-tab badge, keyed off `self_pickup`, ≤6s poll).
-- **DECISION 2026-06-11 — per-stall service options in a foodcourt = NOT needed, DEFERRED into M2.** Standalone
-  storefronts already resolve per-storefront (live). Foodcourt orders attribute to the **venue outlet, not the
-  stall** (`create_qr_order`→`create_order(outlet_id=qr.outlet_id)`), so per-stall can't take effect until
-  foodcourt-order→stall-outlet attribution is built (M2/settlement); real foodcourts are uniformly self-service
-  so the venue-level cascade default is correct. Mixed venues (kopitiam table-service drinks stall) = revisit
-  alongside M2, not standalone.
-- **Still to add:** `pickup_number` · conditional table (hide for self-pickup-only) · real-time push
-  (SSE/WebSocket + Web Push — KIV; today in-app poll ≤6s) · per-item availability by option · **service-charge
-  fix** (charge only when `hand_off==served`, not `order_type==dine_in` — foodcourt self-collect wrongly charged).
-- **UI placement:** sub-config of the **Ordering** module. Today the config lives in the platform
-  **`NodeDetailDrawer`** (cascade on chain/storefront); a merchant-facing copy on the Ordering → "Tables & QR"
-  page (reframe "Tables & Service") is the nicer placement, not yet done.
-Full design → `docs/architecture-fulfilment-modes.md` + memory [[fulfilment-modes]] (both on this two-axis
-model — the old "dine_in vs pickup single mode" framing is superseded).
+## Service options (fulfilment · LOCKED 2026-06-10 → `docs/architecture-fulfilment-modes.md`)
+**TWO orthogonal axes, NOT a single "dine-in vs pickup" mode:** dining context (`eat_in|takeaway` →
+plate/package, table?) × hand-off (`self_pickup|served`). **KEY RULE: the diner "ready for pick-up"
+alert keys off `self_pickup`, NOT "dine-in".** The storefront configures its enabled SET (cascade like
+module flags — a foodcourt sets it once high, stalls inherit); the diner picks per order if >1. SEA
+default = Self-Service + Takeaway. BUILT 2026-06-10/11 (cascade config + drawer control +
+`Order.hand_off` + per-order picker + KDS cue + ready notification, ≤6s poll). **Per-stall options in a
+foodcourt = DEFERRED into M2** (foodcourt orders attribute to the venue outlet until M2 stall
+attribution). Still open: `pickup_number` · conditional table · real push (SSE/Web Push) · per-item
+availability by option · service-charge keyed off `served` (self-collect wrongly charged today).
 
 ## Stack
 - **Backend** `apps/api` — FastAPI + SQLAlchemy 2.0 (typed `Mapped`/`mapped_column`) + Alembic.
@@ -122,7 +76,7 @@ docker-compose -f infra/docker-compose.yml up --build
 cd apps/web && npm install && npm run dev      # dev
 cd apps/web && npm run test                    # Vitest
 ```
-Baseline: **291 backend + 63 frontend tests pass** · 136 endpoints · 43 tables · 26 migrations.
+Baseline: **327 backend + 74 frontend tests pass** · 148 endpoints · 46 tables · 36 migrations · 33 web routes.
 
 ## Member tree (org spine) — Chain / Storefront
 
@@ -163,13 +117,11 @@ child · module toggles · logins · enter). Endpoints: `GET /org/tree`, `POST/P
 - **Enter scopes by node:** Storefront → 1 outlet; sub-chain → its subtree; tenant → all. Menu + Tables&QR
   sub-scope; **CRM/Orders/Settings stay tenant-wide** (loyalty ring = the tenant).
 
-## Vouchers (decided 2026-06-05 — full spec `docs/architecture-vouchers.md`)
-**Shared Voucher core, two issuers, one redemption.** Carries `value` + rules (single-use · valid window ·
-per-period cap · min-spend); redeemed by ONE cashier flow (scan/enter code → validate → apply, on the
-checkout/`record_sale` path). **Litmus:** *earned, always-on, everyone* → **loyalty** issuer; *granted to a
-trigger/segment* → **campaign** issuer — both redeemed the SAME way (welcome "10×$1/period" = campaign;
-"$1-off for N coins" = loyalty). **Scope** = a node, reach = its subtree (`scope_node_id`; `merchant_id` =
-funding tenant). Tiers 1–2 BUILT; tier 3 (cross-merchant = coalition + split-settlement M2) DEFERRED.
+## Vouchers (LOCKED 2026-06-05 → `docs/architecture-vouchers.md`)
+**Shared Voucher core, two issuers, one cashier redemption.** Litmus: *earned, always-on, everyone* →
+**loyalty** issuer; *granted to a trigger/segment* → **campaign** issuer — both redeemed the same way.
+Scope = a node, reach = its subtree (`scope_node_id`; `merchant_id` = funding tenant). Tiers 1–2 BUILT;
+tier 3 (cross-merchant = coalition + split-settlement M2) DEFERRED.
 
 ## Roadmap (DIRECTION = MVP, not PoC — full detail: memory `roadmap-mvp-foundation`)
 Bar = "a first real merchant runs their business on this". MVP merchant is **fully on our stack** (every
@@ -232,12 +184,16 @@ venue/lease/settlement/franchising/Storefront-re-key (all post-MVP).
     groups + storefronts + these 3 logins with fixed node ids → stable QR tokens). Run after a data wipe.
 - Customer QR: scan tokens are the live storefronts' QR (see each Storefront's *Tables & QR*); OTP phone `+6580000000` (DEBUG returns the code).
 
-## Memory & skills
-- Persistent memory: `~/.claude/projects/-Volumes-Data-Drive-Coding-multi-agent-FB-Group/memory/`
-  — `MEMORY.md` index + `build-state.md` (canonical Round log + KIVs), `project-fbgroup-crm.md`, `arch-decisions.md`, `user-prefs.md`.
-  Run `/my-catchup` at session start; `/my-wrapup` to close out (updates memory + regenerates artifacts).
+## Memory & skills (tiered lifecycle — set 2026-06-12, memory `memory-lifecycle`)
+- **Tiers:** this file = constitution (invariants/traps/pointers, keep ≤~2,300 words — move narrative to
+  `docs/`) · `docs/decisions.md` = decision authority · memory dir = `MEMORY.md` index + one-fact files ·
+  `build-state.md` = episodic log (**latest 2 Rounds verbatim, older Rounds ≤5-line summaries**, full text
+  in `build-state-archive.md`) · claude-mem = deep archive (semantic recall).
+- Persistent memory: `~/.claude/projects/-Volumes-Data-Drive-Coding-multi-agent-FB-Group/memory/`.
+  Run `/my-catchup` at session start; `/my-wrapup` to close out — wrapup CONSOLIDATES (promote lessons →
+  semantic homes · compress the now-old Round · mark contradicted memories superseded), not just appends.
 - Project skills in `.claude/skills/`: `/my-architect`, `/my-tester`, `/my-security-audit`, `/my-dba`,
-  `/my-ops`, `/my-diagnose`, `/my-bizdev` (advisors) + `/my-catchup`, `/my-wrapup` (lifecycle).
+  `/my-ops`, `/my-diagnose`, `/my-bizdev`, `/my-uiux` (advisors) + `/my-catchup`, `/my-wrapup` (lifecycle).
 
 ## How the user works (Founder Mode)
 ~2-person team + Claude Code. Prioritize speed, working+tested software, revenue/adoption — while keeping

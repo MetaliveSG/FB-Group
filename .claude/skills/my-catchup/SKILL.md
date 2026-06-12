@@ -22,6 +22,10 @@ Do ALL of these in parallel:
    - `arch-decisions.md` (monorepo, polyglot, DB strategy, auth)
    - `user-prefs.md` (how the user wants me to operate)
 
+1b. **Decision register**: Read `docs/decisions.md` — THE authority on what's currently
+   decided (LOCKED/AGREED/DEFERRED/SUPERSEDED). At minimum the last ~12 rows; it outranks
+   memory prose and doc narrative when they disagree.
+
 2. **CLAUDE.md**: Read `/Volumes/Data Drive/Coding/multi_agent/FB Group/CLAUDE.md`
    for project conventions (if it exists).
 
@@ -29,17 +33,17 @@ Do ALL of these in parallel:
    current state — counts (endpoints/tables/migrations/tests/web routes),
    demo credentials, feature checklist, known limitations, roadmap.
 
-4. **Git state**: This IS a git repo (origin `github.com/MetaliveSG/FB-Group`; branch+PR flow per
-   `CONTRIBUTING.md`, no direct commits to `main`). Run `git log --oneline -15`, `git status`,
-   `git branch --show-current`, `git diff --stat`. "Save progress" = commit on a feature branch
-   (+ memory for context not in code).
+4. **Git state**: This IS a git repo (origin `github.com/MetaliveSG/FB-Group`; **commit directly
+   to `main`** — no PR flow, decision 2026-06-07; CI on push is informational). Run
+   `git log --oneline -15`, `git status`, `git branch --show-current`, `git diff --stat`.
+   "Save progress" = commit on `main` (+ memory for context not in code).
 
 5. **Docker stack state**: Run `docker-compose -f infra/docker-compose.yml ps`
    and `curl -s http://localhost:8000/health` to see if the live stack is
    up. Note the api/web/db status.
 
 6. **Pytest baseline**: Read `artifacts/pytest_results.txt` for the last
-   passing test count (current baseline: 90 backend + 37 frontend).
+   passing test count — trust the artifact, not a hardcoded baseline here.
 
 ## Step 2: Synthesize context
 

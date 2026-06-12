@@ -17,6 +17,8 @@ you will do. Include:
 - Whether artifacts need regenerating (`openapi.json`, `pytest_results.txt`, `schema_tables.txt`)
 - The new `docs/SESSION_NOTES.md` dated entry (human-facing journal) AND the dense
   `~/.claude/.../memory/build-state.md` Round N entry (machine/catchup-facing)
+- The memory consolidation (Step 4): decisions to sweep into `docs/decisions.md`, the Round
+  to compress into the archive, lessons to promote, memories to mark superseded
 - The git commit on `main` (it IS a repo; direct-to-main flow — see memory `workflow-direct-to-main`)
 - Where the zip backup will be saved
 
@@ -186,8 +188,13 @@ Run the full backend suite once more (baseline **287+**) and confirm green.
 Run frontend (`cd apps/web && npm test`, baseline **58+** vitest). Pull the live counts from the run —
 never hardcode a stale baseline.
 
-## Step 4: Update memory (MANDATORY)
+## Step 4: Consolidate memory (MANDATORY — promote · compress · expire, not just append)
 
+This step keeps the always-loaded memory tier CONSTANT-SIZE while the archive grows
+(the tiered-lifecycle decision, 2026-06-12 — see memory `memory-lifecycle` + `docs/decisions.md`).
+Four sub-steps, in order:
+
+### 4a — Append the new Round
 Append a new **Round N** entry to
 `/Users/samuelgan/.claude/projects/-Volumes-Data-Drive-Coding-multi-agent-FB-Group/memory/build-state.md`
 above the previous round. Format:
@@ -201,8 +208,28 @@ evidence: "Live verified on Docker/Postgres: ..." with concrete numbers.>
 ```
 
 If the session uncovered a recurring class of bug, also add a "**Bug fixed**" or
-"**Gotcha**" entry — see the Round 14 entry on API-client-type-vs-backend-schema
-drift for an example.
+"**Gotcha**" entry.
+
+### 4b — Sweep firmed decisions into `docs/decisions.md`
+Review the session for **major decisions the user firmed** ("locked", "agreed", "go with X",
+overruled a design). Each should ALREADY have a row (the CLAUDE.md capture rule says append
+in the same turn) — append any that were missed, and set Status `SUPERSEDED` on any row an
+overruling decision replaced (never delete rows; fill the new row's *Supersedes* column).
+
+### 4c — Compress the now-old Round (keep latest 2 verbatim)
+`build-state.md` keeps only the **latest 2 Rounds verbatim**. The Round that just became
+third-newest: MOVE its full text to the top of the rounds section in `build-state-archive.md`
+(same memory dir), and replace it in `build-state.md` with a **≤5-line summary**: what
+shipped · key commits/migrations · counts · LESSON/Gotcha one-liners · pointers
+(`→ [[topic-memory]] + archive`). Lessons must survive compression — if a LESSON isn't
+already in CLAUDE.md's traps or a topic memory, promote it (4d) BEFORE compressing.
+
+### 4d — Promote + expire
+- **Promote:** any durable lesson/trap/how-to from this session that lives only in the Round
+  narrative → move it to its semantic home (CLAUDE.md "Conventions & traps" for universal
+  traps; the relevant topic memory file otherwise; create one if none fits, + MEMORY.md line).
+- **Expire:** any memory file this session contradicted or superseded → update it or add
+  `status: superseded` to its frontmatter (+ note what replaced it). Don't delete.
 
 ## Step 5: Git commit + push (on `main`)
 
@@ -246,7 +273,8 @@ Print a short summary:
 - Files changed (count + list)
 - Docs updated (which docs, what counts shifted)
 - Artifacts regenerated (openapi paths/ops, schema_tables count, pytest result)
-- Memory Round N appended
+- Memory Round N appended + consolidation done (decisions swept into docs/decisions.md ·
+  old Round compressed to archive · lessons promoted · superseded memories marked)
 - SESSION_NOTES.md dated entry added
 - Git: committed (hash) + pushed to main
 - Backup: created at <path> (size) / skipped

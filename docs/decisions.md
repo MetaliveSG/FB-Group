@@ -1,0 +1,39 @@
+# Decision Register — CIP (FB Group)
+
+**The authority on what is currently decided.** One row per firmed decision, append-only, newest last.
+When a decision is overruled, do NOT delete its row — set its Status to `SUPERSEDED` and point the new
+row's *Supersedes* column at it. Statuses: `LOCKED` (firm, build against it) · `AGREED` (direction set,
+plan-first) · `DEFERRED` (decided *not now*) · `SUPERSEDED` (overruled — kept for the paper trail).
+
+**Capture rule (for Claude):** the moment the user firms a major decision in conversation ("locked",
+"agreed", "go with X", or overruling a design), append the row **in the same turn** — don't wait for
+wrapup. `/my-wrapup` sweeps the session for missed rows; `/my-catchup` reads the recent rows.
+Detail lives in the linked doc/memory; the row is the one-line verdict.
+
+| Date | Decision | Why (one line) | Status | Supersedes | Detail |
+|---|---|---|---|---|---|
+| 2026-05-26 | Monorepo, modular-monolith FastAPI + Next.js; OpenAPI → typed client in `packages/api-client` | one API for all clients; split to services only if load demands | LOCKED | — | memory `arch-decisions` |
+| 2026-05-26 | Auth = PyJWT HS256 + bcrypt direct; OTP/SSO mocked behind provider seams | avoid dependency drama; PoC speed; real providers are config later | LOCKED | — | memory `arch-decisions` |
+| 2026-05-29 | DB = Postgres 16 now; Postgres-vs-MSSQL re-decided post-PoC; keep JSONB usage shallow | free, SQLAlchemy-native, ARM Docker; user holds MSSQL licenses — keep the swap cheap | LOCKED | — | memory `arch-decisions` |
+| 2026-06-01 | Local-first: develop/test on local Docker; NO cloud deploy until proven locally | founder mode — don't burn time on infra before product proof | LOCKED | — | memory `user-prefs` |
+| 2026-06-01 | Member tree = TWO node kinds (Chain/Storefront); `role` is display-only; engine keys off flags (`sells`, boundary flags) | collapsing 5 labels to 2 became a label+seed change, not an RBAC rewrite | LOCKED | Enterprise/Brand/Outlet labels + `GROUP_*` role bundles | `architecture-org-tree.md` §12 |
+| 2026-06-02 | Leasing = `leases` edge table, ZERO columns on `org_nodes`; `rent_type` on the edge; FIXED = landlord-blind, GTO = turnover read-grant | 3NF — the tenancy determines rent type; foodcourt↔coffeeshop becomes a one-value flip | LOCKED | — | memory `venues-leasing-foodcourt-coffeeshop` |
+| 2026-06-03 | Storefronts auto-provision Outlet+Menu(`id==node.id`)+Table+QR on create; `qr_path` node-keyed; clean boot (`SEED_ON_START=0`) | a UI-onboarded storefront must be immediately scannable; settles the contested QR-menu behaviour | LOCKED | R37 contested `_qr_paths_for` behaviour | memory `storefront-provisioning-qr-menu` |
+| 2026-06-04 | Direction = MVP, not PoC; MVP merchant is FULLY on our stack → NO external-POS ingestion / receipt-dedup in MVP | every sale already uniquely id'd on-stack; external capture is post-MVP | LOCKED | `implementation-phases.md` Phase 3 (external-POS API) | memory `roadmap-mvp-foundation` |
+| 2026-06-04 | Report timezone: ONE tz per report (incl. drill-down), tenant-level `Merchant.settings["timezone"]`; NEVER derived from `Outlet.timezone` | a parent spans many outlets → ambiguous window breaks parent↔child recon | LOCKED | — | `reporting-timezone.md` |
+| 2026-06-04 | Unified tree-scoped console: operator sits at the member-tree ROOT, ONE console, features scope downward (3 page tiers) | fixes operator "missing merchant id" 500s; one mental model | AGREED (Stage 1 built) | — | `architecture-unified-console.md` |
+| 2026-06-05 | Vouchers = shared core, TWO issuers (loyalty=earned · campaign=granted), ONE cashier redemption flow | litmus: *earned/always-on/everyone* vs *granted to a trigger/segment* — same redeem either way | LOCKED | — | `architecture-vouchers.md` |
+| 2026-06-07 | Workflow: commit DIRECTLY to `main` — no PR/branch flow; CI runs on push, informational only | 2-person team; PR overhead beat its value | LOCKED | R34 branch-protection + PR flow | memory `workflow-direct-to-main` |
+| 2026-06-08 | Product = **Customer Intelligence Platform (CIP)**; 3 toggleable modules (Table QR · Intelligence · POS) on one always-on core via the `record_sale()` seam | intelligence-led growth positioning; modules = packaging, core = one engine | LOCKED | — | `architecture-3-modules.md` |
+| 2026-06-08 | Web role palette = Manager/Viewer/Finance; POS palette = Supervisor/Cashier; the two login surfaces fully segregated (`User.kind`) | a shared till is not a web identity; void = the Supervisor differentiator | LOCKED | web "staff"/"cashier" roles | memory `roles-reference` |
+| 2026-06-10 | Module flags = BINARY + parent-gated (`effective = AND of own-flags up the path`); a child cannot re-enable under a parent's OFF | user rejected 3-state "inherit" as redundant; AND-up-path is the simplest correct cascade | LOCKED | R40 3-state inherit flags (`b6c7modflags` semantics) | memory `platform-console-treegrid` |
+| 2026-06-10 | `mod_wallet` = 4th toggle, opt-in (default OFF) AND requires Table QR effective-ON | wallet rides on QR ordering; no standalone wallet surface | LOCKED | — | memory `wallet-connector-4th-toggle` |
+| 2026-06-10 | Customer-scan domains = per-tenant `{slug}.mycip.io` (apex `mycip.io`); QR host from PER-TENANT config, never browser origin; BYO custom domains = post-MVP | printed QR codes are permanent; one wildcard cert + one edge serves every tenant | LOCKED | — | `architecture-scan-domains.md` |
+| 2026-06-10 | KDS auth = STATION BINDING (private, revocable per-outlet station token) — not a web login, not a per-person PIN; module flag gates ACCESS, never credential lifecycle | a kitchen tablet is a shared station; toggle-driven credential churn would cascade PINs | LOCKED | — | `architecture-fulfilment-modes.md` §KDS |
+| 2026-06-10 | Fulfilment ≠ payment: additive `fulfilment_status` (QUEUED→PREPARING→READY→COLLECTED); `order.status` COMPLETED stays = *paid* | repurposing COMPLETED would ripple into void + reports; matches Toast/Square separation | LOCKED | — | `architecture-fulfilment-modes.md` |
+| 2026-06-10 | Service options = TWO orthogonal axes (dining context × hand-off); storefront configures the SET (cascade), diner picks per order; the "ready" alert keys off `self_pickup` | Toast/Olo bundle dine-in=table-service → can't model SEA foodcourt eat-in-self-collect (the M4 moat) | LOCKED | the single-axis "dine_in vs pickup mode" design (2026-06-08) | `architecture-fulfilment-modes.md` |
+| 2026-06-11 | Per-stall service options in a foodcourt = NOT needed now → folded into M2 | foodcourt orders attribute to the VENUE outlet until M2 stall-outlet attribution; real foodcourts are uniformly self-service | DEFERRED (into M2) | — | `architecture-fulfilment-modes.md` |
+| 2026-06-11 | Customer token TTL = 1 week (staff stays 8h) | a diner shouldn't re-OTP mid-meal or on a return visit; staff sessions stay short | LOCKED | — | build-state R42 |
+| 2026-06-12 | i18n = 3 DECOUPLED axes: language=person · currency=settlement · timezone=place | Grab-validated — a diner's language never changes the money or the time | LOCKED | — | memory `i18n-l10n-foundation` |
+| 2026-06-12 | Brand theming = `org_nodes.theme` JSON, nearest-ancestor-wins cascade; `_THEME_KEYS` is the single gate for adding keys | enterprise→brand→stall inheritance with one code path | LOCKED | — | build-state R43 |
+| 2026-06-12 | Memory lifecycle = tiered (CLAUDE.md constitution ≤~2k words · memory index+files · episodic log keeps last 2 Rounds verbatim · claude-mem archive) + wrapup consolidation (promote/compress/expire) + THIS register as the decision authority | always-loaded tier stays constant-size while the archive grows; staleness becomes machine-visible | LOCKED | append-only build-state Rounds as the decision record | memory `memory-lifecycle` |

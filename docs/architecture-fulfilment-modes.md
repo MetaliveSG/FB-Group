@@ -4,8 +4,9 @@ _Decision 2026-06-08, **corrected to the two-axis model 2026-06-10** after study
 CIP's **Ordering** module must serve **every F&B format** by configuration, not by hardcoding one — and
 crucially **NOT** as a single "dine-in vs pickup" mode (that was wrong). Fulfilment has **two orthogonal
 axes**; a storefront configures the **set** of options it offers; the diner/staff **picks one per order**.
-Status: PLAN (the "ready" half — KDS + `fulfilment_status` + customer tracker — is BUILT; the config + the
-second axis + per-order selection are to build). Aligns with the Foundation Contract (#5/#6/#7) and the
+Status: **BUILT 2026-06-10/11 (R42)** — two-axis config (`org_nodes.service_options` cascade) + the
+`Order.hand_off` axis + per-order selection + KDS + the diner ready notification are all live; remaining
+gaps listed under "Still to add". Aligns with the Foundation Contract (#5/#6/#7) and the
 3-module ADR (`docs/architecture-3-modules.md`)._
 
 ## How the industry models it (study)
@@ -54,18 +55,38 @@ operating-model moat, not a Toast clone).
   flags (org-node config, **cascade-resolved** so a foodcourt sets it once high and stalls inherit;
   `Merchant.settings` fallback). Each option = a `(dining_context, hand_off)` pair (named for the UI, e.g.
   "Dine in — self-collect", "Takeaway", "Dine in — served").
-- **On the `Order`:** record **both axes** (e.g. `dining_context` + `hand_off`) — or one `service_option` FK
-  referencing the chosen option. Today the model has only `order_type` (`dine_in | takeaway | manual`); the
-  **`hand_off` axis is the missing piece**. `order_type !== "dine_in"` is the current stand-in for
-  `self_pickup` and should be replaced by the explicit hand-off axis. Default = back-compat (`eat_in` +
-  `served`) so existing table-QR data is unchanged. Migration adds the column(s).
+- **On the `Order`:** both axes recorded — `order_type` (dining context: `dine_in | takeaway | manual`)
+  + **`hand_off`** (`self_pickup | served`, migration `h2i3serviceopts`, default `served` for
+  back-compat). `create_order` DERIVES both from the chosen/enabled service option and rejects an
+  unoffered option (409).
 - **Conditional identifier:**
   - `served` (or any `eat_in`) → `table_id` (existing `DiningTable` + table QR).
   - `self_pickup` → **`pickup_number`** — a short human token (per stall, per day, rotating) generated at
     checkout; shown to the diner, included in the "ready" alert, quoted at collection. **No table.**
-- **Status lifecycle (BUILT this round):** the kitchen owns **`fulfilment_status`**
-  (`queued→preparing→ready→collected`), separate from payment `status` — see the KDS section in `CLAUDE.md`.
+- **Status lifecycle (BUILT):** the kitchen owns **`fulfilment_status`**
+  (`queued→preparing→ready→collected`), separate from payment `status` — see §Kitchen display below.
   The diner "ready" alert fires on `ready` **only for `self_pickup`**.
+
+## Kitchen display (KDS) — as built (LOCKED 2026-06-10; moved here from CLAUDE.md 2026-06-12)
+**The kitchen screen (`/kds`) is a back-of-house DISPLAY, not a dashboard.**
+- **Auth model = station binding, NOT a web/email login and NOT a per-person password** (a kitchen tablet
+  is a shared station; per-cook attribution is not needed for MVP). The "role" (view this outlet's open
+  tickets + advance ticket status) is **baked into a private, revocable per-outlet station token** issued
+  from the console — NOT the public QR token (that's semi-public; a separate private token so nobody with
+  a table's QR can open the kitchen). A `RoleName.KITCHEN` PIN role on the **POS palette** (`kind="pos"`,
+  never web) is the LATER upgrade only if per-person attribution is wanted.
+- **Gate = Table QR effective-ON** (`resolve_modules`) controls whether the kitchen screen is reachable;
+  the module flag gates ACCESS, never credential lifecycle (don't mint/destroy credentials on a toggle
+  flip — it cascades + churns PINs).
+- **Fulfilment vs payment are SEPARATE statuses (decided 2026-06-10).** `checkout()` sets `order.status`
+  COMPLETED on pay (COMPLETED = *paid*, drives reports/void — do NOT repurpose it). The kitchen owns the
+  separate additive **`fulfilment_status`** (QUEUED→PREPARING→READY→COLLECTED), orthogonal to payment.
+  **"Pick up" button = mark READY** (the order-ahead+pay+collect model). KDS queue = paid orders
+  (`status=COMPLETED`) where `fulfilment_status≠COLLECTED`, oldest-first (FIFO).
+- **Preview slice (built 2026-06-10):** `/kds` runs in the MERCHANT/operator session (owner previews it);
+  the station-token issue/revoke is the hardening step (deferred). Launched standalone (new window) from
+  the `/platform` tree-grid "Open Kitchen" (gated on Table-QR) + `/merchant/orders`. Shows the 🍽/📦
+  service-option cue per ticket; never shows the diner's phone (order# + full_name only).
 
 ## Foundation Contract alignment (why this is additive, not a rebuild)
 - **#5** — the resolver keys off **seller (stall/menu, `menu.id==node.id`), not table**; `table` is an
