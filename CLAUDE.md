@@ -143,6 +143,13 @@ venue/lease/settlement/franchising/Storefront-re-key (all post-MVP).
 - DB creds (compose): user/pass/db all `fbgroup`. Connect tools to `localhost:5432`.
 
 ## Conventions & traps
+- **NO drive-by .md files (LOCKED 2026-06-12).** Never create a new .md unless (a) the user asked for
+  it, or (b) it's a genuinely new domain with no existing home — and then REGISTER it in the same turn
+  (`docs/README.md` status row for repo docs; `MEMORY.md` line for memories). Default = update the
+  existing home: decision → `docs/decisions.md` · session narrative → `SESSION_NOTES.md` + the
+  build-state Round · design detail → the existing `docs/architecture-*.md` · plans/scopes → the doc
+  they extend · context/preference → an existing memory topic file. An unindexed file is invisible
+  next session — memory debt, not memory.
 - **Multi-tenant**: nearly every query is scoped by `merchant_id`. Lead with it in any composite index.
   Operator (super_admin) drills into merchants via `?merchant_id=`.
 - **Money** = `Numeric(12,2)` as Python `Decimal`. **PKs** = `String(32)` hex UUID (`uuid4().hex`).
