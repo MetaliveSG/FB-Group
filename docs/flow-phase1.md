@@ -33,6 +33,104 @@ both ways · idempotent · **zero customer personal data enters uPOS** (PDPA-cle
 
 ## The step flow
 
+### Plain-text version (readable anywhere — terminal, raw file)
+
+```text
++--------------------------------------------------------+
+| 1 . Diner queues - sees standee:                       |
+|     "SCAN FOR $10 FREE VOUCHERS"                       |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| 2 . Scans & registers in 30s                           |
+|     phone + OTP + one consent tap                      |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| 3 . Welcome pack lands: 5 x $2                         |
+|     voucher #1 unlocked . #2-5 locked                  |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| 4 . Orders 2 kopi -                                    |
+|     cashier bills $3 on uPOS   <----------------+      |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| 5 . Diner shows $2 voucher QR                          |
+|     one-time code . 90s . nothing burned yet           |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| 6 . Cashier scans the QR -                             |
+|     code attaches to the bill                          |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| 7 . Cashier SUBMITS the txn -                          |
+|     uPOS POSTs to CIP API                              |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| 8 . CIP validates + redeems - ONE atomic call          |
+|     single-use . min-spend vs FINAL bill               |
++--------------------------------------------------------+
+        valid |                | duplicate / already-used /
+              |                | below min-spend
+              |                v
+              |   +--------------------------------------+
+              |   | x TXN FAILS - till prompts another   |
+              |   |   tender . nothing burned .          |
+              |   |   queue keeps moving                 |
+              |   +--------------------------------------+
+              v
++--------------------------------------------------------+
+| 9 . uPOS applies -$2 -                                 |
+|     till shows $1 balance                              |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| 10 . Diner pays $1 cash/PayNow -                       |
+|      transaction completes                             |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| 11 . Her phone: OK redeemed .                          |
+|      300 coins provisional . voucher #2 UNLOCKED       |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| 12 . Later (can lag): uPOS webhook -                   |
+|      location/stall . items + OPTIONS                  |
+|      (chilli/no chilli . dry/soup) . amount . txn id   |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| 13 . CIP matches by txn id: items +                    |
+|      preferences -> her profile . coins CONFIRMED      |
++--------------------------------------------------------+
+                            |
+                            v
++--------------------------------------------------------+
+| 14 . CRM/AI: she loves kopi ->                         |
+|      sends kopi voucher -> SHE RETURNS                 |
+|      (return visit: skip 1-3, voucher #2 -> step 4)    |
++--------------------------------------------------------+
+```
+
+### Same flow, rendered (GitHub / VS Code preview with the Mermaid extension)
+
 ```mermaid
 flowchart TD
     S1["1 · Diner queues — sees standee:<br/>SCAN FOR $10 FREE VOUCHERS"]
