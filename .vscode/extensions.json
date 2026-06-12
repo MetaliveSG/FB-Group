@@ -6,6 +6,8 @@
     "mtxr.sqltools-driver-pg",
     // Microsoft's official Postgres extension — schema-aware IntelliSense, GUI connect.
     // (Optional alternative GUI; connections are configured in its own UI, not this file.)
-    "ms-ossdata.vscode-pgsql"
+    "ms-ossdata.vscode-pgsql",
+    // Renders Mermaid diagrams (docs/flow-phase1.md etc.) inside VS Code's markdown preview
+    "bierner.markdown-mermaid"
   ]
 }
