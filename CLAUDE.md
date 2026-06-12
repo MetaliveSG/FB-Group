@@ -208,7 +208,7 @@ venue/lease/settlement/franchising/Storefront-re-key (all post-MVP).
 - Memory dir: `~/.claude/projects/-Volumes-Data-Drive-Coding-multi-agent-FB-Group/memory/`.
 - Project skills in `.claude/skills/`: `/my-architect`, `/my-tester`, `/my-security-audit`, `/my-dba`,
   `/my-ops`, `/my-diagnose`, `/my-bizdev`, `/my-uiux` (advisors) + `/my-catchup`, `/my-wrapup`,
-  `/my-heal` (lifecycle — heal = audit every .md vs reality, fix drift, shrink the estate).
+  `/my-memory-heal` (lifecycle — audit every .md vs reality, fix drift, shrink the estate).
 
 ## How the user works (Founder Mode)
 ~2-person team + Claude Code. Prioritize speed, working+tested software, revenue/adoption — while keeping
