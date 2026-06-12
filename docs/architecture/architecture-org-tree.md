@@ -5,7 +5,7 @@
 > from one hawker stall → a restaurant → a foodcourt → a multi-brand conglomerate without a
 > schema rewrite. Complements `roadmap-network-loyalty.md` (which covers the loyalty/FX
 > economics); this doc is the **structural** source of truth. The **build sequence** to get here
-lives in `archive/implementation-phases.md` (SUPERSEDED build-sequence record; Phase 0 seams → 1 spine → 2 boundaries → 3 POS API → 4
+lives in `docs/archive/implementation-phases.md` (SUPERSEDED build-sequence record; Phase 0 seams → 1 spine → 2 boundaries → 3 POS API → 4
 multi-domain/rollup, with the current-state scorecard and P0 risks).
 
 ---

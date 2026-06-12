@@ -16,7 +16,7 @@ Read these files to understand the system before debugging:
 - `apps/api/app/loyalty/engine.py` (for any points/accrual issue)
 - `apps/api/app/db/session.py` (DB session lifecycle)
 - `~/.claude/.../memory/build-state.md` (architectural decisions + recorded lessons)
-- `docs/architecture.md` (capture loop, multi-tenancy, identity model)
+- `docs/architecture/architecture.md` (capture loop, multi-tenancy, identity model)
 
 ## Diagnostic Toolkit
 
@@ -256,7 +256,7 @@ When reporting findings:
 
 ## Context
 
-System overview: `docs/architecture.md` — pay attention to the capture loop
+System overview: `docs/architecture/architecture.md` — pay attention to the capture loop
 narrative, the multi-tenant `merchant_id` predicate, and the identity model
 (customers vs users).
 

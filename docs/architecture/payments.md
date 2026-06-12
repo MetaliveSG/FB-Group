@@ -2,7 +2,7 @@
 
 _Replaces the **mock** payment in CIP checkout with real money for the SG foodcourt pilot, plus the FSG
 stored-value wallet and the uPOS side-integration. Plugs into the existing `checkout`/`record_sale()`
-path. Critical-path #1 for the pilot (`docs/foodcourt-pilot-kit.md`). **Status: PLAN** (nothing built).
+path. Critical-path #1 for the pilot (`docs/business/foodcourt-pilot-kit.md`). **Status: PLAN** (nothing built).
 Consolidated 2026-06-12 from `payments-scope.md` + `payments-build-spec.md` + `wallet-scope.md` +
 `upos-integration-spec.md` (originals removed; full text in git history). Verify exact HitPay API fields
 against their current docs before coding. Wallet section ≠ legal advice._

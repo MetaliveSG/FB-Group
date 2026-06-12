@@ -86,7 +86,7 @@ When asked to evaluate or design a retention feature, run it through these:
 - **GST 9% + service charge 10%** — already wired (`settings.GST_RATE`, `settings.SERVICE_CHARGE_RATE`). Note: service charge is gratuity for staff, taxed differently from the merchant's POV
 - **Hawker stall avg ticket**: $5-8. Coffee shops: $10-15. Casual dining: $20-40. Fine dining: $80+
 - **Mobile-first**: SG smartphone penetration 88%+; WhatsApp the dominant messaging app (different from MY/ID). Mock provider already targets WhatsApp
-- **PDPA**: customer phone/email/birthday are PII. Retention/erasure flows not yet built (`docs/security.md` flags this as a P2 KIV)
+- **PDPA**: customer phone/email/birthday are PII. Retention/erasure flows not yet built (`docs/reference/security.md` flags this as a P2 KIV)
 - **Coalition culture**: PassionCard (PA), CapitaStar (CapitaLand malls), CDC vouchers (gov). SG diners already trust multi-merchant programs
 - **Hawker culture**: tier-3 merchants (hawker stalls) won't pay SaaS subscriptions. Focus on **tier-1 (chains, multi-outlet)** for direct sales; tier-2 (single-location casual dining) via channel partners; tier-3 only via the coalition program (free merchant tier, FB Group monetizes via diners or partner brands)
 - **Reliability matters more than features**: SG merchants are pragmatic. A reliable basic CRM beats a feature-rich flaky one. Lean into the PoC's idempotency, sync helpers, and resilience patterns as a marketing point
@@ -167,7 +167,7 @@ state (Rounds 1-14 in `~/.claude/.../memory/build-state.md`):
 - Open strategic decisions (Round-10 Luckin study context): **referral program is the top missing lever**; private community groups, coupon budget guardrails, attribution-sweep are also gaps
 
 Reference docs:
-- `docs/product-requirements.md` (scope)
+- `docs/reference/product-requirements.md` (scope)
 - `docs/delivery-report.md` (consolidated state)
 - `~/.claude/.../memory/build-state.md` (every shipped + KIV item)
 

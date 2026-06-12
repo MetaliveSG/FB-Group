@@ -239,8 +239,8 @@ Test scripts: `apps/api/app/tests/` (20 files)
 Factory: `apps/api/app/tests/factories.py::make_world`
 Helpers: `apps/api/app/tests/helpers.py` (H, register_customer, place_order, checkout, staff_token)
 Conftest: `apps/api/app/tests/conftest.py` (in-memory SQLite + StaticPool + TestClient)
-Architecture: `docs/architecture.md`
-Test coverage map: `docs/testing.md`
+Architecture: `docs/architecture/architecture.md`
+Test coverage map: `docs/reference/testing.md`
 
 ## How to Respond
 

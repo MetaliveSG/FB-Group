@@ -3,11 +3,11 @@
 _Operational runbook for the greenlit **+10% foodcourt pilot** at **FSG** (foodcourt operator; all stalls on
 **one POS vendor — uPOS**, one unit per stall). KPI: **+10% court transactions (+SGD 2.6M on a $26M base).**
 **All customer-facing = webapp (PWA), no app install.** uPOS is **not replaced** — small tweaks only
-(see `docs/payments.md §8 (uPOS)`)._
+(see `docs/architecture/payments.md §8 (uPOS)`)._
 
 **Two lanes — cover everyone, force nobody:**
 - **Non-queue → ORDER-AHEAD** *(the +10% engine).* Scan stall/court QR → CIP webapp → order + pay (PayNow/
-  cards) + collect when ready (**pickup** fulfilment mode — no table numbering; `docs/architecture-fulfilment-modes.md`).
+  cards) + collect when ready (**pickup** fulfilment mode — no table numbering; `docs/architecture/architecture-fulfilment-modes.md`).
   Exact data; stacks **balker-recovery + ticket upsell (+10–15%) + frequency + retention.**
 - **Queue → SCAN RECEIPT QR** *(the retention net).* Order + pay at the uPOS counter as usual → uPOS prints a
   **signed receipt QR** → diner scans → CIP webapp → **verified coins.** Opt-in (a subset of queuers scan).
@@ -65,11 +65,11 @@ loyalty + welcome voucher, cross-stall coin ring, RFM, games.
 **Build before pilot (engineering, in priority order):**
 1. **Real payment** — PayNow (SG primary) + cards. ⚠️ **#1 critical-path** (checkout is mock today; no
    order-ahead without real money). Plugs into the existing checkout/`record_sale` path.
-2. **uPOS tweaks** (one vendor → one integration, all stalls — spec in `docs/payments.md §8 (uPOS)`):
+2. **uPOS tweaks** (one vendor → one integration, all stalls — spec in `docs/architecture/payments.md §8 (uPOS)`):
    - **Outbound webhook** — uPOS POSTs every sale to CIP → **100% capture + the +10% baseline/measurement.** *(the high-payoff small tweak)*
    - **Signed receipt-QR** — uPOS prints a QR with a **signed/registered txn token** on the receipt → queue-lane verified earn. *(small)*
    - **Inbound order injection** — accept CIP orders into the uPOS queue → order-ahead on the stall's own POS, no order screen. *(verify it's actually small; else use the order screen.)*
-3. **Fulfilment mode = pickup** (`docs/architecture-fulfilment-modes.md`): `Order.fulfilment_type`
+3. **Fulfilment mode = pickup** (`docs/architecture/architecture-fulfilment-modes.md`): `Order.fulfilment_type`
    (+migration, default dine_in), per-storefront `fulfilment_modes`, **pickup-number** generation, **table
    attachment conditional** (off for these stalls).
 4. **Receipt-QR claim flow** (webapp) — scan signed QR → match the webhook txn → award verified coins.
@@ -151,7 +151,7 @@ loyalty + welcome voucher, cross-stall coin ring, RFM, games.
 | Margin erosion (bought growth) | coupon-budget caps · RFM-targeted · margin-per-redemption |
 | Seasonality skews result | per-stall baseline + YoY; holdout on the retention slice |
 | Device theft | tether + kiosk MDM · spares |
-| **uPOS tweaks slip** (webhook/QR/injection late or "not small") | get the 4-Q capability answer + cost/timeline **Wk-0** (`docs/payments.md §8 (uPOS)`); webhook + signed-QR are the must-haves; inbound injection has the order-screen fallback; FSG (the paying customer) applies the pressure |
+| **uPOS tweaks slip** (webhook/QR/injection late or "not small") | get the 4-Q capability answer + cost/timeline **Wk-0** (`docs/architecture/payments.md §8 (uPOS)`); webhook + signed-QR are the must-haves; inbound injection has the order-screen fallback; FSG (the paying customer) applies the pressure |
 
 ---
 

@@ -12,7 +12,7 @@ seriously — this is the foundation for a production retention platform.
 ## Audit Checklist
 
 Read ALL of these files first, then run every check below. The project's
-documented threat model lives in `docs/security.md` — read it before starting
+documented threat model lives in `docs/reference/security.md` — read it before starting
 so you can compare claims vs reality.
 
 Key files:
@@ -25,7 +25,7 @@ Key files:
 - `apps/api/app/api/routes/*.py`
 - `apps/api/app/services/*.py`
 - `apps/api/app/services/whatsapp.py` (mock provider)
-- `docs/security.md` (documented threat model)
+- `docs/reference/security.md` (documented threat model)
 - `infra/docker-compose.yml`
 
 ### 1. Secrets & Credential Exposure
@@ -80,7 +80,7 @@ The tests `test_crm.py::test_cross_merchant_isolation`, `test_pipeline_modes.py`
 - Verify campaign send doesn't trust a client-supplied audience — `build_audience` derives from segment query
 
 ### 7. Authentication Mocks (PoC limitations to flag explicitly)
-The PoC uses mocks that are intentionally listed in `docs/security.md`:
+The PoC uses mocks that are intentionally listed in `docs/reference/security.md`:
 - OTP (in-process `otp_store`, debug code returned in dev only via `DEBUG=true`)
 - WhatsApp (`MockWhatsAppProvider` + `send_with_retry`)
 - Payments (simulated outcome via `force_outcome` param)
@@ -165,8 +165,8 @@ Sort findings by severity (CRITICAL first). End with a summary count and a one-l
 ## Context
 
 This is the **FB Group F&B CRM PoC** — multi-tenant SaaS for Singapore F&B retention.
-Documented threat model: `docs/security.md`. Production hardening checklist also lives there.
-Architecture: `docs/architecture.md` (RBAC + scope resolution under "Multi-tenancy" and "Identity model" sections).
+Documented threat model: `docs/reference/security.md`. Production hardening checklist also lives there.
+Architecture: `docs/architecture/architecture.md` (RBAC + scope resolution under "Multi-tenancy" and "Identity model" sections).
 
 Key invariants to preserve in any audit recommendation:
 - Multi-tenant isolation by `merchant_id` predicate (single highest-priority guarantee)

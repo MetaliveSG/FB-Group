@@ -6,11 +6,11 @@ size: 16:9
 ---
 
 <!-- FSG chairman deck — Big-4 grade, red/yellow master. Render:
-     marp docs/fsg-chairman-deck.md --pdf  --allow-local-files
-     marp docs/fsg-chairman-deck.md --pptx --allow-local-files
+     marp docs/business/fsg-chairman-deck.md --pdf  --allow-local-files
+     marp docs/business/fsg-chairman-deck.md --pptx --allow-local-files
      Numbers illustrative — insert FSG actuals. Decided architecture: no POS change; small uPOS
      integration (webhook + signed receipt-QR) + a small tablet at anchor stalls. Source narrative:
-     docs/cip-vs-salesforce-fnb.md, foodcourt-pilot-kit.md, payments.md. -->
+     docs/business/cip-vs-salesforce-fnb.md, foodcourt-pilot-kit.md, payments.md. -->
 
 <style>
 :root{
@@ -150,7 +150,7 @@ section.center{ text-align:center; } section.center h1::after{ margin:12px auto 
 
 ![w:1100](../artifacts/uiux-benchmark/fsg-flow-e2e.svg)
 
-<div class="src">Grounded in docs/foodcourt-pilot-kit.md §0 — ① no-queue = order-ahead (+10% engine); ② queue = scan signed receipt-QR (retention). Both feed one engine.</div>
+<div class="src">Grounded in docs/business/foodcourt-pilot-kit.md §0 — ① no-queue = order-ahead (+10% engine); ② queue = scan signed receipt-QR (retention). Both feed one engine.</div>
 
 ---
 

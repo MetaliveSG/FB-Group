@@ -3,7 +3,7 @@
 _GTM collateral for the deal where **KPMG has recommended Salesforce** to an F&B group (recommendation
 only — nothing bought). Goal: diagnose the real job, then position CIP as the **necessary** F&B layer
 (Salesforce = optional). Don't attack KPMG; reframe the question. Cost figures are public benchmarks —
-verify against the actual quote. See also `docs/positioning.md`, memory `moat-register`._
+verify against the actual quote. See also `docs/business/positioning.md`, memory `moat-register`._
 
 ---
 

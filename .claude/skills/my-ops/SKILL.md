@@ -337,14 +337,14 @@ This is the **FB Group F&B CRM PoC** — Docker-compose stack on a single host:
 - `DEBUG=true` in compose so OTP debug_code is returned (dev only)
 - `ACCESS_TOKEN_EXPIRE_MINUTES=480` (8h demo TTL)
 
-Production target (per `docs/deployment.md`): ECS Fargate + RDS Multi-AZ +
+Production target (per `docs/reference/deployment.md`): ECS Fargate + RDS Multi-AZ +
 ElastiCache + Secrets Manager + CloudWatch + ALB + WAF. None of that is
 implemented yet — current PoC is single-host Docker.
 
-Architecture: `docs/architecture.md`
-Deployment / target topology: `docs/deployment.md`
-BC/DR posture: `docs/bc-dr.md`
-Security model: `docs/security.md`
+Architecture: `docs/architecture/architecture.md`
+Deployment / target topology: `docs/reference/deployment.md`
+BC/DR posture: `docs/reference/bc-dr.md`
+Security model: `docs/reference/security.md`
 
 ## Demo Credentials
 

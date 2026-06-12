@@ -128,7 +128,7 @@ When moving to production with > 1 API replica:
 - Set `default_pool_size` ≈ `(cpu_cores * 2) + effective_spindle_count` per backend instance (rule of thumb)
 - Sentence the Postgres `max_connections` to ~200 even with thousands of clients — PgBouncer absorbs the multiplexing
 - Caveat with SQLAlchemy + transaction mode: prepared statement cache (`server_side_cursors`) must be disabled at the connection-string level (`?prepare_threshold=0` for psycopg) — already on psycopg v3
-- The PoC docker-compose doesn't include PgBouncer — flag it as a P2 for production move (`docs/deployment.md` mentions it as part of the AWS-target topology)
+- The PoC docker-compose doesn't include PgBouncer — flag it as a P2 for production move (`docs/reference/deployment.md` mentions it as part of the AWS-target topology)
 
 ### Replica Strategy
 
@@ -225,8 +225,8 @@ WHERE NOT granted;
 | `apps/api/app/db/base.py` | `Base`, `PKMixin`, `TimestampMixin`, `utcnow` |
 | `apps/api/app/db/session.py` | Session factory + `get_db` dependency |
 | `infra/docker-compose.yml` | DB service config + healthcheck |
-| `docs/database.md` | Schema overview by domain |
-| `docs/deployment.md` | AWS-target topology (RDS Multi-AZ + ElastiCache + …) |
+| `docs/reference/database.md` | Schema overview by domain |
+| `docs/reference/deployment.md` | AWS-target topology (RDS Multi-AZ + ElastiCache + …) |
 
 ## How to Respond
 

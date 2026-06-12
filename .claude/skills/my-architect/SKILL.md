@@ -54,7 +54,7 @@ Enforce industry-standard Python conventions:
 - **Speed**: avoid N+1 in CRM list_customers (already hits issues with per-customer queries — flag if making worse); page rendering shouldn't block on optional endpoints (jackpot is optional with `.catch(() => null)`)
 - **Accuracy**: `Decimal` for money, banker's rounding; UUIDs as `String(32)` hex; naive-UTC datetimes via `app.db.base.utcnow()`
 - **Maintainability**: separation of concerns (routes → services → models); service layer holds business logic; analytics in `app/analytics/`; tests in `app/tests/`
-- Compare against the documented architecture (`docs/architecture.md`) — flag drift
+- Compare against the documented architecture (`docs/architecture/architecture.md`) — flag drift
 
 ### 4. Test Case Generation
 Use pytest, mirror existing patterns (`app/tests/conftest.py` provides isolated in-memory SQLite + StaticPool + TestClient):
@@ -102,8 +102,8 @@ This is the **FB Group F&B CRM PoC** — a Singapore-flavoured QR ordering / loy
 - **Personas**: Operator (super admin) → Merchant (owner / outlet manager / staff) → Customer (diner)
 - **Modules**: tenancy, identity/RBAC, catalog, orders, payments, loyalty (+coalition), CRM (segments/tags/notes), engagement (wheel, **jackpot**, tasks, opportunities, activities), campaigns (WhatsApp mock + win-back launcher), analytics + RFM + **AI Insights advisor**, audit
 
-Architecture: `docs/architecture.md`
-API reference: `docs/api.md`
+Architecture: `docs/architecture/architecture.md`
+API reference: `docs/reference/api.md`
 Conventions: `CLAUDE.md` (project) + `~/.claude/.../memory/build-state.md` (running notes)
 
 ## Completeness Checklist (MANDATORY)
@@ -198,12 +198,12 @@ You are the **lead skill**. The other skills are your team — know when to invo
 - "I'm changing the AI insights context" → does the heuristic still produce sensible output? Does the schema still validate? Is the cached system prompt still cached?
 
 **Documentation ownership:**
-- Architectural decisions → `docs/architecture.md`
-- API endpoint additions → `docs/api.md`
-- Test coverage → `docs/testing.md`
-- Deployment changes → `docs/deployment.md` (+ `bc-dr.md` for resilience)
-- Security posture → `docs/security.md`
-- Schema → `docs/database.md`
+- Architectural decisions → `docs/architecture/architecture.md`
+- API endpoint additions → `docs/reference/api.md`
+- Test coverage → `docs/reference/testing.md`
+- Deployment changes → `docs/reference/deployment.md` (+ `bc-dr.md` for resilience)
+- Security posture → `docs/reference/security.md`
+- Schema → `docs/reference/database.md`
 - Consolidated state → `docs/delivery-report.md` (counts: 88 endpoints / 40 tables / 6 migrations / 90 tests / 18 web routes)
 - Running notes → `~/.claude/.../memory/build-state.md`
 - Never duplicate across docs — link

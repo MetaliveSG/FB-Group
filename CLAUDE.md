@@ -4,9 +4,9 @@
 **The system is "Customer Intelligence Platform" (CIP)** — helps F&B merchants **grow using customer
 intelligence**: five modules **CRM · AI · Payment · Ordering · Rewards**, positioned as *intelligence-led
 growth* (data from ordering/payment/rewards feeds the CRM+AI). Repo/codename "FB Group" (SG F&B PoC→MVP).
-Maps to the 3-module engine (Table QR · **Intelligence** · POS) on one core — `docs/architecture-3-modules.md`.
+Maps to the 3-module engine (Table QR · **Intelligence** · POS) on one core — `docs/architecture/architecture-3-modules.md`.
 Overview + capture-loop diagram in `README.md`; this file = operating guidance for Claude.
-**Pitch · growth model · GTM** → `docs/positioning.md` (or `/my-bizdev`).
+**Pitch · growth model · GTM** → `docs/business/positioning.md` (or `/my-bizdev`).
 
 ## Decision register — `docs/decisions.md` (THE authority on what's decided)
 **When the user firms a major decision** ("locked" / "agreed" / "go with X" / overruling a design),
@@ -15,7 +15,7 @@ and mark any overruled row `SUPERSEDED` (never delete). Don't wait for wrapup (`
 for missed rows; `/my-catchup` reads recent rows). The register outranks memory prose and doc narrative
 when they disagree.
 
-## Customer-scan domains (QR · LOCKED 2026-06-10 → `docs/architecture-scan-domains.md`)
+## Customer-scan domains (QR · LOCKED 2026-06-10 → `docs/architecture/architecture-scan-domains.md`)
 Per-tenant scan host = **`{slug}.mycip.io`** (apex `mycip.io`); printed QR encodes
 `https://{slug}.mycip.io/t/{token}` (or `…/t/node/{id}`). **The QR host comes from PER-TENANT config,
 never `window.location.origin`** — the tables page + `/platform` QR button do it the PoC way today and
@@ -23,7 +23,7 @@ MUST be fixed before any real QR prints (printed codes are permanent). Backend `
 validate the token's tenant matches the host's tenant. `slug` field + tenant resolver NOT built; BYO
 custom domains = post-MVP (Tier 3).
 
-## Kitchen display (KDS · LOCKED 2026-06-10 → `docs/architecture-fulfilment-modes.md` §KDS)
+## Kitchen display (KDS · LOCKED 2026-06-10 → `docs/architecture/architecture-fulfilment-modes.md` §KDS)
 `/kds` is a back-of-house DISPLAY. Auth = **station binding** (private, revocable per-outlet station
 token) — NOT a web login, NOT a per-person PIN; Table-QR effective-ON gates ACCESS, the flag never
 drives credential lifecycle. **Fulfilment ≠ payment:** additive **`fulfilment_status`**
@@ -31,7 +31,7 @@ drives credential lifecycle. **Fulfilment ≠ payment:** additive **`fulfilment_
 NOT repurpose). KDS queue = paid ∧ not-collected, FIFO. Preview slice runs in the merchant session;
 station-token issue/revoke deferred.
 
-## Service options (fulfilment · LOCKED 2026-06-10 → `docs/architecture-fulfilment-modes.md`)
+## Service options (fulfilment · LOCKED 2026-06-10 → `docs/architecture/architecture-fulfilment-modes.md`)
 **TWO orthogonal axes, NOT a single "dine-in vs pickup" mode:** dining context (`eat_in|takeaway` →
 plate/package, table?) × hand-off (`self_pickup|served`). **KEY RULE: the diner "ready for pick-up"
 alert keys off `self_pickup`, NOT "dine-in".** The storefront configures its enabled SET (cascade like
@@ -96,8 +96,8 @@ dashboard) = **Manager/Viewer/Finance** · POS (PIN-only, `/pos`) = **Supervisor
 **Platform Console** (`/platform`) drill-down → `NodeDetailDrawer` (rename · status · fee · stop-chain · add
 child · module toggles · logins · enter). Endpoints: `GET /org/tree`, `POST/PATCH /org/nodes`,
 `GET/POST/DELETE /org/nodes/{id}/accounts`, `GET/PUT /org/nodes/{id}/modules`.
-**Full as-built spec → `docs/architecture-org-tree.md §12`**; POS/roles detail → memory `roles-reference` +
-`pos-mvp`; vouchers → `docs/architecture-vouchers.md`. **Critical invariants / traps (do NOT violate):**
+**Full as-built spec → `docs/architecture/architecture-org-tree.md §12`**; POS/roles detail → memory `roles-reference` +
+`pos-mvp`; vouchers → `docs/architecture/architecture-vouchers.md`. **Critical invariants / traps (do NOT violate):**
 - **`menu.id == node.id`** — the invariant all resolvers key off. Storefronts auto-mint Outlet+Menu(id==node)
   +Table+QR (`services/storefronts.py`, idempotent; `provision_missing()` backfills).
 - **Never run `sync_org_tree` on UI-built trees** (it re-parents → silently breaks FIXED-rent isolation).
@@ -117,7 +117,7 @@ child · module toggles · logins · enter). Endpoints: `GET /org/tree`, `POST/P
 - **Enter scopes by node:** Storefront → 1 outlet; sub-chain → its subtree; tenant → all. Menu + Tables&QR
   sub-scope; **CRM/Orders/Settings stay tenant-wide** (loyalty ring = the tenant).
 
-## Vouchers (LOCKED 2026-06-05 → `docs/architecture-vouchers.md`)
+## Vouchers (LOCKED 2026-06-05 → `docs/architecture/architecture-vouchers.md`)
 **Shared Voucher core, two issuers, one cashier redemption.** Litmus: *earned, always-on, everyone* →
 **loyalty** issuer; *granted to a trigger/segment* → **campaign** issuer — both redeemed the same way.
 Scope = a node, reach = its subtree (`scope_node_id`; `merchant_id` = funding tenant). Tiers 1–2 BUILT;
@@ -168,7 +168,7 @@ venue/lease/settlement/franchising/Storefront-re-key (all post-MVP).
   bounds). Tenant tz = `Merchant.settings["timezone"]` (resolved `?tz=` → tenant → platform in
   `routes/reports.py::_tenant_tz`); the Reports dropdown is a display-only override. **NEVER derive the tz
   from `Outlet.timezone`** (a parent spans many outlets → ambiguous window, breaks parent↔child recon).
-  Full design + Phase 1/2/3 → `docs/reporting-timezone.md`.
+  Full design + Phase 1/2/3 → `docs/architecture/reporting-timezone.md`.
 
 ## Where things are
 - `apps/api/app/models/*.py` — schema (source of truth) · `app/services/` — business logic (ORM only, no raw SQL)

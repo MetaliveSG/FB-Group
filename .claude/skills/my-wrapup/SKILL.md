@@ -119,39 +119,39 @@ Verify and update:
   also regenerate `artifacts/demo_credentials.md` if it drifted. New plan docs exist:
   `architecture-3-modules.md`, `buildplan-land-first.md`; keep the `docs-index` memory status tags current.
 
-### docs/architecture.md
+### docs/architecture/architecture.md
 Verify and update:
 - Overview line: `(N endpoints, N tables)` and `App Router, N routes`
 - Frontend personas list — any new merchant page?
 - Analytics / Services sections — new domain mention?
 
-### docs/api.md
+### docs/reference/api.md
 Verify and update:
 - New endpoint row(s) under the right section header — match `Method | Path | Notes` format
 - If you added a new resource (e.g. `/me/jackpot`), confirm it's not duplicating elsewhere
 
-### docs/testing.md
+### docs/reference/testing.md
 Verify and update:
 - Latest run line: `**N passed** across M files`
 - Coverage section heading: `(N backend tests)`
 - New row in the coverage table for each new test file
 
-### docs/database.md
+### docs/reference/database.md
 Verify and update:
 - Header: `**N migrations**` and `**N application tables**`
 - Domain-grouped table list — add new tables to their domain row
 
-### docs/deployment.md
+### docs/reference/deployment.md
 Verify and update:
 - Migration chain narrative: `**N revisions** (initial → ... → newest)` and `verified to upgrade (N tables)`
 
-### docs/security.md
+### docs/reference/security.md
 Update only if you added a new auth path, mock provider, or threat surface.
 
-### docs/bc-dr.md
+### docs/reference/bc-dr.md
 Update only if recovery procedure or RPO/RTO changed.
 
-### docs/product-requirements.md
+### docs/reference/product-requirements.md
 Update only if scope or module list shifted materially.
 
 For each file: if anything is stale, outdated, or missing — fix it.

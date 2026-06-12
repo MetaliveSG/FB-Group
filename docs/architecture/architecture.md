@@ -42,7 +42,7 @@ The **canonical org model is the Chain/Storefront *member tree*** (`org_nodes` s
 the `sells` flag) — onboarded + managed from the Platform Console. The typed `Merchant → Brand →
 Outlet → Table → QRCode` tables are **FK anchors / profiles** under that spine (a Storefront's
 `Menu.id == node.id`; provisioned automatically on create). Full as-built model:
-`docs/architecture-org-tree.md` (§12 grounds provisioning, the QR resolvers, and Enter-scope).
+`docs/architecture/architecture-org-tree.md` (§12 grounds provisioning, the QR resolvers, and Enter-scope).
 
 `merchant_id` is denormalized onto descendant + transactional rows so **tenant isolation is a single
 indexed predicate** on every query. Authorization resolves a user's role assignments into an effective

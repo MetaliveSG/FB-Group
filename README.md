@@ -14,7 +14,7 @@ Customer (web app)                                  Merchant (CRM)
 tree of two node kinds — **Chain** (structural; nests) and **Storefront** (the selling leaf) — from
 the **Platform Console** (`/platform`). Creating a Storefront auto-provisions its outlet, menu and QR;
 **Enter** any node for a console scoped to its subtree. Full as-built spec:
-[`docs/architecture-org-tree.md` §12](docs/architecture-org-tree.md).
+[`docs/architecture/architecture-org-tree.md` §12](docs/architecture/architecture-org-tree.md).
 
 ## Monorepo layout
 ```
@@ -66,6 +66,6 @@ The sample QR token is printed by `python -m app.seed` and saved to
 `artifacts/demo_credentials.md`.
 
 ## Docs
-[Architecture](docs/architecture.md) · [API](docs/api.md) · [Security](docs/security.md) ·
-[Testing](docs/testing.md) · [Deployment](docs/deployment.md) · [BC/DR](docs/bc-dr.md) ·
-[PRD](docs/product-requirements.md)
+[Architecture](docs/architecture/architecture.md) · [API](docs/reference/api.md) · [Security](docs/reference/security.md) ·
+[Testing](docs/reference/testing.md) · [Deployment](docs/reference/deployment.md) · [BC/DR](docs/reference/bc-dr.md) ·
+[PRD](docs/reference/product-requirements.md)

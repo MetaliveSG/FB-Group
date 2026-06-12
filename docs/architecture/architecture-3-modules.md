@@ -320,7 +320,7 @@ the user wants the toggle + side-menu working and verifiable before the deeper s
 spend-based earn becomes input kind #1 (§8). Highest-risk step; guarded by the ledger-reconciliation tests.
 
 **Phase D — Counter-QR join (the LAND)** — enroll-without-ordering → the existing welcome voucher + the
-no-POS Redemption Centre (`docs/buildplan-land-first.md`). Can run on the current fused earn if done before C.
+no-POS Redemption Centre (`docs/architecture/buildplan-land-first.md`). Can run on the current fused earn if done before C.
 
 **Phase E — KDS / order-display screen** — Table QR fulfils with POS off.
 

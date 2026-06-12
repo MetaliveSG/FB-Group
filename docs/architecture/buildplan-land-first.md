@@ -2,7 +2,7 @@
 
 **Status:** DRAFT for approval (2026-06-07). Plan-first, not started. Ships the **loyalty-only**
 counter-QR product (no POS, no table-ordering) — the "LAND" tier of the 3-module ADR
-(`docs/architecture-3-modules.md`). Grounded against the code on 2026-06-07 (see §Grounding).
+(`docs/architecture/architecture-3-modules.md`). Grounded against the code on 2026-06-07 (see §Grounding).
 
 ## Goal / Definition of Done
 A merchant with **no POS and no table-ordering** runs a rewards program: hang a **counter join-QR** →
@@ -117,5 +117,5 @@ in the **join landing** and the **Redemption Centre UI**; the rest reuses verifi
    detail; will resolve during L1).
 
 ---
-**Related:** `docs/architecture-3-modules.md` (the ADR) · [[three-modules-adr]] · [[voucher-redemption-design]]
+**Related:** `docs/architecture/architecture-3-modules.md` (the ADR) · [[three-modules-adr]] · [[voucher-redemption-design]]
 · [[gtm-pos-agnostic-capture]] · [[roadmap-mvp-foundation]].

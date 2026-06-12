@@ -7,7 +7,7 @@ axes**; a storefront configures the **set** of options it offers; the diner/staf
 Status: **BUILT 2026-06-10/11 (R42)** — two-axis config (`org_nodes.service_options` cascade) + the
 `Order.hand_off` axis + per-order selection + KDS + the diner ready notification are all live; remaining
 gaps listed under "Still to add". Aligns with the Foundation Contract (#5/#6/#7) and the
-3-module ADR (`docs/architecture-3-modules.md`)._
+3-module ADR (`docs/architecture/architecture-3-modules.md`)._
 
 ## How the industry models it (study)
 - **Toast — "Dining Options"** (configurable per restaurant; pre-populated Dine In · Take Out · Delivery ·

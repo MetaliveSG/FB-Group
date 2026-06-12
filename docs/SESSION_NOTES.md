@@ -96,7 +96,7 @@
   Added the product section + pitch + **Luckin Coffee growth model** to `CLAUDE.md`, and grounded the
   member-tree **glossary** against actual code (no invented terms: "tenant" = settlement boundary,
   "Enterprise" = a concept/legacy label, NOT a built node kind).
-- **3-module refactor — Phase A (A1–A6) shipped** (`docs/architecture-3-modules.md`): three independently
+- **3-module refactor — Phase A (A1–A6) shipped** (`docs/architecture/architecture-3-modules.md`): three independently
   toggleable modules — **Table QR · Intelligence · POS** — on a shared core.
   - **A1** per-node 3-state module flags (`mod_rewards`/`mod_qr_ordering`/`mod_pos`, nullable=inherit) on
     `org_nodes` + cascade resolver `boundaries.resolve_modules()` (nearest explicit ancestor wins →

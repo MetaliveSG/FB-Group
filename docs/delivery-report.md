@@ -12,8 +12,8 @@ PostgreSQL, fully Dockerised and AWS-ready by design.
 
 ## 2. What was built
 - **Backend** (`apps/api`): FastAPI + SQLAlchemy 2.0, **46 tables**, **148 API endpoints**, 36 Alembic migrations.
-- **Member tree / Platform Console** (`/platform`): a single Chain/Storefront org spine you onboard + manage via UI — drill-down directory + `NodeDetailDrawer` (incl. per-node **module toggles**: Table QR · Intelligence · POS, 3-state inherit/on/off cascade); storefronts auto-provision their Outlet/Menu/QR; **Enter** any node to operate it scoped to its subtree. As-built spec: `docs/architecture-org-tree.md §12`; 3-module plan: `docs/architecture-3-modules.md`.
-- **3 toggleable modules** (`docs/architecture-3-modules.md`, Phase A built): **Table QR · Intelligence · POS** resolve per node via `boundaries.resolve_modules()` (nearest explicit ancestor → `Merchant.settings` fallback); the dashboard sidebar **and** customer tab bar show/hide on toggle. Endpoints `GET/PUT /org/nodes/{id}/modules`.
+- **Member tree / Platform Console** (`/platform`): a single Chain/Storefront org spine you onboard + manage via UI — drill-down directory + `NodeDetailDrawer` (incl. per-node **module toggles**: Table QR · Intelligence · POS, 3-state inherit/on/off cascade); storefronts auto-provision their Outlet/Menu/QR; **Enter** any node to operate it scoped to its subtree. As-built spec: `docs/architecture/architecture-org-tree.md §12`; 3-module plan: `docs/architecture/architecture-3-modules.md`.
+- **3 toggleable modules** (`docs/architecture/architecture-3-modules.md`, Phase A built): **Table QR · Intelligence · POS** resolve per node via `boundaries.resolve_modules()` (nearest explicit ancestor → `Merchant.settings` fallback); the dashboard sidebar **and** customer tab bar show/hide on toggle. Endpoints `GET/PUT /org/nodes/{id}/modules`.
 - **Frontend** (`apps/web`): Next.js 14 App Router, **33 routes** (+ a `/showcase` UI-kit gallery), typed API client in `packages/api-client`. Customer app redesigned mobile-first on a shared **design system** (`packages/ui` tokens + component kit, Lucide icons). Includes the **staff POS** (`/pos`, PIN login, tap→pay, receipt, void) + a merchant **Point of Sale** nav section, plus the **kitchen display** (`/kds`, paid-order queue → mark ready/collected).
 - **i18n/l10n + brand theming** (`packages/i18n`, `org_nodes.theme` cascade): language/currency/timezone as **3 decoupled axes** (person/settlement/place); per-tenant brand kit (`primary`/`accent`/`logo`/`hero`/`tagline` + enterprise showcase fields) resolved nearest-ancestor-wins and surfaced in the QR context. Powers the **Malaysia Boleh! foodcourt home** (branded hero, real stall signboards, dish photos, mascot, recommended/all-stalls directory) and the **FSG enterprise showcase** (`/t/node/fsg` — brands · CSR · history · awards).
 - **Infra** (`infra/`): docker-compose (Postgres + API + web), Dockerfiles, healthchecks, backup script.
@@ -106,16 +106,16 @@ Input validation (Pydantic) · ORM bound params (no SQLi) · bcrypt hashing · J
 expiry + refresh + self-healing 401 · actor-separated auth · RBAC least-privilege ·
 **tenant isolation (test-proven)** · rate limiting (OTP/login) · CORS allow-list ·
 secure headers (HSTS/CSP/XFO/nosniff) · audit logs · env secrets / no hardcoded creds ·
-server-side pricing · safe error responses. Full threat model + PoC limits: `docs/security.md`.
+server-side pricing · safe error responses. Full threat model + PoC limits: `docs/reference/security.md`.
 
 ## 8. API documentation
 Swagger `/docs`, ReDoc `/redoc`, machine spec `artifacts/openapi.json` (148 endpoints),
-human reference `docs/api.md`.
+human reference `docs/reference/api.md`.
 
 ## 9. Database schema (46 tables)
 Tenancy, identity/RBAC, catalog, orders, payments, loyalty (+coalition), CRM
 (tags/notes/segments), engagement (reward catalog, wheel, **jackpot**, tasks, opportunities,
-activities), campaigns, audit. Diagram + grouping: `docs/database.md`;
+activities), campaigns, audit. Diagram + grouping: `docs/reference/database.md`;
 list: `artifacts/schema_tables.txt`. UUID PKs, Numeric money, `merchant_id` isolation key.
 
 ## 10. Known limitations (PoC)
@@ -134,8 +134,8 @@ Swap mocks for real providers (Stripe/NETS/PayNow, SMS OTP, Twilio/Meta WhatsApp
 Google/Apple SSO) · Redis for limits/OTP/cache · **referral program** (top growth lever) ·
 campaign scheduling + budget guardrails · win-back auto-resolution + reward-expiry jobs ·
 cohort retention · AWS deploy (ECS Fargate + RDS Multi-AZ + ElastiCache + Secrets Manager
-+ CloudFront/WAF + CloudWatch/OTel + blue/green) per `docs/deployment.md`;
-RPO ≤5m / RTO ≤30m per `docs/bc-dr.md`.
++ CloudFront/WAF + CloudWatch/OTel + blue/green) per `docs/reference/deployment.md`;
+RPO ≤5m / RTO ≤30m per `docs/reference/bc-dr.md`.
 
 ## 12. Lead Verifier confirmation
 All claims are backed by re-run tests + live HTTP verification against the Dockerised

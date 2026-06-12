@@ -8,7 +8,7 @@ The system is the **Customer Intelligence Platform (CIP)** — it helps F&B merc
 customer intelligence**. Five integrated modules: **CRM · AI · Payment · Ordering · Rewards (loyalty)**.
 The positioning is *intelligence-led growth*, not just QR-ordering/loyalty — the data captured across
 ordering/payment/rewards feeds the CRM + AI that drive merchant growth. Maps to the 3-module engine
-(Table QR · **Intelligence** · POS) on one core — see `docs/architecture-3-modules.md`.
+(Table QR · **Intelligence** · POS) on one core — see `docs/architecture/architecture-3-modules.md`.
 
 ## The pitch (intelligence-led growth)
 - **Category line:** *"Most F&B tools RUN your operations. CIP GROWS your business — it turns every order,
