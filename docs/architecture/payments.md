@@ -294,6 +294,10 @@ small tweaks only. FSG (the paying uPOS customer) drives the request + timeline.
 **Ask uPOS these 6 capability questions FIRST (Week 0):**
 1. **Outbound:** webhook/API call on every completed sale to a configurable HTTPS endpoint —
    **incl. line items WITH their options/modifiers** (chilli/no-chilli, dry/soup, add-ons)?
+   **1b. Store-and-forward (MANDATED, not a question — phase-① resilience depends on it):** does uPOS
+   **queue webhooks while offline and replay them on reconnect**? FSG requires this. **If uPOS truly
+   cannot**, the break-glass is the **signed-token receipt QR** (the receipt itself proves the sale —
+   amount-only earn, no items; secret-on-every-till, so rotate + low caps).
 2. **Receipt:** can the receipt template embed a **dynamic QR** (per-transaction URL/token)?
 3. **Inbound:** an API to create/inject an order into a stall's queue (+ status callbacks)?
 4. **Custom tender:** can a named tender type ("FS Wallet") be added at config level (no integration)?

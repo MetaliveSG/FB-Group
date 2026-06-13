@@ -202,9 +202,11 @@ no-voucher earn lane; one-time claim per txn._
 
 ## Flow C — connection down (degraded mode)
 
-_Vouchers degrade gracefully (deferred, never burned); earning NEVER stops — the receipt QR works
-offline because printing is local. Requires uPOS to queue + replay webhooks (Week-0 ask Q1b);
-fallback if they can't: the signed-token receipt QR (§8)._
+_Vouchers degrade gracefully (deferred, never burned). **Accrual never stops** (the receipt QR prints
+locally); **redemption resumes on restore** (provisional coins aren't spendable until confirmed —
+decided 2026-06-13). uPOS **MUST queue + replay webhooks (store-and-forward)** — mandated, not
+optional (§8 Q1b). **Break-glass IF uPOS genuinely can't comply:** the signed-token receipt QR earns
+from the receipt alone (amount-only, no items) — kept as pilot insurance, not the plan._
 
 ```text
 +--------------------------------------------------------+
@@ -235,15 +237,18 @@ fallback if they can't: the signed-token receipt QR (§8)._
                             |
                             v
 +--------------------------------------------------------+
-| C5 . Connection restores -> uPOS replays its           |
-|      queued webhooks -> match by txn id ->             |
-|      coins CONFIRMED . items + options attach          |
+| C5 . Connection RESTORES -> uPOS replays its           |
+|      queued webhooks (store-and-forward) ->            |
+|      match by txn id -> coins CONFIRMED + spendable    |
+|      . items + options attach                          |
 +--------------------------------------------------------+
                             |
                             v
 +--------------------------------------------------------+
-| C6 . Pending claim unmatched after 72h ->              |
+| C6 . Pending claim unmatched 72h AFTER RECONNECT ->    |
 |      expires + lands on the exception report           |
+|      (timer runs from reconnect, NOT from claim -      |
+|       a long outage must not expire valid claims)      |
 +--------------------------------------------------------+
 ```
 
