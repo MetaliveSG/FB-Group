@@ -7,6 +7,52 @@
 
 ---
 
+# Session — 2026-06-13 — FSG payments + phase-① counter flow (design, no code)
+
+## What changed
+- **FSG roadmap RE-SEQUENCED** (`edfbe81`): ① loyalty + CRM first → ② wallet/credit-card at the
+  EXISTING uPOS counters → ③ online ordering last. Propagated to `payments.md` build slices +
+  build-state direction + the kpmg memory.
+- **`architecture/payments.md` heavily extended** — the counter rail spec:
+  - **§7b scan-at-tender rail** (`cd1525c`,`227932e`): customer-presented — cashier bills in uPOS,
+    diner shows a one-time CIP QR, **cashier scans → on txn submit uPOS POSTs `/tender/scan` →
+    CIP validates+redeems atomically → uPOS deducts → shows balance**. ONE rail serves vouchers
+    (①) and wallet (②). Engine = `tender_intents` + token service + idempotency by `txn_id`.
+  - **Item-level capture + voucher-at-counter** (`77abcc5`): §8 webhook (items + OPTIONS like
+    chilli/dry-soup) is the intelligence artery; vouchers redeem by riding the payment.
+  - **Voucher state machine** (`83d589e`): redeem-on-scan, atomic; armed≠redeemed; sequential
+    unlock fires at scan-approval.
+  - **Offline/degraded design** (`aa3921e`): store-and-forward MANDATED of uPOS; signed-QR
+    break-glass; coins provisional-not-spendable until confirmed; expiry 72h from reconnect.
+- **`docs/flow-phase1.md` created** (renamed from flow-mindmap) — the phase-① flow as: 30-second
+  board+CTO pitch · 14-step vertical flow (ASCII + Mermaid) · **Flow B** receipt-discovery door ·
+  **Flow C** connection-down · engineer sequence diagram. `.vscode` recommends the Mermaid extension.
+
+## Decisions (all register rows, dated 2026-06-12/13)
+- FSG re-sequenced (loyalty easiest to roll out, captures data first).
+- Item-level counter capture (what/where/how-much + options) is mandatory — feeds CRM/AI.
+- Customer-presented scan-at-tender; the till owns the bill (diner never keys the amount).
+- Voucher = redeem-on-scan atomic; sequential welcome-pack unlock.
+- Offline: store-and-forward mandated + signed-QR break-glass; coins provisional; expiry from reconnect.
+- Flow B: receipt-QR scan earns the meal's coins + welcome pack for a first-timer.
+
+## Dense record
+- Commits `edfbe81`…`5449fd3` (18) · migrations: NONE · counts UNCHANGED (148 endpoints · 46 tables ·
+  36 migrations · 327+74 tests · 33 routes) · **docs/design only, zero code** · verified: decisions
+  register + flow doc + payments spec mutually consistent (heal-style grep, no stale paths).
+- PRINCIPLE worth keeping: **value-state is realtime + server-side (redeem/debit/mint commit in CIP
+  at scan time); evidence-data is async (the uPOS webhook may lag — enriches + confirms later).**
+  Authorization never waits on, or trusts, the late data.
+
+## Still open / next session
+- Build phase ①: CIP-side token service + `/tender/scan` + `tender_intents` + sequential unlock
+  (uPOS-independent, can start now); FSG sends uPOS the §8 handout (6 Qs — Q1/Q1b/Q5 gate phase ①).
+- 🔀 parked routes in flow-phase1.md (wallet rail detail, online ordering, multi-voucher, M2 funding).
+- Earn economics (100 coins/$ gross · 100 coins = $1 food-only · min-spend $3) = tenant config — confirm at build.
+- Untracked `artifacts/` benchmark dirs + `showcase/beat3/` — commit vs gitignore (carried KIV).
+
+---
+
 # Session — 2026-06-12 (pm) — persistent-memory system
 
 ## What changed

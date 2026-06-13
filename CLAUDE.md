@@ -144,6 +144,7 @@ venue/lease/settlement/franchising/Storefront-re-key (all post-MVP).
   session log) · design detail → the existing `docs/architecture/*.md` · plans/scopes → the doc
   they extend · context/preference → an existing memory topic file. An unindexed file is invisible
   next session — memory debt, not memory.
+- **Value-state realtime + server-side; evidence-data async (counter/offline rail).** Any state that mints/moves value (voucher redeem · wallet debit · coin grant) commits in CIP at action time on the diner's online device; the uPOS webhook (sale record, items) is allowed to LAG and only ENRICHES/CONFIRMS later. **Authorization never waits on, or trusts, the late data** — offline earns go *provisional, not spendable* until the webhook matches by `txn_id` (`docs/flow-phase1.md` Flow C). Never wire unverified earn to spendable balance.
 - **Multi-tenant**: nearly every query is scoped by `merchant_id`. Lead with it in any composite index.
   Operator (super_admin) drills into merchants via `?merchant_id=`.
 - **Money** = `Numeric(12,2)` as Python `Decimal`. **PKs** = `String(32)` hex UUID (`uuid4().hex`).
